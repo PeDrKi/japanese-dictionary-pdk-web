@@ -3,7 +3,7 @@
 
 const ACT = {};      // data-act → handler(el, event)
 const NAV = { tab: 'today', sub: null, stack: [] };
-const FILT = { search: '', type: '', jlpt: '', status: '', fav: false, due: false, deck: '', shown: 50, select: false, sel: new Set() };
+const FILT = { search: '', type: '', jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', shown: 50, select: false, sel: new Set() };
 
 // ── Toast ───────────────────────────────────────────────────────────────────
 let toastTimer;
@@ -89,7 +89,7 @@ function cardRow(c, extra = '') {
     <span class="grow"><span class="t">${esc(c.meaning_vi)}</span><br><span class="s jp">${esc(cardMainText(c)) || '&nbsp;'}</span></span>
     <span style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
       <span class="row" style="gap:6px">${c.is_favorite ? '<span style="color:var(--accent)">★</span>' : ''}<span class="st ${c.status}" title="${STATUS_LABEL[c.status]}"></span></span>
-      ${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}${extra}
+      <span class="row" style="gap:4px">${POS_SHORT[c.pos] ? `<span class="tag">${POS_SHORT[c.pos]}</span>` : ''}${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}</span>${extra}
     </span></button>`;
 }
 const emptyBox = (g, msg, sub = '') => `<div class="empty"><div class="g jp">${g}</div><p><b>${esc(msg)}</b></p>${sub ? `<p class="small">${sub}</p>` : ''}</div>`;

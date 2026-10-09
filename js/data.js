@@ -90,7 +90,7 @@ async function getSig() { try { const { data, error } = await sb.rpc('jp_sync_si
 // Cơ sở dữ liệu phải đã chạy schema.sql bản 3 (có cột version + hàm log_study)
 async function checkSchema() {
   const { data, error } = await sb.rpc('jp_schema_version');
-  if (error || !(data >= 3)) throw new Error('Cơ sở dữ liệu chưa được nâng cấp lên bản mới (thiếu cột version / hàm log_study / jp_sync_sig).');
+  if (error || !(data >= 5)) throw new Error('Cơ sở dữ liệu chưa được nâng cấp lên bản mới (thiếu cột version / từ loại / hàm log_study / jp_sync_sig).');
 }
 
 // ── Đồng bộ nhiều thiết bị: tự làm mới ─────────────────────────────────────
@@ -171,7 +171,7 @@ function logStudy(cardId, result) {
 // Nếu ai đó đã sửa trước: trường khác nhau → tự gộp; cùng 1 trường khác giá trị → hỏi bạn.
 const EDIT_FIELDS = {
   cards: ['type', 'character', 'reading_on', 'reading_kun', 'reading_kana', 'reading_hanviet', 'romaji', 'meaning_vi', 'meaning_en',
-    'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes'],
+    'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos'],
   decks: ['name', 'description', 'color', 'icon', 'category_id'],
   radicals: ['character', 'name', 'color'],
 };
@@ -342,6 +342,7 @@ function filterCards(f = {}) {
   if (f.type) list = list.filter(c => c.type === f.type);
   if (f.jlpt) list = list.filter(c => c.jlpt_level === f.jlpt);
   if (f.status) list = list.filter(c => c.status === f.status);
+  if (f.pos) list = list.filter(c => c.pos === f.pos);
   if (f.fav) list = list.filter(c => c.is_favorite);
   if (f.due) { const t = localDate(); list = list.filter(c => isDue(c, t)); }
   if (f.deck) { const s = new Set(S.cardsOfDeck.get(f.deck) || []); list = list.filter(c => s.has(c.id)); }

@@ -6,13 +6,14 @@ const FIELD_LABEL = {
   reading_hanviet: 'Âm Hán Việt', romaji: 'Romaji', meaning_vi: 'Nghĩa tiếng Việt', meaning_en: 'Nghĩa tiếng Anh',
   example_jp: 'Câu ví dụ', example_vi: 'Dịch câu ví dụ', stroke_count: 'Số nét', jlpt_level: 'JLPT', status: 'Trạng thái',
   source: 'Nguồn', notes: 'Ghi chú', is_favorite: 'Yêu thích', name: 'Tên', description: 'Mô tả', color: 'Màu', icon: 'Biểu tượng',
-  category_id: 'Danh mục',
+  category_id: 'Danh mục', pos: 'Từ loại',
 };
 function fmtVal(field, v) {
   if (v === null || v === undefined || v === '') return '(trống)';
   if (field === 'is_favorite') return v ? '★ Có' : 'Không';
   if (field === 'status') return STATUS_LABEL[v] || v;
   if (field === 'type') return TYPE_LABEL[v] || v;
+  if (field === 'pos') return POS_LABEL[v] || '(không rõ)';
   if (field === 'category_id') { const c = S.cats.find(x => x.id === v); return c ? c.name : '(danh mục khác)'; }
   return String(v);
 }

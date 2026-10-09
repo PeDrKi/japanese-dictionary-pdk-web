@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- 日本語 Web — schema Supabase (Postgres) · phiên bản 3 (xử lý xung đột nhiều thiết bị)
+-- 日本語 Web — schema Supabase (Postgres) · phiên bản 5 (xung đột nhiều thiết bị + từ loại)
 -- Chạy: Supabase Dashboard → SQL Editor → New query → dán TOÀN BỘ → Run
 -- Dùng được cho cả cài mới LẪN nâng cấp từ bản đầu (an toàn khi chạy lại nhiều lần).
 -- Cấu trúc bám sát japanese.db của bản desktop (8 bảng, khoá chính UUID),
@@ -204,9 +204,17 @@ begin
   end loop;
 end $$;
 
+-- ── PHIÊN BẢN 4-5: từ loại (danh từ, động từ [nhóm 1-3], tính từ い/な, đại từ, trợ từ, trạng từ, liên từ, thán từ) ──────
+alter table public.cards add column if not exists pos text;
+-- (v5: mở rộng danh sách từ loại → xoá ràng buộc cũ rồi tạo lại; chạy lại nhiều lần vẫn an toàn)
+alter table public.cards drop constraint if exists cards_pos_check;
+alter table public.cards add constraint cards_pos_check
+  check (pos is null or pos in ('noun', 'verb', 'verb1', 'verb2', 'verb3', 'adj_i', 'adj_na',
+                                'pronoun', 'particle', 'adverb', 'conjunction', 'interjection'));
+
 -- ── Phiên bản schema (app kiểm tra khi khởi động để báo "chưa chạy schema mới") ──
 create or replace function public.jp_schema_version() returns integer
-language sql stable as $$ select 3 $$;
+language sql stable as $$ select 5 $$;
 
 -- Chữ ký nhẹ của toàn bộ dữ liệu của bạn: app hỏi cái này mỗi ~60 giây thay vì tải lại tất cả.
 -- Đổi khi có thêm / xóa / sửa bất kỳ hàng nào (chạy với quyền của người gọi nên RLS chỉ tính dữ liệu của bạn).

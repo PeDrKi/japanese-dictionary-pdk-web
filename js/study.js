@@ -1,13 +1,13 @@
 /* study.js — màn chọn bài ôn + 3 chế độ: Flashcard, Quiz trắc nghiệm, Luyện gõ + bàn phím kana */
 'use strict';
 
-const SC = { mode: 'flash', ask: 'meaning_vi', typing: 'meaning', source: 'due', deck: '', type: '', jlpt: '', status: '', fav: false, limit: 20, split: true };
+const SC = { mode: 'flash', ask: 'meaning_vi', typing: 'meaning', source: 'due', deck: '', type: '', jlpt: '', pos: '', status: '', fav: false, limit: 20, split: true };
 const QUIZ_ASK = [['meaning_vi', 'Nghĩa tiếng Việt'], ['meaning_en', 'Nghĩa tiếng Anh'], ['romaji', 'Romaji'], ['reading_hanviet', 'Âm Hán Việt'], ['on', 'Âm On-yomi'], ['kun', 'Âm Kun-yomi']];
 const TYPING_ASK = [['meaning', 'Nghĩa VN'], ['romaji', 'Romaji'], ['kana', 'Kana'], ['on', 'Âm On'], ['kun', 'Âm Kun'], ['hanviet', 'Hán Việt']];
 const MODE_LABEL = { flash: 'Flashcard', quiz: 'Quiz', typing: 'Luyện gõ' };
 
 function studyPool(cfg = SC) {
-  return filterCards({ due: cfg.source === 'due', deck: cfg.deck, type: cfg.type, jlpt: cfg.jlpt, status: cfg.status, fav: cfg.fav });
+  return filterCards({ due: cfg.source === 'due', deck: cfg.deck, type: cfg.type, jlpt: cfg.jlpt, pos: cfg.pos, status: cfg.status, fav: cfg.fav });
 }
 function viewStudyLauncher() {
   const n = studyPool().length;
@@ -21,6 +21,7 @@ function viewStudyLauncher() {
   <div class="field"><span>Nguồn thẻ</span><div class="chips">${chip('source', 'due', 'Đến hạn hôm nay')}${chip('source', 'all', 'Tất cả thẻ')}</div></div>
   <div class="field"><span>Loại thẻ</span><div class="chips"><button class="chip ${SC.type ? '' : 'on'}" data-act="scSet" data-k="type" data-v="">Tất cả</button>${TYPES.map(t => chip('type', t, TYPE_LABEL[t])).join('')}</div></div>
   <div class="field"><span>JLPT</span><div class="chips"><button class="chip ${SC.jlpt ? '' : 'on'}" data-act="scSet" data-k="jlpt" data-v="">Tất cả</button>${JLPT.map(t => chip('jlpt', t, t)).join('')}</div></div>
+  <div class="field"><span>Từ loại</span><div class="chips" style="flex-wrap:wrap"><button class="chip ${SC.pos ? '' : 'on'}" data-act="scSet" data-k="pos" data-v="">Tất cả</button>${POS.map(t => chip('pos', t, POS_LABEL[t])).join('')}</div></div>
   <div class="field"><span>Trạng thái</span><div class="chips"><button class="chip ${SC.status ? '' : 'on'}" data-act="scSet" data-k="status" data-v="">Tất cả</button>${STATUSES.map(t => chip('status', t, STATUS_LABEL[t])).join('')}</div></div>
   ${liveDecks().length ? `<label class="field"><span>Bộ thẻ</span><select id="sc-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${SC.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>` : ''}
   <div class="row wrap" style="margin-bottom:12px"><button class="chip ${SC.fav ? 'on' : ''}" data-act="scFav">★ Chỉ yêu thích</button></div>
@@ -59,7 +60,7 @@ function expandReadingItems(cards, kind) {
   return items;
 }
 function startStudy(cfg) {
-  let cards = studyPool(cfg.due ? { source: 'due', deck: '', type: '', jlpt: '', status: '', fav: false } : cfg);
+  let cards = studyPool(cfg.due ? { source: 'due', deck: '', type: '', jlpt: '', pos: '', status: '', fav: false } : cfg);
   shuffle(cards); if (cfg.limit) cards = cards.slice(0, cfg.limit);
   let items;
   if (cfg.mode === 'flash') items = cards.map(c => ({ ...c }));

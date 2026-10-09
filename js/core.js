@@ -8,6 +8,26 @@ const TYPE_GLYPH = { kanji: '漢', hiragana: 'ひ', katakana: 'ア', vocab: '語
 const STATUSES = ['new', 'learning', 'known'];
 const STATUS_LABEL = { new: 'Chưa học', learning: 'Đang học', known: 'Đã nhớ' };
 const JLPT = ['N5', 'N4', 'N3', 'N2', 'N1'];
+// Từ loại (áp dụng cho thẻ từ vựng). "verb" = động từ chưa rõ nhóm; verb1/2/3 = có chỉ rõ nhóm
+const POS = ['noun', 'verb', 'verb1', 'verb2', 'verb3', 'adj_i', 'adj_na', 'pronoun', 'particle', 'adverb', 'conjunction', 'interjection'];
+const POS_LABEL = { noun: 'Danh từ', verb: 'Động từ', verb1: 'Động từ nhóm 1', verb2: 'Động từ nhóm 2', verb3: 'Động từ nhóm 3',
+  adj_i: 'Tính từ đuôi い', adj_na: 'Tính từ đuôi な', pronoun: 'Đại từ', particle: 'Trợ từ', adverb: 'Trạng từ', conjunction: 'Liên từ', interjection: 'Thán từ' };
+const POS_SHORT = { noun: 'Danh từ', verb: 'Động từ', verb1: 'ĐT 1', verb2: 'ĐT 2', verb3: 'ĐT 3', adj_i: 'TT い', adj_na: 'TT な',
+  pronoun: 'Đại từ', particle: 'Trợ từ', adverb: 'Trạng từ', conjunction: 'Liên từ', interjection: 'Thán từ' };
+// Nhận mã chuẩn hoặc tên gọi quen thuộc (CSV / file .db / bản desktop) → mã chuẩn hoặc null
+const POS_ALIAS = { 'danh từ': 'noun', 'danh tu': 'noun', 'meishi': 'noun', n: 'noun',
+  'động từ': 'verb', 'dong tu': 'verb', 'doushi': 'verb', 'verb': 'verb',
+  'động từ nhóm 1': 'verb1', 'dong tu nhom 1': 'verb1', 'nhóm 1': 'verb1', 'godan': 'verb1', 'group 1': 'verb1', 'v1': 'verb1', 'verb 1': 'verb1',
+  'động từ nhóm 2': 'verb2', 'dong tu nhom 2': 'verb2', 'nhóm 2': 'verb2', 'ichidan': 'verb2', 'group 2': 'verb2', 'v2': 'verb2', 'verb 2': 'verb2',
+  'động từ nhóm 3': 'verb3', 'dong tu nhom 3': 'verb3', 'nhóm 3': 'verb3', 'group 3': 'verb3', 'v3': 'verb3', 'verb 3': 'verb3', 'irregular': 'verb3',
+  'tính từ đuôi い': 'adj_i', 'tính từ đuôi i': 'adj_i', 'tinh tu duoi i': 'adj_i', 'i-adj': 'adj_i', 'i adj': 'adj_i', 'adj-i': 'adj_i',
+  'tính từ đuôi な': 'adj_na', 'tính từ đuôi na': 'adj_na', 'tinh tu duoi na': 'adj_na', 'na-adj': 'adj_na', 'na adj': 'adj_na', 'adj-na': 'adj_na',
+  'đại từ': 'pronoun', 'dai tu': 'pronoun', 'daimeishi': 'pronoun',
+  'trợ từ': 'particle', 'tro tu': 'particle', 'joshi': 'particle',
+  'trạng từ': 'adverb', 'trang tu': 'adverb', 'fukushi': 'adverb',
+  'liên từ': 'conjunction', 'lien tu': 'conjunction', 'setsuzokushi': 'conjunction',
+  'thán từ': 'interjection', 'than tu': 'interjection', 'kandoushi': 'interjection' };
+const safePos = v => { const s = String(v ?? '').trim().toLowerCase(); return POS.includes(s) ? s : (POS_ALIAS[s] || null); };
 const DECK_COLORS = ['#3ECFCF', '#F0B429', '#E85D5D', '#9B7FE8', '#4ECB85', '#4A90D9', '#FF6B9D'];
 const DECK_ICONS = ['📁', '📚', '🌸', '🎌', '⭐', '🔥', '💎', '🎯'];
 const LIMITS = { character: 50, meaning: 200, reading: 100, example: 500, notes: 1000, source: 100 };
@@ -184,6 +204,7 @@ function buildCardData(f) {
     example_vi: t((f.example_vi || '').trim(), LIMITS.example) || null,
     stroke_count: f.stroke_count ? parseInt(f.stroke_count, 10) || null : null,
     jlpt_level: safeJlpt(f.jlpt_level),
+    pos: f.type === 'vocab' ? safePos(f.pos) : null,
     status: f.status || 'new',
     is_favorite: !!f.is_favorite,
     source: t((f.source || '').trim(), LIMITS.source) || null,
@@ -236,7 +257,7 @@ function parseIds(s) {
 
 // ── CSV ─────────────────────────────────────────────────────────────────────
 const CSV_FIELDS = ['type', 'character', 'reading_on', 'reading_kun', 'reading_kana', 'reading_hanviet', 'romaji', 'meaning_vi',
-  'meaning_en', 'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes'];
+  'meaning_en', 'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos'];
 function parseCsv(text) {
   text = text.replace(/^﻿/, '');
   const rows = []; let row = [], f = '', q = false;
@@ -272,7 +293,7 @@ function csvRowsToCards(rows) {
       type, character, meaning_vi, reading_on: s('reading_on'), reading_kun: s('reading_kun'), reading_kana: s('reading_kana'),
       reading_hanviet: s('reading_hanviet'), romaji: s('romaji'), meaning_en: s('meaning_en'), example_jp: s('example_jp'),
       example_vi: s('example_vi'), stroke_count: s('stroke_count'), jlpt_level: s('jlpt_level').toUpperCase(),
-      status: STATUSES.includes(stat) ? stat : 'new', is_favorite: s('is_favorite', '0') === '1', source: s('source'), notes: s('notes'),
+      status: STATUSES.includes(stat) ? stat : 'new', is_favorite: s('is_favorite', '0') === '1', source: s('source'), notes: s('notes'), pos: s('pos'),
     }));
   });
   return { valid, errors };

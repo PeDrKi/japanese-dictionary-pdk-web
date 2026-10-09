@@ -56,3 +56,6 @@ Bản desktop (`japanese-dictionary-pdk-fixed`) giờ đồng bộ vào đúng P
 - Nhập .db: gộp danh mục trùng tên; loại thẻ lạ → vocab. Nhập CSV: bỏ dòng trùng ngay trong file.
 - Sửa thẻ: trường không đụng tới giữ nguyên (không bị cắt độ dài/chuẩn hoá → không sinh xung đột giả).
 - Form thẻ không đóng khi chạm ra ngoài; ô nhập 16px (iOS không tự phóng to); gợi ý dịch bỏ khi MyMemory hết hạn mức.
+
+## Bản 3.2/3.3 — Từ loại
+Thẻ **từ vựng** có thêm trường *Từ loại*: Danh từ · Động từ (hoặc nhóm 1 / 2 / 3) · Tính từ đuôi い / な · Đại từ · Trợ từ · Trạng từ · Liên từ · Thán từ. Hiện trong form sửa thẻ, chi tiết thẻ, danh sách (nhãn nhỏ), bộ lọc, cấu hình ôn tập, CSV (cột `pos`, nhận cả mã `noun/verb1/verb2/verb3/adj_i/adj_na` lẫn tên tiếng Việt) và tự điền khi tra Jisho. **Bắt buộc chạy lại toàn bộ `schema.sql`** (schema phiên bản 5, cột `cards.pos`).

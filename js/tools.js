@@ -10,6 +10,23 @@ function guessType(word) {
   if ([...word].length === 1 && word >= '一' && word <= '鿿') return 'kanji';
   return 'vocab';
 }
+// Từ loại của Jisho (tiếng Anh) → mã từ loại của app
+function posFromJisho(list) {
+  const t = list.join(' | ').toLowerCase();
+  if (/suru verb|kuru verb/.test(t)) return 'verb3';
+  if (/ichidan verb/.test(t)) return 'verb2';
+  if (/godan verb/.test(t)) return 'verb1';
+  if (/i-adjective/.test(t)) return 'adj_i';
+  if (/na-adjective|adjectival nouns?/.test(t)) return 'adj_na';
+  if (/\bverb\b/.test(t)) return 'verb';
+  if (/pronoun/.test(t)) return 'pronoun';
+  if (/particle/.test(t)) return 'particle';
+  if (/adverb/.test(t)) return 'adverb';
+  if (/conjunction/.test(t)) return 'conjunction';
+  if (/interjection/.test(t)) return 'interjection';
+  if (/\bnoun\b/.test(t)) return 'noun';
+  return '';
+}
 async function jishoSearch(keyword) {
   const r = await fetch('api/jisho?keyword=' + encodeURIComponent(keyword));
   if (!r.ok) throw new Error('Máy chủ tra cứu không phản hồi (' + r.status + ')');
@@ -18,7 +35,7 @@ async function jishoSearch(keyword) {
     const jp = (e.japanese || [])[0] || {}; const senses = e.senses || [];
     const en = senses.flatMap(s => s.english_definitions || []).slice(0, 4).join(', ');
     const jl = (e.jlpt || [])[0]; const word = jp.word || jp.reading || '';
-    return { word, reading: jp.reading || '', en, jlpt: jl ? (safeJlpt(jl.replace('jlpt-', '')) || '') : '', pos: (senses[0]?.parts_of_speech || [])[0] || '', common: !!e.is_common };
+    return { word, reading: jp.reading || '', en, jlpt: jl ? (safeJlpt(jl.replace('jlpt-', '')) || '') : '', pos: posFromJisho(senses.flatMap(s => s.parts_of_speech || [])), common: !!e.is_common };
   });
 }
 async function suggestVi(en) {
@@ -43,7 +60,7 @@ ACT.cfJisho = async el => {
 ACT.jishoPick = async el => {
   const { res, form, s } = _jr, r = res[+el.dataset.i], type = guessType(r.word);
   form.dataset.type = type; syncFormType(form); const set = (n, v) => { if (form.elements[n] && v) form.elements[n].value = v; };
-  set('character', r.word); set('meaning_en', r.en); set('jlpt_level', r.jlpt);
+  set('character', r.word); set('meaning_en', r.en); set('jlpt_level', r.jlpt); if (type === 'vocab') set('pos', r.pos);
   if (type === 'kanji') set('reading_kun', r.reading); else set('reading_kana', r.reading);
   set('romaji', kanaToRomaji(r.reading)); s.close();
   const box = $('#cf-suggest', form); if (r.en && !form.elements.meaning_vi.value) {
@@ -190,7 +207,7 @@ async function importDesktopDb(file, say, overwrite = false) {
   await up('decks', deskDecks.filter(r => !deckMap.has(r.id)).map(r => ({ id: r.id, name: r.name, description: r.description, color: r.color, icon: r.icon, category_id: cm(r.category_id), created_at: isoLocal(r.created_at), updated_at: isoLocal(r.updated_at), deleted_at: del(r) })));
   await up('cards', cards.map(r => ({
     id: r.id, type: TYPES.includes(r.type) ? r.type : 'vocab', character: r.character, reading_on: r.reading_on, reading_kun: r.reading_kun, reading_kana: r.reading_kana, reading_hanviet: r.reading_hanviet,
-    romaji: r.romaji, meaning_vi: r.meaning_vi, meaning_en: r.meaning_en, example_jp: r.example_jp, example_vi: r.example_vi, stroke_count: r.stroke_count, jlpt_level: safeJlpt(r.jlpt_level),
+    romaji: r.romaji, meaning_vi: r.meaning_vi, meaning_en: r.meaning_en, example_jp: r.example_jp, example_vi: r.example_vi, stroke_count: r.stroke_count, jlpt_level: safeJlpt(r.jlpt_level), pos: safePos(r.pos),
     status: STATUSES.includes(r.status) ? r.status : 'new', is_favorite: !!r.is_favorite, source: r.source, notes: r.notes, srs_interval: r.srs_interval || 1, srs_ease: r.srs_ease || 2.5,
     srs_due_date: r.srs_due_date ? String(r.srs_due_date).slice(0, 10) : null, created_at: isoLocal(r.created_at), updated_at: isoLocal(r.updated_at), deleted_at: del(r),
   })));
