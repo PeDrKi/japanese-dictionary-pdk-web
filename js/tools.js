@@ -73,6 +73,44 @@ ACT.jishoPick = async el => {
 };
 ACT.useSuggest = el => { const f = el.closest('form'); f.elements.meaning_vi.value = el.dataset.v; el.parentElement.textContent = ''; };
 
+// Dòng tóm tắt của mục "Tùy chọn thêm": cho thấy từ loại / JLPT đã được điền để khỏi phải mở ra xem
+function updateAdvSummary(form) {
+  const el = form.querySelector('#cf-advs'); if (!el) return;
+  const parts = [POS_LABEL[form.elements.pos?.value], form.elements.jlpt_level?.value].filter(Boolean);
+  el.textContent = parts.length ? 'Tùy chọn thêm · ' + parts.join(' · ') : 'Tùy chọn thêm (từ loại, JLPT, ví dụ, ghi chú…)';
+}
+// Gõ chữ Nhật xong → tự tra Jisho rồi điền cách đọc, nghĩa, từ loại, JLPT (chỉ điền ô còn trống; ô bạn đã sửa tay thì giữ nguyên)
+function wireAutofill(form) {
+  let timer = 0, token = 0; form._auto = new Set(); form._typeTouched = false;
+  const box = $('#cf-suggest', form), mv = $('#w-meaning_vi', form);
+  const set = (n, v) => { const el = form.elements[n]; if (!el || !v) return false; if (el.value && !form._auto.has(n)) return false; el.value = v; form._auto.add(n); return true; };
+  form.addEventListener('input', e => { const n = e.target.name; if (n && n !== 'character') { form._auto.delete(n); if (n === 'meaning_vi') mv.classList.remove('auto'); } });
+  form.elements.character.addEventListener('input', () => {
+    clearTimeout(timer); const kw = form.elements.character.value.trim(), my = ++token;
+    if (!kw || /[A-Za-z]/.test(kw)) { box.textContent = ''; return; }   // đang gõ romaji dở dang → chờ
+    timer = setTimeout(async () => {
+      box.textContent = 'Đang tra Jisho…';
+      try {
+        const res = await jishoSearch(kw); if (my !== token) return;
+        const r = res.find(x => x.word === kw) || res.find(x => x.reading === kw);
+        if (!r) { box.textContent = res.length ? 'Không thấy khớp hoàn toàn — bấm "Chọn kết quả khác" để xem gợi ý.' : ''; return; }
+        const type = guessType(r.word);
+        if (!form._typeTouched && form.dataset.type !== type) { form.dataset.type = type; syncFormType(form); }
+        if (type === 'kanji') set('reading_kun', r.reading); else set('reading_kana', r.reading);
+        set('meaning_en', r.en); set('jlpt_level', r.jlpt); set('pos', r.pos); set('romaji', kanaToRomaji(r.reading));
+        updateAdvSummary(form);
+        box.innerHTML = 'Đã điền tự động từ Jisho — kiểm tra lại rồi bấm Lưu.';
+        if (r.en && (!form.elements.meaning_vi.value || form._auto.has('meaning_vi'))) {
+          let vi = ''; try { vi = await suggestVi(r.en.split(',')[0]); } catch { /* bỏ qua */ }
+          if (my !== token) return;
+          if (vi && set('meaning_vi', vi)) { mv.classList.add('auto'); box.innerHTML = 'Đã điền tự động từ Jisho. <b>Nghĩa tiếng Việt là dịch máy</b> — hãy kiểm tra lại rồi bấm Lưu.'; }
+          else if (!form.elements.meaning_vi.value) box.textContent = 'Đã điền cách đọc từ Jisho. Chưa gợi ý được nghĩa tiếng Việt — hãy tự nhập.';
+        }
+      } catch { if (my === token) box.textContent = ''; }   // không có mạng / chạy ngoài Vercel: im lặng, vẫn nhập tay được
+    }, 650);
+  });
+}
+
 // ── Tách bộ kanji ───────────────────────────────────────────────────────────
 let IDS = null;
 async function loadIds() {

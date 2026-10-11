@@ -230,3 +230,25 @@ nav#tabs button[aria-current="page"]::before { content: ''; position: absolute; 
 .list:not(#cardlist) > .item .s { white-space: normal; }
 .sheet:focus, .full:focus { outline: none; }
 .linkbtn { min-height: 44px; }
+
+/* Nút bật/tắt gõ tiếng Nhật (hiện cạnh ô đang gõ) */
+.imepill { position: fixed; z-index: 60; width: 34px; height: 26px; padding: 0; border-radius: 8px; border: 1px solid var(--line); background: var(--surface2); color: var(--mute); font-size: 15px; line-height: 1; cursor: pointer; box-shadow: var(--shadow); }
+.imepill[data-on="1"] { background: var(--accent, #c0392b); color: #fff; border-color: transparent; }
+.imepill:focus-visible { outline: 2px solid var(--accent, #c0392b); outline-offset: 2px; }
+@media (pointer: coarse) { .imepill { width: 40px; height: 32px; font-size: 17px; } }
+
+/* Phím tắt */
+.kbd { font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 4px 8px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; background: var(--surface2); color: var(--text); white-space: nowrap; }
+@media (pointer: coarse) { .kbdhint { display: none; } }
+
+/* Đợt chỉnh UX: chú thích màu, tự điền, tóm tắt ôn tập, khoảng cách */
+.countrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 2px 2px 8px; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; }
+.field.auto input { border-style: dashed; border-color: var(--accent); }
+.sumcard { padding: 10px 14px; margin-bottom: 12px; }
+.sumcard > div { font-size: 15px; margin-top: 2px; }
+.search input { padding-left: 44px; }
+.search::before { left: 15px; }
+.item .t { font-size: 16.5px; }
+.item .s { font-size: 13.5px; }
+.page:has(+ .fab) { padding-bottom: 72px; }   /* nút + không che thẻ cuối danh sách */

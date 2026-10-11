@@ -1,0 +1,50 @@
+/* keys.js — phím tắt cho máy tính (bàn phím vật lý). Bấm ? để xem danh sách.
+   Phím đơn chỉ chạy khi KHÔNG đang gõ trong ô nhập và KHÔNG có hộp thoại/màn hình ôn tập đang mở. */
+'use strict';
+const SHORTCUTS = [
+  ['Chung', [['1 – 5', 'Chuyển tab: Hôm nay, Thư viện, Ôn tập, Bộ thẻ, Khác'], ['/', 'Tìm trong Thư viện'], ['n', 'Thêm thẻ mới'], ['r', 'Ôn các thẻ đến hạn hôm nay'], ['t', 'Đổi giao diện sáng / tối'], ['?', 'Mở bảng phím tắt này'], ['Esc', 'Đóng hộp thoại / xóa ô tìm kiếm']]],
+  ['Khi nhập liệu', [['Ctrl + Enter', 'Lưu form đang mở'], ['Ctrl + `', 'Bật / tắt gõ tiếng Nhật (A → あ → ア)'], ['nn', 'Gõ ん (khi đang bật gõ tiếng Nhật)']]],
+  ['Khi ôn tập', [['Space / Enter', 'Lật thẻ'], ['← hoặc 1', 'Chưa nhớ'], ['→ hoặc 2', 'Đã nhớ'], ['1 – 4', 'Chọn đáp án (Quiz)'], ['Esc', 'Thoát phiên ôn tập']]],
+];
+function openShortcuts() {
+  const rows = SHORTCUTS.map(([g, list]) => `<h3 style="margin:14px 0 6px;font-size:14px">${esc(g)}</h3>` +
+    list.map(([k, d]) => `<div class="row" style="justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(d)}</span><kbd class="kbd">${esc(k)}</kbd></div>`).join('')).join('');
+  const s = openSheet(`<h2>Phím tắt</h2>${rows}<div class="sp"></div><button class="btn block" data-close>Đóng</button>`);
+  return s;
+}
+ACT.shortcuts = openShortcuts;
+
+(() => {
+  const TABKEYS = { 1: 'today', 2: 'cards', 3: 'study', 4: 'decks', 5: 'more' };
+  const isTyping = el => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  const overlay = () => (typeof layers !== 'undefined' && layers.length > 0) || !!document.querySelector('.full');
+  const goTab = tab => { if (!$('#view')) return false; ACT.tab({ dataset: { tab } }); return true; };
+
+  document.addEventListener('keydown', e => {
+    if (e.isComposing || e.defaultPrevented) return;
+    const t = e.target, k = e.key;
+
+    // Ctrl/⌘ + Enter: lưu form đang mở (kể cả khi đang gõ trong textarea)
+    if (k === 'Enter' && (e.ctrlKey || e.metaKey) && !e.altKey) {
+      const f = (t && t.closest && t.closest('form')) || (layers.length && layers[layers.length - 1].el.querySelector('form'));
+      if (f && f.requestSubmit) { e.preventDefault(); f.requestSubmit(); }
+      return;
+    }
+    // Esc trong ô tìm kiếm: xóa & rời ô
+    if (k === 'Escape' && t && t.id === 'q') {
+      if (t.value) { t.value = ''; t.dispatchEvent(new Event('input', { bubbles: true })); } else t.blur();
+      e.preventDefault(); return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey || isTyping(t) || !$('#root')) return;
+
+    if (k === '?') { if (!overlay()) { e.preventDefault(); openShortcuts(); } return; }
+    if (overlay() || !$('#view')) return;
+    if (TABKEYS[k] && !e.shiftKey) { e.preventDefault(); goTab(TABKEYS[k]); return; }
+    switch (k) {
+      case '/': e.preventDefault(); goTab('cards'); { const q = $('#q'); if (q) { q.focus(); q.select(); } } break;
+      case 'n': e.preventDefault(); ACT.newCard(); break;
+      case 'r': e.preventDefault(); goTab('today'); { const b = $('[data-act=startDue]'); if (b) b.click(); else toast('Hôm nay chưa có thẻ nào đến hạn ôn'); } break;
+      case 't': e.preventDefault(); themeCycle(); break;
+    }
+  });
+})();

@@ -52,12 +52,12 @@ function viewToday() {
     <button data-act="startDue" data-mode="typing" ${due ? '' : 'disabled'}><span class="g">打</span>Luyện gõ<small>Tự gõ đáp án</small></button></div>`
       : `<div style="margin:16px 0;display:flex;flex-direction:column;gap:10px"><button class="btn primary block cta" data-act="sub" data-name="starters">Thêm bộ thẻ mẫu có sẵn</button>
       <div class="row"><button class="btn grow" data-act="newCard">+ Tự thêm thẻ</button><button class="btn grow" data-act="importDb">Nhập từ desktop</button></div></div>`}
-  <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><b>14 ngày qua</b>
+  ${days.some(d => d[1]) ? `<div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><b>14 ngày qua</b>
     <span class="mute small">${streak ? `🔥 chuỗi ${streak} ngày` : ''}</span></div>
-    ${days.some(d => d[1]) ? '' : '<p class="small mute" style="margin:0 0 8px">Ôn một lượt hôm nay để bắt đầu chuỗi ngày học.</p>'}
     <div class="bars" role="img" aria-label="Số lượt ôn mỗi ngày trong 14 ngày qua">${days.map(([d, n]) => `<i class="${n ? '' : 'z'}" title="${d}: ${n}" style="height:${n ? Math.max(6, n / mx * 100) : 3}%"></i>`).join('')}</div>
     <div class="row mute small" style="justify-content:space-between;margin-top:8px"><span>Hôm nay: ${today.length} lượt${today.length ? ` · đúng ${Math.round(ok / today.length * 100)}%` : ''}</span>
-    <span>${S.sessTotal ? `Tổng chính xác ${Math.round(S.sessCorrect / S.sessTotal * 100)}%` : ''}</span></div></div>
+    <span>${S.sessTotal ? `Tổng chính xác ${Math.round(S.sessCorrect / S.sessTotal * 100)}%` : ''}</span></div></div>`
+  : `<div class="card"><b>Chuỗi ngày học</b><p class="small mute" style="margin:6px 0 0">Ôn một lượt hôm nay để bắt đầu chuỗi — biểu đồ sẽ hiện ở đây.</p></div>`}
   <div class="sp"></div>
   <div class="card"><b>Tiến độ ghi nhớ</b><div class="sp"></div>
     <div class="meter">${STATUSES.map(s => `<i style="width:${live.length ? by[s] / live.length * 100 : 0}%;background:${{ new: '#6b8cff', learning: '#f0b429', known: '#4ecb85' }[s]}"></i>`).join('')}</div>
@@ -71,7 +71,7 @@ function currentList() { return filterCards({ search: FILT.search, type: FILT.ty
 function viewCards() {
   const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck].filter(Boolean).length;
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck);
-  return `<div class="page">${pageTop(deck ? `${deck.icon || ''} ${deck.name}` : 'Thẻ từ vựng', false,
+  return `<div class="page">${pageTop(deck ? `${deck.icon || ''} ${deck.name}` : 'Thư viện', false,
     `<button class="btn tool${FILT.select ? ' on' : ''}" data-act="toggleSelect" aria-pressed="${FILT.select}">${FILT.select ? '✕ Xong' : '☑ Chọn'}</button>
      <button class="btn tool${active ? ' on' : ''}" data-act="openFilter">⚙ Lọc${active ? ` <b class="cnt">${active}</b>` : ''}</button>`)}
   <div class="search"><input class="input" id="q" type="search" placeholder="Tìm chữ, nghĩa, romaji, cách đọc…" value="${esc(FILT.search)}" autocomplete="off" aria-label="Tìm thẻ"></div>
@@ -91,7 +91,8 @@ function cardsBody() {
   const list = currentList(), shown = list.slice(0, FILT.shown);
   const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck].filter(Boolean).length;
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck);
-  return `<div class="mute small" style="margin:2px 2px 8px">${list.length} thẻ${deck ? ` · <a href="#" data-act="clearDeck" style="color:var(--accent)">bỏ lọc bộ thẻ</a>` : ''}</div>
+  return `<div class="mute small countrow"><span>${list.length} thẻ${deck ? ` · <a href="#" data-act="clearDeck" style="color:var(--accent)">bỏ lọc bộ thẻ</a>` : ''}</span>
+  <span class="legend" aria-label="Ý nghĩa chấm màu">${STATUSES.map(k => `<span class="row" style="gap:4px"><span class="st ${k}"></span>${STATUS_LABEL[k]}</span>`).join('')}</span></div>
   <div class="list" id="cardlist">${shown.map(c => cardRow(c)).join('') || emptyBox('空', FILT.search || active ? 'Không có thẻ khớp bộ lọc' : 'Chưa có thẻ nào', 'Bấm nút + để thêm thẻ đầu tiên.')}</div>
   ${list.length > shown.length ? `<button class="btn block" style="margin-top:12px" data-act="moreCards">Xem thêm (${list.length - shown.length})</button>` : ''}`;
 }
@@ -185,20 +186,21 @@ function openCardForm(id, preset = {}) {
   const decks = new Set(id ? S.deckOfCard.get(id) || [] : (FILT.deck ? [FILT.deck] : []));
   const v = k => esc(c[k] ?? '');
   const s = openSheet(`<h2>${id ? 'Sửa thẻ' : 'Thêm thẻ'}</h2>
+  ${id ? '' : '<p class="small" style="margin:-6px 0 10px"><button type="button" class="linkbtn" data-act="cfQuick">⚡ Thêm nhiều thẻ một lúc (dán danh sách)</button></p>'}
   <form id="cf" autocomplete="off">
     <div class="chips" style="flex-wrap:wrap" id="cf-types">${TYPES.map(t => `<button type="button" class="chip ${c.type === t ? 'on' : ''}" data-act="cfType" data-v="${t}">${TYPE_LABEL[t]}</button>`).join('')}</div>
     <label class="field" id="w-character"><span>Chữ / từ *</span><input name="character" class="jp" style="font-size:20px" value="${v('character')}" maxlength="50" ${id ? '' : 'autofocus'}></label>
-    <div class="row" style="margin:-4px 0 12px"><button type="button" class="btn ghost small" data-act="cfJisho">🔍 Tra Jisho</button><button type="button" class="btn ghost small" data-act="cfKana">あ Bàn phím kana</button></div>
+    <div class="row" style="margin:-4px 0 12px"><button type="button" class="btn ghost small" data-act="cfJisho">🔍 Chọn kết quả khác</button><button type="button" class="btn ghost small" data-act="cfKana">あ Bàn phím kana</button></div>
     <div class="grid2" data-for="kanji"><label class="field"><span>Âm On (ON-yomi)</span><input name="reading_on" class="jp" value="${v('reading_on')}" placeholder="げつ、がつ"></label>
       <label class="field"><span>Âm Kun (KUN-yomi)</span><input name="reading_kun" class="jp" value="${v('reading_kun')}" placeholder="つき"></label></div>
     <label class="field" data-for="vocab hiragana katakana"><span>Cách đọc (kana)</span><input name="reading_kana" class="jp" value="${v('reading_kana')}"></label>
     <label class="field" id="w-meaning_vi"><span>Nghĩa tiếng Việt *</span><input name="meaning_vi" value="${v('meaning_vi')}" maxlength="200"></label>
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>
+    ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks">${liveDecks().map(d => `<button type="button" class="chip ${decks.has(d.id) ? 'on' : ''}" data-act="cfDeck" data-id="${d.id}">${esc(d.icon || '')} ${esc(d.name)}</button>`).join('')}</div></div>` : ''}
+    <details class="adv" id="cf-adv" ${id ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
     <label class="field"><span>Từ loại</span><select name="pos"><option value="">— chưa chọn —</option>${POS.map(j => `<option value="${j}" ${c.pos === j ? 'selected' : ''}>${POS_LABEL[j]}</option>`).join('')}</select></label>
     <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label>
       <label class="field"><span>Trạng thái</span><select name="status">${STATUSES.map(j => `<option value="${j}" ${c.status === j ? 'selected' : ''}>${STATUS_LABEL[j]}</option>`).join('')}</select></label></div>
-    ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks">${liveDecks().map(d => `<button type="button" class="chip ${decks.has(d.id) ? 'on' : ''}" data-act="cfDeck" data-id="${d.id}">${esc(d.icon || '')} ${esc(d.name)}</button>`).join('')}</div></div>` : ''}
-    <h3 class="fsec">Thông tin thêm</h3>
     <div class="grid2 fit" data-for="kanji vocab"><label class="field"><span>Âm Hán Việt</span><input name="reading_hanviet" value="${v('reading_hanviet')}"></label>
       <label class="field" data-for="kanji"><span>Số nét</span><input name="stroke_count" type="number" inputmode="numeric" min="1" max="60" value="${v('stroke_count')}"></label></div>
     <div class="row" style="align-items:flex-end"><label class="field grow"><span>Romaji</span><input name="romaji" value="${v('romaji')}"></label><button type="button" class="btn" style="margin-bottom:12px" data-act="cfRomaji">⚡ Tự tạo</button></div>
@@ -208,10 +210,13 @@ function openCardForm(id, preset = {}) {
     <label class="field"><span>Nguồn</span><input name="source" value="${v('source')}" maxlength="100" placeholder="Minna no Nihongo…"></label>
     <label class="field"><span>Ghi chú</span><textarea name="notes" maxlength="1000">${v('notes')}</textarea></label>
     <label class="row" style="margin-bottom:8px"><input type="checkbox" name="is_favorite" ${c.is_favorite ? 'checked' : ''} style="width:20px;height:20px"> <span>★ Yêu thích</span></label>
+    </details>
     <div class="row sheet-actions"><button type="button" class="btn grow" data-close>Hủy</button><button type="submit" class="btn primary grow">Lưu thẻ</button></div>
   </form>`, { sticky: true });
   const form = s.$('#cf'); form.dataset.type = c.type; form._deckSel = decks; form._id = id; form._sheet = s;
-  syncFormType(form);
+  syncFormType(form); updateAdvSummary(form);
+  form.addEventListener('change', () => updateAdvSummary(form));
+  if (!id) wireAutofill(form);
   form.addEventListener('submit', async e => {
     e.preventDefault(); const f = Object.fromEntries(new FormData(form)); const t = form.dataset.type;
     const chk = { character: !!(f.character || '').trim(), meaning_vi: !!(f.meaning_vi || '').trim() };
@@ -250,7 +255,8 @@ function syncFormType(form) {
   $$('[data-for]', form).forEach(el => el.classList.toggle('hidden', !el.dataset.for.split(' ').includes(t)));
   $$('#cf-types .chip', form).forEach(b => b.classList.toggle('on', b.dataset.v === t));
 }
-ACT.cfType = el => { const f = el.closest('form'); f.dataset.type = el.dataset.v; syncFormType(f); };
+ACT.cfType = el => { const f = el.closest('form'); f.dataset.type = el.dataset.v; f._typeTouched = true; syncFormType(f); };
+ACT.cfQuick = () => { $('#cf')?._sheet?.close(); setTimeout(() => ACT.quickAdd(), 0); };
 ACT.cfDeck = el => { const f = el.closest('form'); const id = el.dataset.id; f._deckSel.has(id) ? f._deckSel.delete(id) : f._deckSel.add(id); el.classList.toggle('on'); };
 ACT.cfRomaji = el => {
   const f = el.closest('form'), g = n => f.elements[n]?.value || '';
@@ -340,6 +346,8 @@ function viewMore() {
     ${isAdmin() ? link('管', 'Quản trị', 'Tài khoản người dùng, bộ thẻ mẫu, số liệu', 'admin') : ''}
     ${link('廃', 'Thùng rác', `${S.cards.filter(c => !alive(c)).length} thẻ đã xóa`, 'trash')}
     ${act('鍵', 'Đổi mật khẩu', 'Đặt mật khẩu mới cho tài khoản', 'changePassword')}
+    ${act('打', 'Gõ tiếng Nhật (Ctrl+`)', 'Gõ romaji ra kana trong ô nhập · hiện: <span id="imestate">' + IME.describe() + '</span>', 'imeCycle')}
+    ${act('鍵', 'Phím tắt (?)', 'Bàn phím trên máy tính: chuyển tab, thêm thẻ, tìm, ôn tập…', 'shortcuts').replace('class="item"', 'class="item kbdhint"')}
     ${act('色', 'Giao diện', 'Tự động / tối / sáng', 'theme')}
     ${BAKED_CONFIG ? '' : act('鯖', 'Máy chủ', esc((getConfig().url || '').replace(/^https?:\/\//, '')), 'cfgEdit')}
     ${act('再', 'Tải lại dữ liệu', 'Lấy bản mới nhất từ máy chủ', 'reload')}
@@ -350,6 +358,7 @@ function viewMore() {
   <p class="small" style="text-align:center;margin:12px 0 0"><button class="linkbtn mute" data-act="deleteMyAccount">Xóa tài khoản của tôi</button></p></div></div>`;
 }
 ACT.theme = themeCycle;
+ACT.imeCycle = () => IME.cycle();
 ACT.reload = async () => { await guard(async () => { await flushQueue(); await loadAll(); }, 'Đã tải lại'); render(); };
 
 // ── Thống kê ──

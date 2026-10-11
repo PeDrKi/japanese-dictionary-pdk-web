@@ -2,7 +2,7 @@
 'use strict';
 
 const root = () => $('#root');
-const TABS = [['today', '今', 'Hôm nay'], ['cards', '札', 'Thẻ'], ['study', '習', 'Ôn tập'], ['decks', '組', 'Bộ thẻ'], ['more', '他', 'Khác']];
+const TABS = [['today', '今', 'Hôm nay'], ['cards', '札', 'Thư viện'], ['study', '習', 'Ôn tập'], ['decks', '組', 'Bộ thẻ'], ['more', '他', 'Khác']];
 
 // ── Cấu hình máy chủ: hỏi 1 lần khi dùng lần đầu, sửa được trong Khác → Máy chủ ──
 function normUrl(u) { u = (u || '').trim().replace(/\/+$/, ''); return /^https?:\/\//i.test(u) || !u ? u : 'https://' + u; }

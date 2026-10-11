@@ -119,3 +119,19 @@ Nếu không, liên kết trong email sẽ trỏ sai chỗ.
 - Liên kết xác nhận đăng ký tự đăng nhập; liên kết hết hạn báo tiếng Việt.
 - Đăng ký / đặt mật khẩu mới yêu cầu từ 8 ký tự; đăng nhập vẫn chấp nhận mật khẩu cũ 6 ký tự.
 - Thông báo lỗi đăng nhập/đăng ký bằng tiếng Việt (sai mật khẩu, email đã đăng ký, thao tác quá nhanh, chưa xác nhận email…).
+
+
+## Gõ tiếng Nhật trong ô nhập (Ctrl+`)
+Bấm **Ctrl+`** (hoặc nút nhỏ あ/ア/A hiện cạnh ô đang gõ, hoặc Khác → "Gõ tiếng Nhật") để đổi vòng: Tắt → あ hiragana → ア katakana → Tắt. Khi bật, gõ romaji sẽ ra kana ngay trong ô: `taberu` → たべる, `kyou` → きょう, `gakkou` → がっこう, `kohi-` → こひー, `nn` hoặc `n'` → ん. Chữ ん gõ bằng **hai lần `n`** (`nn`), ví dụ `shinnbunn` → しんぶん; một chữ `n` đứng trước phụ âm vẫn tự thành ん (`kanta` → かんた).
+Chỉ chuyển ra **kana**, không đổi thành kanji (muốn kanji hãy dùng bàn phím tiếng Nhật của hệ điều hành). Không áp dụng cho ô email, mật khẩu, URL, khóa. Mặc định luôn Tắt khi mở app.
+
+
+## Phím tắt trên máy tính
+Bấm **?** (khi không đang gõ) để xem bảng phím tắt đầy đủ, hoặc Khác → "Phím tắt".
+`1`–`5` chuyển tab · `/` tìm thẻ · `n` thêm thẻ · `r` ôn thẻ đến hạn · `t` đổi giao diện · `Esc` đóng / xóa ô tìm · `Ctrl+Enter` lưu form đang mở · `Ctrl+`` bật/tắt gõ tiếng Nhật. Khi ôn tập: `Space/Enter` lật thẻ, `←`/`→` hoặc `1`/`2` chấm chưa nhớ/đã nhớ, `1`–`4` chọn đáp án Quiz.
+Phím đơn chỉ hoạt động khi bạn không đang gõ trong ô nhập và không có hộp thoại mở. Trên điện thoại không ảnh hưởng gì.
+
+## Đợt chỉnh UX (v3.16)
+- **Thêm thẻ nhanh:** gõ chữ Nhật xong, app tự tra Jisho và điền cách đọc, nghĩa, từ loại, JLPT (nghĩa tiếng Việt là dịch máy — có nhãn nhắc kiểm tra). Ô bạn đã sửa tay không bị ghi đè. Từ loại/JLPT/trạng thái/ví dụ… nằm trong mục "Tùy chọn thêm" (gập sẵn, dòng tóm tắt cho thấy cái đã điền). Link "Thêm nhiều thẻ một lúc" ngay đầu form. *Tự điền cần chạy trên Vercel (có `/api/jisho`); chạy ngoài Vercel thì im lặng, vẫn nhập tay được.*
+- **Ôn tập:** màn chọn chỉ còn kiểu ôn + tóm tắt "Lần này sẽ ôn" + nút Bắt đầu; câu hỏi/số thẻ/bộ lọc gập trong "Tùy chỉnh bài ôn". Cài đặt được nhớ cho lần mở sau.
+- **Hôm nay:** chưa có dữ liệu thì không vẽ biểu đồ rỗng. **Thư viện:** đổi tên tab; có chú thích màu trạng thái; nhãn từ loại viết đủ ("Động từ 2", "Tính từ い"); nút + không che thẻ cuối; chữ nghĩa to hơn.

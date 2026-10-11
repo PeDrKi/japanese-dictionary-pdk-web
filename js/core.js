@@ -12,7 +12,7 @@ const JLPT = ['N5', 'N4', 'N3', 'N2', 'N1'];
 const POS = ['noun', 'verb', 'verb1', 'verb2', 'verb3', 'adj_i', 'adj_na', 'pronoun', 'particle', 'adverb', 'conjunction', 'interjection'];
 const POS_LABEL = { noun: 'Danh từ', verb: 'Động từ', verb1: 'Động từ nhóm 1', verb2: 'Động từ nhóm 2', verb3: 'Động từ nhóm 3',
   adj_i: 'Tính từ đuôi い', adj_na: 'Tính từ đuôi な', pronoun: 'Đại từ', particle: 'Trợ từ', adverb: 'Trạng từ', conjunction: 'Liên từ', interjection: 'Thán từ' };
-const POS_SHORT = { noun: 'Danh từ', verb: 'Động từ', verb1: 'ĐT 1', verb2: 'ĐT 2', verb3: 'ĐT 3', adj_i: 'TT い', adj_na: 'TT な',
+const POS_SHORT = { noun: 'Danh từ', verb: 'Động từ', verb1: 'Động từ 1', verb2: 'Động từ 2', verb3: 'Động từ 3', adj_i: 'Tính từ い', adj_na: 'Tính từ な',
   pronoun: 'Đại từ', particle: 'Trợ từ', adverb: 'Trạng từ', conjunction: 'Liên từ', interjection: 'Thán từ' };
 // Nhận mã chuẩn hoặc tên gọi quen thuộc (CSV / file .db / bản desktop) → mã chuẩn hoặc null
 const POS_ALIAS = { 'danh từ': 'noun', 'danh tu': 'noun', 'meishi': 'noun', n: 'noun',
