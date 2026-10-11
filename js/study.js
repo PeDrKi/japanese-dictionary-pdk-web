@@ -14,25 +14,29 @@ function viewStudyLauncher() {
   const chip = (k, v, l) => `<button class="chip ${SC[k] === v ? 'on' : ''}" data-act="scSet" data-k="${k}" data-v="${v}">${l}</button>`;
   const asks = SC.mode === 'quiz' ? QUIZ_ASK : SC.mode === 'typing' ? TYPING_ASK : null;
   const askKey = SC.mode === 'quiz' ? 'ask' : 'typing';
+  const nAdv = [SC.type, SC.jlpt, SC.pos, SC.status, SC.deck, SC.fav].filter(Boolean).length;
+  const MODE_HINT = { flash: 'Lật thẻ, tự chấm đúng/sai', quiz: 'Chọn 1 trong 4 đáp án', typing: 'Tự gõ đáp án' };
   return `<div class="page">${pageTop('Ôn tập')}
-  <div class="field"><span>Chế độ</span><div class="chips">${Object.entries(MODE_LABEL).map(([k, l]) => chip('mode', k, l)).join('')}</div></div>
-  ${asks ? `<div class="field"><span>${SC.mode === 'quiz' ? 'Hỏi về' : 'Nhập'}</span><div class="chips" style="flex-wrap:wrap">${asks.map(([k, l]) => chip(askKey, k, l)).join('')}</div></div>` : ''}
+  <div class="field"><span>Bạn muốn ôn kiểu nào?</span><div class="modes">${Object.entries(MODE_LABEL).map(([k, l]) => `<button class="modeopt${SC.mode === k ? ' on' : ''}" data-act="scSet" data-k="mode" data-v="${k}" aria-pressed="${SC.mode === k}"><b>${l}</b><small>${MODE_HINT[k]}</small></button>`).join('')}</div></div>
+  ${asks ? `<div class="field"><span>${SC.mode === 'quiz' ? 'Câu hỏi hỏi về' : 'Bạn sẽ nhập'}</span><div class="chips" style="flex-wrap:wrap">${asks.map(([k, l]) => chip(askKey, k, l)).join('')}</div></div>` : ''}
   ${SC.mode === 'typing' && SC.typing === 'kana' ? `<label class="row" style="margin-bottom:12px"><input type="checkbox" data-act="scSplit" ${SC.split ? 'checked' : ''} style="width:20px;height:20px"><span>Tách từng âm đọc của Kanji thành câu hỏi riêng</span></label>` : ''}
-  <div class="field"><span>Nguồn thẻ</span><div class="chips">${chip('source', 'due', 'Đến hạn hôm nay')}${chip('source', 'all', 'Tất cả thẻ')}</div></div>
+  <div class="field"><span>Ôn những thẻ nào?</span><div class="chips">${chip('source', 'due', 'Đến hạn hôm nay')}${chip('source', 'all', 'Tất cả thẻ')}</div></div>
+  <div class="field"><span>Số thẻ mỗi lượt</span><div class="chips">${[10, 20, 50, 0].map(v => `<button class="chip ${SC.limit === v ? 'on' : ''}" data-act="scLimit" data-v="${v}">${v || 'Tất cả'}</button>`).join('')}</div></div>
+  <details class="adv" id="sc-adv" ${SC.adv || nAdv ? 'open' : ''}><summary>Lọc theo loại, JLPT, từ loại…${nAdv ? ` <b class="cnt">${nAdv}</b>` : ''}</summary>
   <div class="field"><span>Loại thẻ</span><div class="chips"><button class="chip ${SC.type ? '' : 'on'}" data-act="scSet" data-k="type" data-v="">Tất cả</button>${TYPES.map(t => chip('type', t, TYPE_LABEL[t])).join('')}</div></div>
   <div class="field"><span>JLPT</span><div class="chips"><button class="chip ${SC.jlpt ? '' : 'on'}" data-act="scSet" data-k="jlpt" data-v="">Tất cả</button>${JLPT.map(t => chip('jlpt', t, t)).join('')}</div></div>
   <div class="field"><span>Từ loại</span><div class="chips" style="flex-wrap:wrap"><button class="chip ${SC.pos ? '' : 'on'}" data-act="scSet" data-k="pos" data-v="">Tất cả</button>${POS.map(t => chip('pos', t, POS_LABEL[t])).join('')}</div></div>
   <div class="field"><span>Trạng thái</span><div class="chips"><button class="chip ${SC.status ? '' : 'on'}" data-act="scSet" data-k="status" data-v="">Tất cả</button>${STATUSES.map(t => chip('status', t, STATUS_LABEL[t])).join('')}</div></div>
   ${liveDecks().length ? `<label class="field"><span>Bộ thẻ</span><select id="sc-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${SC.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>` : ''}
-  <div class="row wrap" style="margin-bottom:12px"><button class="chip ${SC.fav ? 'on' : ''}" data-act="scFav">★ Chỉ yêu thích</button></div>
-  <div class="field"><span>Số thẻ mỗi lượt</span><div class="chips">${[10, 20, 50, 0].map(v => `<button class="chip ${SC.limit === v ? 'on' : ''}" data-act="scLimit" data-v="${v}">${v || 'Tất cả'}</button>`).join('')}</div></div>
-  <div class="card" style="margin:6px 0 14px"><b class="jp" style="font-size:22px">${n}</b> <span class="mute">thẻ phù hợp${SC.limit && n > SC.limit ? ` · ôn ${SC.limit} thẻ` : ''}</span></div>
-  <button class="btn primary block" data-act="scStart" ${n ? '' : 'disabled'} style="min-height:52px;font-size:16px">Bắt đầu ôn</button></div>`;
+  <div class="row wrap" style="margin-bottom:6px"><button class="chip ${SC.fav ? 'on' : ''}" data-act="scFav">★ Chỉ yêu thích</button></div></details>
+  <div class="startbar"><div class="grow"><b class="jp" style="font-size:20px">${SC.limit && n > SC.limit ? SC.limit : n}</b> <span class="mute small">thẻ${SC.limit && n > SC.limit ? ` (trong ${n} thẻ phù hợp)` : ' phù hợp'}</span>${n ? '' : '<div class="small mute">Không có thẻ khớp — thử bỏ bớt bộ lọc.</div>'}</div>
+  <button class="btn primary" data-act="scStart" ${n ? '' : 'disabled'} style="min-height:48px;padding:0 26px;font-size:16px">Bắt đầu ôn</button></div></div>`;
 }
 ACT.scSet = el => { SC[el.dataset.k] = el.dataset.v; render(); };
 ACT.scFav = () => { SC.fav = !SC.fav; render(); };
 ACT.scLimit = el => { SC.limit = +el.dataset.v; render(); };
 ACT.scSplit = el => { SC.split = el.checked; };
+document.addEventListener('toggle', e => { if (e.target.id === 'sc-adv') SC.adv = e.target.open; }, true);
 document.addEventListener('change', e => { if (e.target.id === 'sc-deck') { SC.deck = e.target.value; render(); } });
 ACT.scStart = () => startStudy({ ...SC, mode: SC.mode });
 

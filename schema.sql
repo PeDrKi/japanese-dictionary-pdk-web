@@ -11,7 +11,7 @@
 --   • updated_at do SERVER đặt ở mọi lần ghi (không tin đồng hồ điện thoại).
 --   • log_study(): ghi 1 lượt ôn + cập nhật lịch SRS NGUYÊN TỬ trên server, nên 2 thiết
 --     bị cùng ôn 1 thẻ không ghi đè lên nhau; gửi lại cùng 1 lượt ôn (mất mạng rồi gửi
---     lại) không bị tính 2 lần; lượt ôn cũ hơn lượt gần nhất không phá lịch mới.
+--     lại) không bị tính 2 lần; lượt ôn cũ hơn lượt gần nhất không phá lịch mới; giờ ôn ở tương lai (đồng hồ máy nhanh) bị chặn bằng giờ server.
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- ── Danh mục bộ thẻ ─────────────────────────────────────────────────────────
@@ -190,6 +190,234 @@ begin
   end loop;
 end $$;
 
+-- ══ PHIÊN BẢN 6: VAI TRÒ (user / admin) ═════════════════════════════════════════════════════════
+--  • Mọi quyền được kiểm tra Ở SERVER (RLS + hàm security definer), giao diện chỉ ẩn/hiện nút.
+--  • user : chỉ thấy và sửa dữ liệu CỦA MÌNH. Không tự đổi được vai trò / trạng thái của mình.
+--  • admin: xem danh sách tài khoản + số liệu tổng (KHÔNG đọc được nội dung thẻ riêng của ai),
+--           khóa/mở khóa, đổi vai trò, xóa tài khoản, quản lý "bộ thẻ mẫu" dùng chung.
+--  • Tài khoản bị khóa: mọi truy vấn dữ liệu bị từ chối (RLS), đăng nhập vẫn được nhưng app báo bị khóa.
+--  • Cấp quyền admin ĐẦU TIÊN: chạy trong SQL Editor (xem README):
+--      update public.profiles set role = 'admin' where user_id = (select id from auth.users where email = 'ban@example.com');
+create table if not exists public.profiles (
+  user_id     uuid primary key references auth.users(id) on delete cascade,
+  role        text not null default 'user' check (role in ('user', 'admin')),
+  status      text not null default 'active' check (status in ('active', 'blocked')),
+  created_at  timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+drop policy if exists "read own profile" on public.profiles;
+create policy "read own profile" on public.profiles for select to authenticated using (user_id = auth.uid());
+-- Cố ý KHÔNG có policy insert/update/delete: người dùng không thể tự nâng quyền; mọi thay đổi đi qua hàm bên dưới.
+
+insert into public.profiles (user_id) select id from auth.users on conflict do nothing;   -- tài khoản đã có từ trước = user
+
+create or replace function public.handle_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (user_id) values (new.id) on conflict do nothing;
+  return new;
+end $$;
+drop trigger if exists trg_new_user on auth.users;
+create trigger trg_new_user after insert on auth.users for each row execute function public.handle_new_user();
+
+create or replace function public.jp_is_admin() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from profiles where user_id = auth.uid() and role = 'admin' and status = 'active') $$;
+
+create or replace function public.jp_is_active() returns boolean
+language sql stable security definer set search_path = public as $$
+  select not exists (select 1 from profiles where user_id = auth.uid() and status = 'blocked') $$;
+
+-- Thông tin vai trò của chính mình (tự tạo hồ sơ nếu thiếu, vd tài khoản tạo trước khi có trigger)
+create or replace function public.jp_me() returns table (role text, status text)
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Chưa đăng nhập'; end if;
+  insert into profiles (user_id) values (auth.uid()) on conflict do nothing;
+  return query select p.role, p.status from profiles p where p.user_id = auth.uid();
+end $$;
+
+create or replace function public.admin_list_users() returns table (
+  user_id uuid, email text, role text, status text, created_at timestamptz, last_sign_in_at timestamptz,
+  cards bigint, decks bigint, last_study timestamptz)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  return query
+    select u.id, u.email::text, coalesce(p.role, 'user'), coalesce(p.status, 'active'), u.created_at, u.last_sign_in_at,
+           (select count(*) from cards c where c.user_id = u.id and c.deleted_at is null),
+           (select count(*) from decks d where d.user_id = u.id and d.deleted_at is null),
+           (select max(s.studied_at) from study_sessions s where s.user_id = u.id)
+    from auth.users u left join profiles p on p.user_id = u.id
+    order by u.created_at desc;
+end $$;
+
+create or replace function public.admin_stats() returns json
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  return json_build_object(
+    'users',      (select count(*) from auth.users),
+    'admins',     (select count(*) from profiles where role = 'admin'),
+    'blocked',    (select count(*) from profiles where status = 'blocked'),
+    'active_7d',  (select count(distinct user_id) from study_sessions where studied_at > now() - interval '7 days'),
+    'cards',      (select count(*) from cards where deleted_at is null),
+    'sessions',   (select count(*) from study_sessions),
+    'starters',   (select count(*) from starter_decks));
+end $$;
+
+create or replace function public.admin_set_role(p_user uuid, p_role text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  if p_role not in ('user', 'admin') then raise exception 'Vai trò không hợp lệ'; end if;
+  if p_user = auth.uid() and p_role <> 'admin' then raise exception 'Không thể tự hạ quyền của chính mình'; end if;
+  insert into profiles (user_id, role) values (p_user, p_role) on conflict (user_id) do update set role = excluded.role;
+end $$;
+
+create or replace function public.admin_set_status(p_user uuid, p_status text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  if p_status not in ('active', 'blocked') then raise exception 'Trạng thái không hợp lệ'; end if;
+  if p_user = auth.uid() then raise exception 'Không thể tự khóa tài khoản của chính mình'; end if;
+  insert into profiles (user_id, status) values (p_user, p_status) on conflict (user_id) do update set status = excluded.status;
+end $$;
+
+create or replace function public.admin_delete_user(p_user uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  if p_user = auth.uid() then raise exception 'Không thể tự xóa tài khoản của chính mình ở đây'; end if;
+  delete from auth.users where id = p_user;      -- toàn bộ dữ liệu của họ tự xóa theo (on delete cascade)
+end $$;
+
+-- Tự xóa tài khoản của mình (quyền của mọi người dùng, cần cho việc đáp ứng yêu cầu xóa dữ liệu)
+create or replace function public.delete_my_account() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'Chưa đăng nhập'; end if;
+  if (select role from profiles where user_id = auth.uid()) = 'admin'
+     and (select count(*) from profiles where role = 'admin' and status = 'active') <= 1 then
+    raise exception 'Bạn là quản trị viên duy nhất — hãy cấp quyền admin cho người khác trước khi xóa tài khoản';
+  end if;
+  delete from auth.users where id = auth.uid();
+end $$;
+
+-- ── Bộ thẻ mẫu (nội dung dùng chung do admin quản lý, ai cũng thêm được vào thẻ của mình) ──
+create table if not exists public.starter_decks (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  description text,
+  icon        text default '📘',
+  color       text default '#4A90D9',
+  level       text,
+  published   boolean not null default true,
+  created_by  uuid references auth.users(id) on delete set null default auth.uid(),
+  created_at  timestamptz not null default now()
+);
+create table if not exists public.starter_cards (
+  id              uuid primary key default gen_random_uuid(),
+  deck_id         uuid not null references public.starter_decks(id) on delete cascade,
+  type            text not null check (type in ('kanji','hiragana','katakana','vocab')),
+  character       text not null,
+  reading_on      text, reading_kun text, reading_kana text, reading_hanviet text, romaji text,
+  meaning_vi      text not null,
+  meaning_en      text, example_jp text, example_vi text,
+  stroke_count    integer, jlpt_level text, pos text,
+  sort_order      integer not null default 0
+);
+create index if not exists starter_cards_deck on public.starter_cards (deck_id);
+alter table public.starter_decks enable row level security;
+alter table public.starter_cards enable row level security;
+drop policy if exists "read starters" on public.starter_decks;
+drop policy if exists "read starter cards" on public.starter_cards;
+create policy "read starters" on public.starter_decks for select to authenticated
+  using (jp_is_active() and (published or jp_is_admin()));
+create policy "read starter cards" on public.starter_cards for select to authenticated
+  using (jp_is_active() and exists (select 1 from starter_decks d where d.id = deck_id and (d.published or jp_is_admin())));
+-- Ghi: chỉ qua hàm admin_* bên dưới (không có policy ghi)
+
+-- Admin đăng 1 bộ thẻ CỦA MÌNH làm bộ mẫu (chụp lại nội dung tại thời điểm đăng). Đăng lại = thay nội dung cũ.
+create or replace function public.admin_publish_deck(p_deck uuid, p_name text default null, p_level text default null,
+                                                      p_replace uuid default null) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare d decks; sid uuid;
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  select * into d from decks where id = p_deck and user_id = auth.uid() and deleted_at is null;
+  if not found then raise exception 'Không tìm thấy bộ thẻ của bạn'; end if;
+  if p_replace is not null then
+    update starter_decks set name = coalesce(nullif(p_name, ''), d.name), description = d.description, icon = d.icon,
+           color = d.color, level = coalesce(p_level, level) where id = p_replace returning id into sid;
+    if sid is null then raise exception 'Bộ mẫu cần thay không tồn tại'; end if;
+    delete from starter_cards where deck_id = sid;
+  else
+    insert into starter_decks (name, description, icon, color, level)
+    values (coalesce(nullif(p_name, ''), d.name), d.description, d.icon, d.color, p_level) returning id into sid;
+  end if;
+  insert into starter_cards (deck_id, type, character, reading_on, reading_kun, reading_kana, reading_hanviet, romaji,
+                             meaning_vi, meaning_en, example_jp, example_vi, stroke_count, jlpt_level, pos, sort_order)
+  select sid, c.type, c.character, c.reading_on, c.reading_kun, c.reading_kana, c.reading_hanviet, c.romaji,
+         c.meaning_vi, c.meaning_en, c.example_jp, c.example_vi, c.stroke_count, c.jlpt_level, c.pos,
+         row_number() over (order by dc.added_at, c.created_at)
+  from deck_cards dc join cards c on c.id = dc.card_id
+  where dc.deck_id = p_deck and dc.deleted_at is null and c.deleted_at is null and c.user_id = auth.uid();
+  return sid;
+end $$;
+
+create or replace function public.admin_set_starter(p_id uuid, p_published boolean) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  update starter_decks set published = p_published where id = p_id;
+end $$;
+
+create or replace function public.admin_delete_starter(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not jp_is_admin() then raise exception 'Không có quyền quản trị'; end if;
+  delete from starter_decks where id = p_id;
+end $$;
+
+-- Người dùng thêm 1 bộ mẫu vào thẻ của mình: tạo bộ thẻ mới, thẻ đã có (cùng loại + chữ) thì dùng lại thay vì nhân đôi.
+create or replace function public.import_starter_deck(p_starter uuid) returns json
+language plpgsql security definer set search_path = public as $$
+declare s starter_decks; me uuid := auth.uid(); did uuid := gen_random_uuid(); nm text; k int := 1;
+        r starter_cards; cid uuid; added int := 0; linked int := 0;
+begin
+  if me is null then raise exception 'Chưa đăng nhập'; end if;
+  if not jp_is_active() then raise exception 'Tài khoản đang bị khóa'; end if;
+  select * into s from starter_decks where id = p_starter and (published or jp_is_admin());
+  if not found then raise exception 'Không tìm thấy bộ thẻ mẫu'; end if;
+  nm := s.name;
+  while exists (select 1 from decks where user_id = me and name = nm and deleted_at is null) loop
+    k := k + 1; nm := s.name || ' (' || k || ')';
+  end loop;
+  insert into decks (id, user_id, name, description, icon, color) values (did, me, nm, s.description, s.icon, s.color);
+  for r in select * from starter_cards where deck_id = p_starter order by sort_order loop
+    select id into cid from cards where user_id = me and type = r.type and character = r.character and deleted_at is null limit 1;
+    if cid is null then
+      insert into cards (user_id, type, character, reading_on, reading_kun, reading_kana, reading_hanviet, romaji,
+                         meaning_vi, meaning_en, example_jp, example_vi, stroke_count, jlpt_level, pos)
+      values (me, r.type, r.character, r.reading_on, r.reading_kun, r.reading_kana, r.reading_hanviet, r.romaji,
+              r.meaning_vi, r.meaning_en, r.example_jp, r.example_vi, r.stroke_count, r.jlpt_level, r.pos) returning id into cid;
+      added := added + 1;
+    else linked := linked + 1; end if;
+    insert into deck_cards (user_id, deck_id, card_id) values (me, did, cid) on conflict do nothing;
+  end loop;
+  return json_build_object('deck_id', did, 'name', nm, 'added', added, 'linked', linked);
+end $$;
+
+revoke execute on function public.admin_list_users(), public.admin_stats(), public.admin_set_role(uuid, text),
+  public.admin_set_status(uuid, text), public.admin_delete_user(uuid), public.admin_publish_deck(uuid, text, text, uuid),
+  public.admin_set_starter(uuid, boolean), public.admin_delete_starter(uuid), public.import_starter_deck(uuid),
+  public.delete_my_account(), public.jp_me() from public, anon;
+grant execute on function public.admin_list_users(), public.admin_stats(), public.admin_set_role(uuid, text),
+  public.admin_set_status(uuid, text), public.admin_delete_user(uuid), public.admin_publish_deck(uuid, text, text, uuid),
+  public.admin_set_starter(uuid, boolean), public.admin_delete_starter(uuid), public.import_starter_deck(uuid),
+  public.delete_my_account(), public.jp_me(), public.jp_is_admin(), public.jp_is_active() to authenticated;
+
 -- ── Row Level Security ──────────────────────────────────────────────────────
 do $$
 declare t text;
@@ -200,7 +428,8 @@ begin
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "own rows" on public.%I', t);
     execute format('create policy "own rows" on public.%I for all to authenticated
-                    using (user_id = auth.uid()) with check (user_id = auth.uid())', t);
+                    using (user_id = auth.uid() and public.jp_is_active())
+                    with check (user_id = auth.uid() and public.jp_is_active())', t);
   end loop;
 end $$;
 
@@ -214,7 +443,7 @@ alter table public.cards add constraint cards_pos_check
 
 -- ── Phiên bản schema (app kiểm tra khi khởi động để báo "chưa chạy schema mới") ──
 create or replace function public.jp_schema_version() returns integer
-language sql stable as $$ select 5 $$;
+language sql stable as $$ select 6 $$;
 
 -- Chữ ký nhẹ của toàn bộ dữ liệu của bạn: app hỏi cái này mỗi ~60 giây thay vì tải lại tất cả.
 -- Đổi khi có thêm / xóa / sửa bất kỳ hàng nào (chạy với quyền của người gọi nên RLS chỉ tính dữ liệu của bạn).
@@ -254,6 +483,8 @@ begin
     raise exception 'p_result phải là correct hoặc incorrect';
   end if;
 
+  if not public.jp_is_active() then raise exception 'Tài khoản đang bị khóa' using errcode = '42501'; end if;
+  if p_at > now() then p_at := now(); end if;          -- đồng hồ máy chạy nhanh: không cho lượt ôn "ở tương lai" làm các lượt thật sau đó bị coi là cũ
   select * into c from public.cards where id = p_card for update;   -- khoá hàng: 2 thiết bị xếp hàng lần lượt
   if not found then return null; end if;
 

@@ -58,4 +58,64 @@ Bản desktop (`japanese-dictionary-pdk-fixed`) giờ đồng bộ vào đúng P
 - Form thẻ không đóng khi chạm ra ngoài; ô nhập 16px (iOS không tự phóng to); gợi ý dịch bỏ khi MyMemory hết hạn mức.
 
 ## Bản 3.2/3.3 — Từ loại
-Thẻ **từ vựng** có thêm trường *Từ loại*: Danh từ · Động từ (hoặc nhóm 1 / 2 / 3) · Tính từ đuôi い / な · Đại từ · Trợ từ · Trạng từ · Liên từ · Thán từ. Hiện trong form sửa thẻ, chi tiết thẻ, danh sách (nhãn nhỏ), bộ lọc, cấu hình ôn tập, CSV (cột `pos`, nhận cả mã `noun/verb1/verb2/verb3/adj_i/adj_na` lẫn tên tiếng Việt) và tự điền khi tra Jisho. **Bắt buộc chạy lại toàn bộ `schema.sql`** (schema phiên bản 5, cột `cards.pos`).
+Mọi thẻ (từ vựng, kanji, ...) có thêm trường *Từ loại*: Danh từ · Động từ (hoặc nhóm 1 / 2 / 3) · Tính từ đuôi い / な · Đại từ · Trợ từ · Trạng từ · Liên từ · Thán từ. Hiện trong form sửa thẻ, chi tiết thẻ, danh sách (nhãn nhỏ), bộ lọc, cấu hình ôn tập, CSV (cột `pos`, nhận cả mã `noun/verb1/verb2/verb3/adj_i/adj_na` lẫn tên tiếng Việt) và tự điền khi tra Jisho. **Bắt buộc chạy lại toàn bộ `schema.sql`** (schema phiên bản 5, cột `cards.pos`).
+
+## Bản 3.5–3.6 — giao diện thân thiện hơn (3.6: nút chạm lớn hơn trên điện thoại)
+- **Hôm nay**: nút lớn "Ôn N thẻ ngay"; 3 kiểu ôn khác có chú thích ngắn; biểu đồ trống thành lời nhắc.
+- **Ôn tập**: chọn kiểu ôn bằng thẻ có mô tả; bộ lọc nâng cao thu gọn (hiện số bộ lọc đang bật); thanh "Bắt đầu ôn" luôn nằm sát đáy kèm số thẻ.
+- **Thẻ**: nút "Chọn" và "Lọc" có chữ (thay cho biểu tượng khó hiểu); máy tính hiển thị 2 cột.
+- **Form thẻ**: đưa trường chính lên đầu (chữ, cách đọc, nghĩa, từ loại, JLPT, bộ thẻ), phần còn lại dưới "Thông tin thêm"; nút Lưu/Hủy luôn hiện.
+- **Đăng nhập**: nút Hiện/Ẩn mật khẩu, "Tạo tài khoản" thành liên kết phụ, sửa chữ chồng lên logo.
+- Không đổi schema (vẫn v5). Cần tải lại trang 1–2 lần để service worker lấy bản v3.5.
+
+## Bản 3.7 — xử lý các giới hạn đã biết
+- Nút Back (điện thoại/trình duyệt) không còn "kẹt" sau khi vào Thống kê/Bộ thủ rồi đổi tab hoặc xóa bộ thủ.
+- Hộp thoại giữ phím Tab bên trong nó và trả focus về nút đã mở khi đóng.
+- `schema.sql`: `log_study` chặn giờ ôn ở tương lai (đồng hồ máy nhanh) — **chạy lại schema.sql một lần** để áp dụng (vẫn là bản 5, an toàn).
+
+## Bản 3.8 — Phân quyền: người dùng (user) và quản trị viên (admin)
+**Bắt buộc:** chạy lại TOÀN BỘ `schema.sql` mới trong Supabase SQL Editor (bản 6, an toàn, không mất dữ liệu; chạy lại nhiều lần cũng được). Tài khoản có sẵn tự thành "user".
+
+**Cấp quyền admin đầu tiên** (làm 1 lần trong SQL Editor, thay email của bạn):
+```sql
+update public.profiles set role = 'admin'
+where user_id = (select id from auth.users where email = 'ban@example.com');
+```
+Sau đó đăng nhập lại → tab **Khác** có mục **Quản trị**. Từ đó cấp/hạ quyền admin ngay trong app.
+
+| | Người dùng | Admin |
+|---|---|---|
+| Thẻ, bộ thẻ, ôn tập của mình | ✔ | ✔ |
+| Thấy dữ liệu của người khác | ✘ | ✘ (chỉ thấy email, số thẻ/bộ, lần vào cuối, số liệu tổng) |
+| Thêm "Bộ thẻ mẫu" vào thẻ của mình | ✔ | ✔ |
+| Xem danh sách tài khoản, khóa/mở khóa, đổi vai trò, xóa tài khoản | ✘ | ✔ |
+| Đăng / ẩn / xóa bộ thẻ mẫu dùng chung | ✘ | ✔ |
+| Tự xóa tài khoản của mình | ✔ | ✔ (trừ khi là admin duy nhất) |
+
+- Quyền được kiểm tra ở **máy chủ** (RLS + hàm security definer): người dùng không thể tự nâng quyền dù sửa mã trên trình duyệt.
+- Tài khoản bị khóa: đăng nhập được nhưng mọi truy vấn dữ liệu bị từ chối; app hiện thông báo bị khóa.
+- Admin không tự khóa / hạ quyền / xóa chính mình; không thể xóa admin cuối cùng.
+- Bản desktop không có màn quản trị (dùng web để quản trị); đồng bộ desktop vẫn hoạt động bình thường với tài khoản user.
+
+### Bản 3.9
+- `log_study` từ chối rõ ràng khi tài khoản bị khóa (mã 42501) và app GIỮ hàng đợi lượt ôn, mở khóa xong tự gửi lại (không mất dữ liệu). **Chạy lại `schema.sql` một lần nữa.**
+
+## Bản 3.10 — Sẵn sàng cho người dùng tự đăng ký
+**1. Nhúng sẵn cấu hình (để người dùng khỏi nhập URL/khóa Supabase)** — sửa file `js/config.js`:
+```js
+window.JP_CONFIG = { url: 'https://xxxx.supabase.co', key: 'eyJ… hoặc sb_publishable_…' };
+```
+Lấy ở Supabase → Project Settings → API (Project URL + anon/publishable key). **Không** dán khóa `service_role`. Khi đó app đi thẳng vào màn đăng nhập và ẩn mục "Đổi máy chủ". Để trống (mặc định) = app hỏi URL + khóa **một lần** ở lần dùng đầu tiên trên mỗi thiết bị (có kiểm tra kết nối), lưu trong trình duyệt; sau này sửa ở **Khác → Máy chủ**. *Khi cập nhật bằng bản zip mới nhớ giữ lại file `js/config.js` đã điền.*
+
+**2. Cấu hình bắt buộc để "Quên mật khẩu" và email xác nhận hoạt động** — Supabase → Authentication → URL Configuration:
+- **Site URL**: địa chỉ Vercel của bạn (vd `https://ten-app.vercel.app`).
+- **Redirect URLs**: thêm đúng địa chỉ đó (và bản có dấu `/` cuối nếu có).
+Nếu không, liên kết trong email sẽ trỏ sai chỗ.
+
+**3. Email gửi đi** — Supabase mặc định chỉ gửi vài email mỗi giờ (đủ để thử, KHÔNG đủ cho nhiều người). Khi mở rộng: Authentication → SMTP Settings → dùng dịch vụ SMTP riêng (Resend, Brevo, …). Có thể tạm tắt "Confirm email" (Authentication → Sign In / Providers → Email) nếu muốn người dùng vào ngay không cần xác nhận — đổi lại dễ bị tài khoản rác.
+
+**Tính năng mới**
+- Quên mật khẩu (gửi liên kết → đặt mật khẩu mới), Đổi mật khẩu trong tab Khác.
+- Liên kết xác nhận đăng ký tự đăng nhập; liên kết hết hạn báo tiếng Việt.
+- Đăng ký / đặt mật khẩu mới yêu cầu từ 8 ký tự; đăng nhập vẫn chấp nhận mật khẩu cũ 6 ký tự.
+- Thông báo lỗi đăng nhập/đăng ký bằng tiếng Việt (sai mật khẩu, email đã đăng ký, thao tác quá nhanh, chưa xác nhận email…).

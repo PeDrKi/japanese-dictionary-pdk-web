@@ -60,7 +60,7 @@ ACT.cfJisho = async el => {
 ACT.jishoPick = async el => {
   const { res, form, s } = _jr, r = res[+el.dataset.i], type = guessType(r.word);
   form.dataset.type = type; syncFormType(form); const set = (n, v) => { if (form.elements[n] && v) form.elements[n].value = v; };
-  set('character', r.word); set('meaning_en', r.en); set('jlpt_level', r.jlpt); if (type === 'vocab') set('pos', r.pos);
+  set('character', r.word); set('meaning_en', r.en); set('jlpt_level', r.jlpt); set('pos', r.pos);
   if (type === 'kanji') set('reading_kun', r.reading); else set('reading_kana', r.reading);
   set('romaji', kanaToRomaji(r.reading)); s.close();
   const box = $('#cf-suggest', form); if (r.en && !form.elements.meaning_vi.value) {

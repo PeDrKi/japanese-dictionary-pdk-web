@@ -8,7 +8,7 @@ const TYPE_GLYPH = { kanji: '漢', hiragana: 'ひ', katakana: 'ア', vocab: '語
 const STATUSES = ['new', 'learning', 'known'];
 const STATUS_LABEL = { new: 'Chưa học', learning: 'Đang học', known: 'Đã nhớ' };
 const JLPT = ['N5', 'N4', 'N3', 'N2', 'N1'];
-// Từ loại (áp dụng cho thẻ từ vựng). "verb" = động từ chưa rõ nhóm; verb1/2/3 = có chỉ rõ nhóm
+// Từ loại (mọi loại thẻ: từ vựng, kanji, ...). "verb" = động từ chưa rõ nhóm; verb1/2/3 = có chỉ rõ nhóm
 const POS = ['noun', 'verb', 'verb1', 'verb2', 'verb3', 'adj_i', 'adj_na', 'pronoun', 'particle', 'adverb', 'conjunction', 'interjection'];
 const POS_LABEL = { noun: 'Danh từ', verb: 'Động từ', verb1: 'Động từ nhóm 1', verb2: 'Động từ nhóm 2', verb3: 'Động từ nhóm 3',
   adj_i: 'Tính từ đuôi い', adj_na: 'Tính từ đuôi な', pronoun: 'Đại từ', particle: 'Trợ từ', adverb: 'Trạng từ', conjunction: 'Liên từ', interjection: 'Thán từ' };
@@ -204,7 +204,7 @@ function buildCardData(f) {
     example_vi: t((f.example_vi || '').trim(), LIMITS.example) || null,
     stroke_count: f.stroke_count ? parseInt(f.stroke_count, 10) || null : null,
     jlpt_level: safeJlpt(f.jlpt_level),
-    pos: f.type === 'vocab' ? safePos(f.pos) : null,
+    pos: safePos(f.pos),
     status: f.status || 'new',
     is_favorite: !!f.is_favorite,
     source: t((f.source || '').trim(), LIMITS.source) || null,

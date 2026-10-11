@@ -2,8 +2,9 @@
 'use strict';
 
 // Điền sẵn nếu muốn (anon key là public, an toàn nhờ RLS). Để trống → app sẽ hỏi lần đầu.
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
+const SUPABASE_URL = (window.JP_CONFIG && window.JP_CONFIG.url || '').trim().replace(/\/+$/, '');   // đặt trong js/config.js
+const SUPABASE_ANON_KEY = (window.JP_CONFIG && window.JP_CONFIG.key || '').trim();
+const BAKED_CONFIG = !!(SUPABASE_URL && SUPABASE_ANON_KEY);   // đã nhúng sẵn → ẩn mọi chỗ cho người dùng đổi máy chủ
 
 const LS = {
   get(k, d = null) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -25,7 +26,7 @@ function initSupabase() {
 }
 
 // ── State ───────────────────────────────────────────────────────────────────
-const S = {
+const S = { me: { role: 'user', status: 'active' },
   user: null, cards: [], decks: [], cats: [], deckCards: [], radicals: [], radCards: [], decomps: new Map(),
   daily: [], sessTotal: 0, sessCorrect: 0,
   byId: new Map(), deckOfCard: new Map(), cardsOfDeck: new Map(), radOfCard: new Map(), cardsOfRad: new Map(),
@@ -90,7 +91,7 @@ async function getSig() { try { const { data, error } = await sb.rpc('jp_sync_si
 // Cơ sở dữ liệu phải đã chạy schema.sql bản 3 (có cột version + hàm log_study)
 async function checkSchema() {
   const { data, error } = await sb.rpc('jp_schema_version');
-  if (error || !(data >= 5)) throw new Error('Cơ sở dữ liệu chưa được nâng cấp lên bản mới (thiếu cột version / từ loại / hàm log_study / jp_sync_sig).');
+  if (error || !(data >= 6)) throw new Error('Cơ sở dữ liệu chưa được nâng cấp lên bản mới (thiếu cột version / từ loại / vai trò admin / hàm log_study / jp_sync_sig).');
 }
 
 // ── Đồng bộ nhiều thiết bị: tự làm mới ─────────────────────────────────────
@@ -138,7 +139,7 @@ async function flushQueue() {
       catch (e) { break; }                                   // lỗi mạng: thử lại sau, giữ nguyên hàng đợi
       if (r.error) {
         if (r.error.code === 'PGRST202' || r.error.code === '42883') { SYNC.needsSchema = true; break; }   // chưa chạy schema mới: GIỮ hàng đợi, không mất dữ liệu
-        if (isTransient(r.error)) break;
+        if (isTransient(r.error) || r.error.code === '42501') break;   // 42501 = tài khoản bị khóa/không đủ quyền: GIỮ hàng đợi, mở khóa xong sẽ gửi lại
         console.warn('Bỏ qua lượt ôn bị từ chối:', r.error.message, op);                                     // lỗi dữ liệu thật sự (vd thẻ đã bị xóa vĩnh viễn)
       } else {
         SYNC.needsSchema = false;

@@ -2,7 +2,7 @@
 'use strict';
 
 const ACT = {};      // data-act → handler(el, event)
-const NAV = { tab: 'today', sub: null, stack: [] };
+const NAV = { tab: 'today', sub: null, stack: [], depth: 0 };   // depth = số mục history do màn phụ đã đẩy vào
 const FILT = { search: '', type: '', jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', shown: 50, select: false, sel: new Set() };
 
 // ── Toast ───────────────────────────────────────────────────────────────────
@@ -26,13 +26,28 @@ async function guard(fn, okMsg) {
 
 // ── Lớp phủ: mỗi sheet/màn hình phụ đẩy 1 state vào history để nút Back đóng được ──
 const layers = []; let ignorePops = 0; // số lần history.back() do chính app gọi, popstate tương ứng phải bỏ qua
+// Giữ phím Tab quay vòng trong hộp thoại đang mở (không "chui" ra trang phía sau)
+function trapFocus(el) {
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const f = [...el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')]
+      .filter(x => x.offsetParent !== null || x === document.activeElement);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1], a = document.activeElement;
+    if (e.shiftKey && (a === first || !el.contains(a))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (a === last || !el.contains(a))) { e.preventDefault(); first.focus(); }
+  });
+}
 function pushLayer(el, onClose) {
   const layer = { el, onClose, closed: false };
+  const opener = document.activeElement;   // trả focus về chỗ cũ khi đóng (bàn phím / trình đọc màn hình)
+  trapFocus(el);
   layers.push(layer); history.pushState({ layer: layers.length }, '');
   layer.close = () => {
     if (layer.closed) return; layer.closed = true;
     const i = layers.indexOf(layer); if (i >= 0) layers.splice(i, 1);
     el.remove(); onClose?.();
+    if (opener && opener.isConnected && typeof opener.focus === 'function') { try { opener.focus({ preventScroll: true }); } catch {} }
     // Chỉ lùi lịch sử khi đang đứng trên một mục do app đẩy vào — không bao giờ lùi ra khỏi trang
     if (!layer.byPop && history.state && history.state.layer) { ignorePops++; history.back(); }
   };
@@ -42,7 +57,7 @@ window.addEventListener('popstate', () => {
   if (ignorePops > 0) { ignorePops--; return; }
   const top = layers[layers.length - 1];
   if (top) { top.byPop = true; top.close(); }
-  else if (NAV.sub) { NAV.sub = NAV.stack.pop() || null; render(); }
+  else if (NAV.sub) { NAV.depth = Math.max(0, NAV.depth - 1); NAV.sub = NAV.stack.pop() || null; render(); }
 });
 
 function openSheet(html, opts = {}) {
@@ -53,6 +68,7 @@ function openSheet(html, opts = {}) {
   if (!opts.sticky) scrim.addEventListener('mousedown', e => { if (e.target === scrim) layer.close(); });   // form dài: chạm ra ngoài không làm mất nội dung đang nhập
   scrim.addEventListener('click', e => { if (e.target.closest('[data-close]')) layer.close(); });
   const first = $('[autofocus]', scrim); if (first) setTimeout(() => first.focus(), 60);
+  else { const sh = $('.sheet', scrim); sh.tabIndex = -1; setTimeout(() => sh.focus({ preventScroll: true }), 30); }
   return { el: scrim, sheet: $('.sheet', scrim), close: layer.close, $: s => $(s, scrim) };
 }
 function openFull(html, opts = {}) {
@@ -106,5 +122,14 @@ function themeCycle() {
   if (nx === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = nx;
   toast({ auto: 'Giao diện: theo hệ thống', dark: 'Giao diện: tối', light: 'Giao diện: sáng' }[nx]);
 }
-ACT.back = () => { if (layers.length) layers[layers.length - 1].close(); else { history.back(); } };
+// Rời màn phụ: lùi đúng 1 mục history (popstate sẽ vẽ lại); nếu không còn mục nào (vd vừa tải lại trang) thì tự lùi trong NAV
+function leaveSub() {
+  if (NAV.depth > 0) history.back();
+  else { NAV.sub = NAV.stack.pop() || null; render(); }
+}
+// Chuyển tab khi đang ở màn phụ: gỡ hết các mục history của màn phụ để nút Back không "kẹt" ở những màn đã rời
+function dropSubHistory() {
+  if (NAV.depth > 0) { ignorePops++; history.go(-NAV.depth); NAV.depth = 0; }
+}
+ACT.back = () => { if (layers.length) layers[layers.length - 1].close(); else if (NAV.sub) leaveSub(); else history.back(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && layers.length) layers[layers.length - 1].close(); });
