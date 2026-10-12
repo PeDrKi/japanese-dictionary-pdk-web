@@ -135,3 +135,18 @@ Phím đơn chỉ hoạt động khi bạn không đang gõ trong ô nhập và 
 - **Thêm thẻ nhanh:** gõ chữ Nhật xong, app tự tra Jisho và điền cách đọc, nghĩa, từ loại, JLPT (nghĩa tiếng Việt là dịch máy — có nhãn nhắc kiểm tra). Ô bạn đã sửa tay không bị ghi đè. Từ loại/JLPT/trạng thái/ví dụ… nằm trong mục "Tùy chọn thêm" (gập sẵn, dòng tóm tắt cho thấy cái đã điền). Link "Thêm nhiều thẻ một lúc" ngay đầu form. *Tự điền cần chạy trên Vercel (có `/api/jisho`); chạy ngoài Vercel thì im lặng, vẫn nhập tay được.*
 - **Ôn tập:** màn chọn chỉ còn kiểu ôn + tóm tắt "Lần này sẽ ôn" + nút Bắt đầu; câu hỏi/số thẻ/bộ lọc gập trong "Tùy chỉnh bài ôn". Cài đặt được nhớ cho lần mở sau.
 - **Hôm nay:** chưa có dữ liệu thì không vẽ biểu đồ rỗng. **Thư viện:** đổi tên tab; có chú thích màu trạng thái; nhãn từ loại viết đủ ("Động từ 2", "Tính từ い"); nút + không che thẻ cuối; chữ nghĩa to hơn.
+
+## Chạy test
+
+```
+npm install
+npx playwright install chromium   # lần đầu
+npm test            # 54 unit test (logic SRS, kana, IME, lọc thẻ...)
+npm run test:e2e    # 87 test giao diện (Playwright, Supabase giả lập trong bộ nhớ)
+npm run test:all    # cả hai
+```
+
+- Nếu máy đã có Chromium: `PW_CHROMIUM=/đường/dẫn/chromium npm run test:e2e`.
+- `tests/fixtures/parity.json` sinh từ bản desktop Python để đảm bảo web và desktop tính SRS giống nhau.
+- Test E2E không gọi Supabase/Jisho thật. Kiểm tra RLS trên Postgres thật chưa nằm trong dự án.
+- GitHub Actions (`.github/workflows/web-tests.yml`) chạy `npm run test:all` mỗi lần push.

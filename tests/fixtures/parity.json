@@ -1,0 +1,1060 @@
+{
+ "srs": [
+  {
+   "interval": 0,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 2,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 0,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 0,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 2,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 0,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 0,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 2,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 0,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 0,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 0,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 0,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 0,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 0,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 0,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 1,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 2,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 1,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 1,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 2,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 1,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 1,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 2,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 1,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 1,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 1,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 1,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 1,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 1,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 1,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 2,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 2,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 2,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 3,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 2,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 2,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 4,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 2,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 2,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 5,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 2,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 2,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 6,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 2,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 2,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 6,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 2,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 3,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 4,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 3,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 3,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 5,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 3,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 3,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 6,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 3,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 3,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 8,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 3,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 3,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 8,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 3,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 3,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 8,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 3,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 5,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 7,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 5,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 5,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 8,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 5,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 5,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 10,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 5,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 5,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 13,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 5,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 5,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 14,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 5,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 5,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 14,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 5,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 10,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 14,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 10,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 10,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 16,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 10,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 10,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 21,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 10,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 10,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 26,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 10,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 10,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 28,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 10,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 10,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 28,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 10,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 30,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 42,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 30,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 30,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 48,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 30,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 30,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 63,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 30,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 30,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 78,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 30,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 30,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 84,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 30,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 30,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 84,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 30,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 60,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 84,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 60,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 60,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 60,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 60,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 60,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 60,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 60,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 60,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 60,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 60,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 60,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 89,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 89,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 89,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 89,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 89,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 89,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 89,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 89,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 89,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 89,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 89,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 89,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 90,
+   "ease": 1.3,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 1.4
+  },
+  {
+   "interval": 90,
+   "ease": 1.3,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 90,
+   "ease": 1.5,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 1.6
+  },
+  {
+   "interval": 90,
+   "ease": 1.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.3
+  },
+  {
+   "interval": 90,
+   "ease": 2.0,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.1
+  },
+  {
+   "interval": 90,
+   "ease": 2.0,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 1.8
+  },
+  {
+   "interval": 90,
+   "ease": 2.5,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.6
+  },
+  {
+   "interval": 90,
+   "ease": 2.5,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.3
+  },
+  {
+   "interval": 90,
+   "ease": 2.7,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 90,
+   "ease": 2.7,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.5
+  },
+  {
+   "interval": 90,
+   "ease": 2.8,
+   "result": "correct",
+   "interval_out": 90,
+   "ease_out": 2.8
+  },
+  {
+   "interval": 90,
+   "ease": 2.8,
+   "result": "incorrect",
+   "interval_out": 1,
+   "ease_out": 2.6
+  }
+ ],
+ "status": [
+  {
+   "cur": "new",
+   "result": "correct",
+   "out": "learning"
+  },
+  {
+   "cur": "new",
+   "result": "incorrect",
+   "out": "new"
+  },
+  {
+   "cur": "learning",
+   "result": "correct",
+   "out": "known"
+  },
+  {
+   "cur": "learning",
+   "result": "incorrect",
+   "out": "new"
+  },
+  {
+   "cur": "known",
+   "result": "correct",
+   "out": "known"
+  },
+  {
+   "cur": "known",
+   "result": "incorrect",
+   "out": "learning"
+  }
+ ],
+ "romaji": [
+  {
+   "kana": "たべる",
+   "romaji": "taberu"
+  },
+  {
+   "kana": "がっこう",
+   "romaji": "gakkou"
+  },
+  {
+   "kana": "きょう",
+   "romaji": "kyou"
+  },
+  {
+   "kana": "しんぶん",
+   "romaji": "shinbun"
+  },
+  {
+   "kana": "ちょっと",
+   "romaji": "chotto"
+  },
+  {
+   "kana": "コーヒー",
+   "romaji": "koohii"
+  },
+  {
+   "kana": "ありがとうございます",
+   "romaji": "arigatougozaimasu"
+  },
+  {
+   "kana": "おおきい",
+   "romaji": "ookii"
+  },
+  {
+   "kana": "にほんご",
+   "romaji": "nihongo"
+  },
+  {
+   "kana": "じしょ",
+   "romaji": "jisho"
+  },
+  {
+   "kana": "つくえ",
+   "romaji": "tsukue"
+  },
+  {
+   "kana": "ふじさん",
+   "romaji": "fujisan"
+  },
+  {
+   "kana": "ラーメン",
+   "romaji": "raamen"
+  },
+  {
+   "kana": "パーティー",
+   "romaji": "paatii"
+  },
+  {
+   "kana": "おかあさん",
+   "romaji": "okaasan"
+  },
+  {
+   "kana": "こんにちは",
+   "romaji": "konnichiha"
+  },
+  {
+   "kana": "せんせい",
+   "romaji": "sensei"
+  },
+  {
+   "kana": "でんわ",
+   "romaji": "denwa"
+  },
+  {
+   "kana": "きって",
+   "romaji": "kitte"
+  },
+  {
+   "kana": "いっぱい",
+   "romaji": "ippai"
+  },
+  {
+   "kana": "しゃしん",
+   "romaji": "shashin"
+  },
+  {
+   "kana": "ひゃく",
+   "romaji": "hyaku"
+  },
+  {
+   "kana": "じゅう",
+   "romaji": "juu"
+  },
+  {
+   "kana": "ぎゅうにゅう",
+   "romaji": "gyuunyuu"
+  },
+  {
+   "kana": "ゔぁ",
+   "romaji": "ゔぁ"
+  },
+  {
+   "kana": "あ",
+   "romaji": "a"
+  },
+  {
+   "kana": "ん",
+   "romaji": "n"
+  },
+  {
+   "kana": "、",
+   "romaji": ", "
+  },
+  {
+   "kana": "がんばって",
+   "romaji": "ganbatte"
+  },
+  {
+   "kana": "ほん・ばこ",
+   "romaji": "hon, bako"
+  }
+ ],
+ "quick": [
+  {
+   "line": "猫 - con mèo",
+   "valid": true,
+   "character": "猫",
+   "meaning_vi": "con mèo"
+  },
+  {
+   "line": "犬: con chó",
+   "valid": true,
+   "character": "犬",
+   "meaning_vi": "con chó"
+  },
+  {
+   "line": "水\tnước",
+   "valid": true,
+   "character": "水",
+   "meaning_vi": "nước"
+  },
+  {
+   "line": "日本 – Nhật Bản",
+   "valid": true,
+   "character": "日本",
+   "meaning_vi": "Nhật Bản"
+  },
+  {
+   "line": "食べる - ăn - uống",
+   "valid": true,
+   "character": "食べる",
+   "meaning_vi": "ăn - uống"
+  },
+  {
+   "line": "",
+   "valid": false,
+   "character": "",
+   "meaning_vi": ""
+  },
+  {
+   "line": "  ",
+   "valid": false,
+   "character": "",
+   "meaning_vi": ""
+  },
+  {
+   "line": "猫",
+   "valid": false,
+   "character": "猫",
+   "meaning_vi": ""
+  },
+  {
+   "line": "猫 - ",
+   "valid": false,
+   "character": "猫",
+   "meaning_vi": ""
+  },
+  {
+   "line": "- nghĩa",
+   "valid": false,
+   "character": "",
+   "meaning_vi": "nghĩa"
+  }
+ ]
+}
