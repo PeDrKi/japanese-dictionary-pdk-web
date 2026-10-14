@@ -1,13 +1,15 @@
 /* views.js — các màn hình chính: Hôm nay, Thẻ, Bộ thẻ, Khác (+ thống kê, thùng rác, bộ thủ) */
 'use strict';
 
+// Ngữ pháp / Bộ thủ / Thống kê: là mục của thanh bên trên màn hình rộng (không có nút ← khi đứng ở mục chính)
+const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'stats'].includes(NAV.tab);
 function render() {
   const v = $('#view'); if (!v) return;
   const sub = NAV.sub;
   if (sub) {
     v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
   } else {
-    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, more: viewMore }[NAV.tab]();
+    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, more: viewMore }[NAV.tab]();
   }
   $$('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === NAV.tab ? 'page' : 'false'));
   const d = dueCount(), bd = $('#duebadge'); if (bd) { bd.textContent = d > 99 ? '99+' : d; bd.classList.toggle('hidden', !d); }
@@ -208,7 +210,7 @@ function openCardForm(id, preset = {}) {
     <label class="field" data-for="vocab hiragana katakana"><span>Cách đọc (kana)</span><input name="reading_kana" class="jp" value="${v('reading_kana')}"></label>
     <label class="field" id="w-meaning_vi"><span>Nghĩa tiếng Việt *</span><input name="meaning_vi" value="${v('meaning_vi')}" maxlength="200"></label>
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>
-    ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks">${liveDecks().map(d => `<button type="button" class="chip ${decks.has(d.id) ? 'on' : ''}" data-act="cfDeck" data-id="${d.id}">${esc(d.icon || '')} ${esc(d.name)}</button>`).join('')}</div></div>` : ''}
+    ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks"></div></div>` : ''}
     <details class="adv" id="cf-adv" ${id ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
     <label class="field"><span>Từ loại</span><select name="pos"><option value="">— chưa chọn —</option>${POS.map(j => `<option value="${j}" ${c.pos === j ? 'selected' : ''}>${POS_LABEL[j]}</option>`).join('')}</select></label>
     <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label>
@@ -225,8 +227,8 @@ function openCardForm(id, preset = {}) {
     </details>
     <div class="row sheet-actions"><button type="button" class="btn grow" data-close>Hủy</button><button type="submit" class="btn primary grow">Lưu thẻ</button></div>
   </form>`, { sticky: true });
-  const form = s.$('#cf'); form.dataset.type = c.type; form._deckSel = decks; form._id = id; form._sheet = s;
-  syncFormType(form); updateAdvSummary(form);
+  const form = s.$('#cf'); form.dataset.type = c.type; form._deckSel = decks; form._isNew = !id; form._id = id; form._sheet = s;
+  syncFormType(form); updateAdvSummary(form); renderDeckField(form);
   form.addEventListener('change', () => updateAdvSummary(form));
   if (!id) wireAutofill(form);
   form.addEventListener('submit', async e => {
@@ -255,7 +257,7 @@ function openCardForm(id, preset = {}) {
         if (r.merged) note = 'Đã lưu — có thay đổi từ thiết bị khác, hai bên đã được gộp';
         saved = r.row;
       } else saved = await addCard(data, form._newId || (form._newId = uuid7()));   // id cố định cho form: bấm Lưu lại sau lỗi giữa chừng không tạo thẻ thứ 2
-      await setCardDecks(saved.id, [...form._deckSel]);
+      await setCardDecks(saved.id, [...form._deckSel]); rememberDecks([...form._deckSel]);
       return true;
     });
     form._busy = false; if (sb_) sb_.disabled = false;
@@ -269,7 +271,41 @@ function syncFormType(form) {
 }
 ACT.cfType = el => { const f = el.closest('form'); f.dataset.type = el.dataset.v; f._typeTouched = true; syncFormType(f); };
 ACT.cfQuick = () => { $('#cf')?._sheet?.close(); setTimeout(() => ACT.quickAdd(), 0); };
-ACT.cfDeck = el => { const f = el.closest('form'); const id = el.dataset.id; f._deckSel.has(id) ? f._deckSel.delete(id) : f._deckSel.add(id); el.classList.toggle('on'); };
+// ── Chọn bộ thẻ cho thẻ: hiện gọn các bộ đã chọn + vài bộ dùng gần đây; danh sách đầy đủ (có tìm kiếm) nằm trong hộp chọn ──
+const recentDecks = () => (LS.get('jp_recent_decks', []) || []).filter(id => liveDecks().some(d => d.id === id));
+function rememberDecks(ids) { if (!ids.length) return; LS.set('jp_recent_decks', [...ids, ...recentDecks().filter(i => !ids.includes(i))].slice(0, 6)); }
+function renderDeckField(form) {
+  const box = $('#cf-decks', form); if (!box) return;
+  const sel = [...form._deckSel].map(id => S.decks.find(d => d.id === id)).filter(d => d && alive(d));
+  const rec = form._isNew ? recentDecks().filter(id => !form._deckSel.has(id)).slice(0, 4).map(id => S.decks.find(d => d.id === id)) : [];
+  const n = liveDecks().length;
+  box.innerHTML = sel.map(d => `<button type="button" class="chip on" data-act="cfDeck" data-id="${d.id}" aria-label="Bỏ khỏi bộ ${esc(d.name)}">${esc(d.icon || '')} ${esc(d.name)} ✕</button>`).join('')
+    + rec.map(d => `<button type="button" class="chip dashed" data-act="cfDeck" data-id="${d.id}" title="Dùng gần đây">+ ${esc(d.icon || '')} ${esc(d.name)}</button>`).join('')
+    + `<button type="button" class="btn ghost small" data-act="cfDeckPick">${sel.length ? 'Đổi…' : `＋ Chọn bộ thẻ (${n})`}</button>`;
+}
+ACT.cfDeck = el => { const f = el.closest('form'); const id = el.dataset.id; f._deckSel.has(id) ? f._deckSel.delete(id) : f._deckSel.add(id); renderDeckField(f); };
+ACT.cfDeckPick = el => {
+  const form = el.closest('form'); let q = '';
+  const catOf = d => S.cats.find(c => c.id === d.category_id);
+  const draw = () => {
+    const toks = q.trim().toLowerCase().split(/\s+/).filter(Boolean), all = liveDecks();
+    const list = all.filter(d => !toks.length || toks.every(t => (d.name || '').toLowerCase().includes(t)));
+    const groups = [...S.cats.map(c => ({ t: `${c.icon || ''} ${c.name}`, l: list.filter(d => d.category_id === c.id) })), { t: S.cats.length ? 'Chưa phân loại' : '', l: list.filter(d => !catOf(d)) }].filter(g => g.l.length);
+    return groups.map(g => `${g.t ? `<div class="mute small" style="margin:12px 2px 4px">${esc(g.t)}</div>` : ''}<div class="deckpick">${g.l.map(d => `<label class="dp ${form._deckSel.has(d.id) ? 'on' : ''}"><input type="checkbox" data-id="${d.id}" ${form._deckSel.has(d.id) ? 'checked' : ''}><span>${esc(d.icon || '')} ${esc(d.name)}</span></label>`).join('')}</div>`).join('') || '<p class="mute">Không có bộ thẻ khớp.</p>';
+  };
+  const s = openSheet(`<h2>Chọn bộ thẻ <span class="mute small" id="dp-n"></span></h2>
+    <div class="search"><input class="input" id="dp-q" type="search" placeholder="Tìm bộ thẻ… (Enter để chọn bộ đầu tiên)" autocomplete="off" autofocus></div>
+    <div id="dp-list">${draw()}</div><div class="sp"></div><button class="btn primary block" data-close>Xong</button>`);
+  const upd = () => { s.$('#dp-n').textContent = form._deckSel.size ? `· đã chọn ${form._deckSel.size}` : ''; renderDeckField(form); };
+  const redraw = () => { s.$('#dp-list').innerHTML = draw(); upd(); };
+  upd();
+  s.$('#dp-q').addEventListener('input', e => { q = e.target.value; s.$('#dp-list').innerHTML = draw(); });
+  s.$('#dp-q').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return; e.preventDefault();
+    const first = s.$('#dp-list input[type=checkbox]'); if (first) { const id = first.dataset.id; form._deckSel.has(id) ? form._deckSel.delete(id) : form._deckSel.add(id); redraw(); }
+  });
+  s.el.addEventListener('change', e => { const id = e.target.dataset?.id; if (!id) return; e.target.checked ? form._deckSel.add(id) : form._deckSel.delete(id); e.target.closest('.dp')?.classList.toggle('on', e.target.checked); upd(); });
+};
 ACT.cfRomaji = el => {
   const f = el.closest('form'), g = n => f.elements[n]?.value || '';
   const src = romajiSource(f.dataset.type, g('reading_on'), g('reading_kun'), g('reading_kana'), g('character'));
@@ -395,7 +431,7 @@ ACT.catDel = async el => { if (!await confirmBox('Xóa danh mục? Các bộ th�
 
 // ═══ KHÁC ══════════════════════════════════════════════════════════════════
 function viewMore() {
-  const link = (g, t, s, name) => `<button class="item" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
+  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'stats'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   const act = (g, t, s, a) => `<button class="item" data-act="${a}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   return `<div class="page">${pageTop('Khác')}
   <div class="list">
@@ -435,7 +471,7 @@ function viewStats() {
   const deckSizes = liveDecks().map(d => [d.name, (S.cardsOfDeck.get(d.id) || []).length]).sort((a, b) => b[1] - a[1]);
   const acc = S.sessTotal ? Math.round(S.sessCorrect / S.sessTotal * 100) : 0;
   const fields = [['Nghĩa Anh', 'meaning_en'], ['Ví dụ', 'example_jp'], ['Romaji', 'romaji'], ['JLPT', 'jlpt_level'], ['Nguồn', 'source']];
-  return `<div class="page">${pageTop('Thống kê', true)}
+  return `<div class="page">${pageTop('Thống kê', !isTopTab())}
   <div class="grid2"><div class="card"><div class="mute small">Tổng số thẻ</div><b class="jp" style="font-size:30px">${n}</b></div>
     <div class="card"><div class="mute small">Yêu thích</div><b class="jp" style="font-size:30px">${live.filter(c => c.is_favorite).length}</b></div>
     <div class="card"><div class="mute small">Lượt ôn tập</div><b class="jp" style="font-size:30px">${S.sessTotal}</b></div>
@@ -463,7 +499,7 @@ ACT.emptyTrash = async () => { const ids = S.cards.filter(c => !alive(c)).map(c 
 // ── Bộ thủ ──
 function viewRadicals() {
   const rs = liveRadicals();
-  return `<div class="page">${pageTop('Bộ thủ', true, '<button class="btn primary" data-act="newRadical">+ Thêm</button>')}
+  return `<div class="page">${pageTop('Bộ thủ', !isTopTab(), '<button class="btn primary" data-act="newRadical">+ Thêm</button>')}
   ${rs.length ? `<div class="list">${rs.map((r, i) => `<div class="item" style="padding:0"><button class="row grow" style="background:none;border:0;padding:10px 12px;text-align:left" data-act="sub" data-name="radical" data-id="${r.id}">
     <span class="big jp" style="color:${esc(r.color || 'var(--text)')}">${esc(r.character)}</span><span class="grow"><span class="t">${esc(r.name || '(chưa đặt tên)')}</span><br><span class="s">${(S.cardsOfRad.get(r.id) || []).length} thẻ</span></span></button>
     <button class="iconbtn" style="border:0;background:none" data-act="radMove" data-id="${r.id}" data-dir="-1" aria-label="Lên" ${i ? '' : 'disabled'}>↑</button>

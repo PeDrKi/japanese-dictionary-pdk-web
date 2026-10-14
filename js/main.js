@@ -2,7 +2,8 @@
 'use strict';
 
 const root = () => $('#root');
-const TABS = [['today', '今', 'Hôm nay'], ['cards', '札', 'Thư viện'], ['study', '習', 'Ôn tập'], ['decks', '組', 'Bộ thẻ'], ['more', '他', 'Khác']];
+const TABS = [['today', '今', 'Hôm nay'], ['cards', '札', 'Thư viện'], ['study', '習', 'Ôn tập'], ['decks', '組', 'Bộ thẻ'], ['grammar', '文', 'Ngữ pháp', 'desk'], ['radicals', '部', 'Bộ thủ', 'desk'], ['stats', '計', 'Thống kê', 'desk'], ['more', '他', 'Khác']];
+// Mục 'desk' chỉ hiện ở thanh bên của màn hình rộng (≥900px); trên điện thoại thanh dưới vẫn 5 mục, các mục này nằm trong Khác
 
 // ── Cấu hình máy chủ: hỏi 1 lần khi dùng lần đầu, sửa được trong Khác → Máy chủ ──
 function normUrl(u) { u = (u || '').trim().replace(/\/+$/, ''); return /^https?:\/\//i.test(u) || !u ? u : 'https://' + u; }
@@ -145,8 +146,8 @@ function screenAuth(msg = '') {
   if ($('#chg')) $('#chg').onclick = e => { e.preventDefault(); screenConfig(); };
 }
 function shell() {
-  root().innerHTML = `<div id="app"><main id="view"></main><nav id="tabs" aria-label="Điều hướng chính">${TABS.map(([k, g, l]) =>
-    `<button data-act="tab" data-tab="${k}" aria-label="${l}"><span class="g jp">${g}</span><span class="l">${l}</span>${k === 'today' ? '<span class="badge hidden" id="duebadge"></span>' : ''}</button>`).join('')}</nav></div>`;
+  root().innerHTML = `<div id="app"><main id="view"></main><nav id="tabs" aria-label="Điều hướng chính">${TABS.map(([k, g, l, x]) =>
+    `<button data-act="tab" data-tab="${k}" aria-label="${l}"${x ? ' class="desk"' : ''}><span class="g jp">${g}</span><span class="l">${l}</span>${k === 'today' ? '<span class="badge hidden" id="duebadge"></span>' : ''}</button>`).join('')}</nav></div>`;
 }
 function screenBlocked() {
   root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Tài khoản đang bị khóa</h1><p class="mute">Quản trị viên đã tạm khóa tài khoản này nên bạn chưa truy cập được dữ liệu. Dữ liệu của bạn vẫn được giữ nguyên. Hãy liên hệ quản trị viên để được mở khóa.</p>

@@ -163,3 +163,11 @@ npm run test:all    # cả hai
 ## v3.20 — Bộ thẻ gọn hơn, lọc theo danh mục
 - **Bộ thẻ:** ô tìm, chip lọc theo danh mục (có số bộ), sắp xếp (tên / cần ôn nhiều nhất / nhiều thẻ nhất / mới tạo), thu gọn từng danh mục (được nhớ), nút ▶ ôn nhanh các thẻ đến hạn của một bộ (dùng kiểu ôn đang chọn ở tab Ôn tập), liên kết "Xem thẻ ›" của danh mục.
 - **Thư viện:** Bộ lọc có thêm **Danh mục** (thẻ thuộc bất kỳ bộ nào trong danh mục), kết hợp được với các lọc khác; có liên kết "bỏ lọc".
+
+## v3.21 — Thanh bên 8 mục
+- Trên màn hình rộng (≥ 900px, máy tính), **Ngữ pháp, Bộ thủ, Thống kê** nằm ngay trên thanh bên, ngang hàng với Thư viện, Ôn tập, Bộ thẻ. Phím tắt: `1–8` (Khác là `5`, Ngữ pháp `6`, Bộ thủ `7`, Thống kê `8`).
+- Trên điện thoại thanh dưới vẫn 5 mục cho khỏi chật; ba mục này vẫn nằm trong **Khác**.
+
+## v3.22 — Chọn bộ thẻ gọn hơn (form thêm/sửa thẻ)
+- Form không còn bày ra mọi bộ thẻ thành hàng chip. Chỉ hiện các bộ **đã chọn** (bấm chip để bỏ), tối đa 4 bộ **dùng gần đây** (thẻ mới, chạm 1 lần để chọn) và nút **＋ Chọn bộ thẻ**.
+- Hộp chọn: có ô tìm, nhóm theo danh mục, ô tích; gõ tên rồi **Enter** để chọn bộ khớp đầu tiên; **Xong** để đóng.

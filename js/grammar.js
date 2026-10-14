@@ -15,7 +15,7 @@ function grammarBody() {
     : emptyBox('文', 'Chưa có mẫu ngữ pháp nào', 'Bấm nút + để lưu mẫu câu đầu tiên, vd 〜てから (sau khi…).')) }</div>`;
 }
 function viewGrammar() {
-  return `<div class="page">${pageTop('Ngữ pháp', true, S.grammarOk ? '<button class="btn primary" data-act="newGrammar">+ Thêm</button>' : '')}
+  return `<div class="page">${pageTop('Ngữ pháp', !isTopTab(), S.grammarOk ? '<button class="btn primary" data-act="newGrammar">+ Thêm</button>' : '')}
   <div class="search"><input class="input" id="gq" type="search" placeholder="Tìm mẫu câu, nghĩa, ví dụ…" value="${esc(GFILT.search)}" autocomplete="off" aria-label="Tìm ngữ pháp"></div>
   <div class="chips" style="margin-top:8px"><button class="chip ${GFILT.jlpt ? '' : 'on'}" data-act="gramLevel" data-v="">Tất cả</button>${JLPT.map(j => `<button class="chip ${GFILT.jlpt === j ? 'on' : ''}" data-act="gramLevel" data-v="${j}">${j}</button>`).join('')}</div>
   <div id="grambody">${grammarBody()}</div>

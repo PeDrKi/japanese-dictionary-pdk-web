@@ -267,3 +267,21 @@ nav#tabs button[aria-current="page"]::before { content: ''; position: absolute; 
 .deckgo { min-width: 44px; min-height: 44px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 15px; }
 .deckrow .deckgo { margin-right: 2px; }
 #dsort { min-height: 44px; }
+
+/* Ngữ pháp / Bộ thủ / Thống kê: mục của thanh bên (màn hình rộng); điện thoại giữ thanh dưới 5 mục */
+nav#tabs button.desk { display: none; }
+@media (min-width: 900px) {
+  nav#tabs button.desk { display: flex; }
+  nav#tabs { overflow-y: auto; scrollbar-width: none; }
+  nav#tabs button { height: 62px; }
+  .mobonly { display: none !important; }
+}
+
+/* Chọn bộ thẻ cho thẻ */
+.chip.dashed { border-style: dashed; background: transparent; }
+.deckpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.dp { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; }
+.dp.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); font-weight: 600; }
+.dp input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+.dp span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dp-list { max-height: 52vh; overflow-y: auto; margin-top: 8px; }

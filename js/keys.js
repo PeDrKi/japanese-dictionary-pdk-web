@@ -2,7 +2,7 @@
    Phím đơn chỉ chạy khi KHÔNG đang gõ trong ô nhập và KHÔNG có hộp thoại/màn hình ôn tập đang mở. */
 'use strict';
 const SHORTCUTS = [
-  ['Chung', [['1 – 5', 'Chuyển tab: Hôm nay, Thư viện, Ôn tập, Bộ thẻ, Khác'], ['/', 'Tìm trong Thư viện'], ['n', 'Thêm thẻ mới'], ['g', 'Mở trang Ngữ pháp'], ['r', 'Ôn các thẻ đến hạn hôm nay'], ['t', 'Đổi giao diện sáng / tối'], ['?', 'Mở bảng phím tắt này'], ['Esc', 'Đóng hộp thoại / xóa ô tìm kiếm']]],
+  ['Chung', [['1 – 8', 'Chuyển mục: Hôm nay, Thư viện, Ôn tập, Bộ thẻ, Khác (5), Ngữ pháp, Bộ thủ, Thống kê'], ['/', 'Tìm trong Thư viện'], ['n', 'Thêm thẻ mới'], ['g', 'Mở trang Ngữ pháp'], ['r', 'Ôn các thẻ đến hạn hôm nay'], ['t', 'Đổi giao diện sáng / tối'], ['?', 'Mở bảng phím tắt này'], ['Esc', 'Đóng hộp thoại / xóa ô tìm kiếm']]],
   ['Khi nhập liệu', [['Ctrl + Enter', 'Lưu form đang mở'], ['Enter (ở ô Chữ)', 'Tra Jisho — ↑ ↓ hoặc 1–8 để chọn, con trỏ tự nhảy sang ô nghĩa'], ['Ctrl + .', 'Dùng bản dịch tiếng Việt gợi ý cho ô nghĩa'], ['Ctrl + `', 'Bật / tắt gõ tiếng Nhật (A → あ → ア)'], ['nn', 'Gõ ん (khi đang bật gõ tiếng Nhật)']]],
   ['Khi ôn tập', [['Space / Enter', 'Lật thẻ'], ['← hoặc 1', 'Chưa nhớ'], ['→ hoặc 2', 'Đã nhớ'], ['1 – 4', 'Chọn đáp án (Quiz)'], ['Esc', 'Thoát phiên ôn tập']]],
 ];
@@ -15,9 +15,11 @@ function openShortcuts() {
 ACT.shortcuts = openShortcuts;
 
 (() => {
-  const TABKEYS = { 1: 'today', 2: 'cards', 3: 'study', 4: 'decks', 5: 'more' };
+  const TABKEYS = { 1: 'today', 2: 'cards', 3: 'study', 4: 'decks', 5: 'more', 6: 'grammar', 7: 'radicals', 8: 'stats' };
+  const wide = () => window.matchMedia && matchMedia('(min-width: 900px)').matches;   // có thanh bên → mở thẳng; điện thoại → qua Khác
   const isTyping = el => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   const overlay = () => (typeof layers !== 'undefined' && layers.length > 0) || !!document.querySelector('.full');
+  const openTabKey = tab => { if (['grammar', 'radicals', 'stats'].includes(tab) && !wide()) { goTab('more'); ACT.sub({ dataset: { name: tab } }); } else goTab(tab); };
   const goTab = tab => { if (!$('#view')) return false; ACT.tab({ dataset: { tab } }); return true; };
 
   document.addEventListener('keydown', e => {
@@ -45,11 +47,11 @@ ACT.shortcuts = openShortcuts;
 
     if (k === '?') { if (!overlay()) { e.preventDefault(); openShortcuts(); } return; }
     if (overlay() || !$('#view')) return;
-    if (TABKEYS[k] && !e.shiftKey) { e.preventDefault(); goTab(TABKEYS[k]); return; }
+    if (TABKEYS[k] && !e.shiftKey) { e.preventDefault(); openTabKey(TABKEYS[k]); return; }
     switch (k) {
       case '/': e.preventDefault(); goTab('cards'); { const q = $('#q'); if (q) { q.focus(); q.select(); } } break;
       case 'n': e.preventDefault(); ACT.newCard(); break;
-      case 'g': e.preventDefault(); goTab('more'); ACT.sub({ dataset: { name: 'grammar' } }); break;
+      case 'g': e.preventDefault(); openTabKey('grammar'); break;
       case 'r': e.preventDefault(); goTab('today'); { const b = $('[data-act=startDue]'); if (b) b.click(); else toast('Hôm nay chưa có thẻ nào đến hạn ôn'); } break;
       case 't': e.preventDefault(); themeCycle(); break;
     }

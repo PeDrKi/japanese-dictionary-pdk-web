@@ -6,9 +6,11 @@ const GSEED = { ...SEED, grammar_points: [
 ] };
 export default async ({ session }) => {
   await session(GSEED, async ({ page, check, db, errors }) => {
-    await page.waitForSelector('#view'); await page.click('#tabs [data-tab=more]');
-    check('Khác có mục Ngữ pháp, đếm đúng 2 mẫu', (await page.locator('[data-name=grammar]').innerText()).includes('2 mẫu'));
-    await page.click('[data-name=grammar]'); await page.waitForSelector('#gramlist');
+    await page.waitForSelector('#view');
+    const side = await page.locator('#tabs button:visible').allInnerTexts();
+    check('màn hình rộng: thanh bên có 8 mục, Ngữ pháp / Bộ thủ / Thống kê ngang hàng với Thư viện', side.length === 8 && ['Ngữ pháp', 'Bộ thủ', 'Thống kê'].every(t => side.join('|').includes(t)), side.join('|'));
+    await page.click('#tabs [data-tab=grammar]'); await page.waitForSelector('#gramlist');
+    check('Ngữ pháp là mục chính: sáng đúng mục thanh bên, không có nút ←', (await page.getAttribute('#tabs [data-tab=grammar]', 'aria-current')) === 'page' && (await page.locator('.topbar [data-act=back]').count()) === 0);
     check('trang Ngữ pháp liệt kê 2 mẫu', (await page.locator('#gramlist .item').count()) === 2);
     await page.fill('#gq', 'vừa'); await page.waitForTimeout(400);
     check('tìm theo nghĩa', (await page.locator('#gramlist .item').count()) === 1 && (await page.locator('#gramlist').innerText()).includes('ながら'));
@@ -36,7 +38,7 @@ export default async ({ session }) => {
     await page.click('[data-act=delGrammar]'); await page.click('#cf-ok'); await page.waitForTimeout(500);
     check('xóa mẫu', (await db()).grammar_points.length === 2 && (await page.locator('#gramlist .item').count()) === 2);
     // phím tắt g
-    await page.click('[data-act=back]'); await page.click('#tabs [data-tab=today]');
+    await page.click('#tabs [data-tab=today]');
     await page.keyboard.press('g'); await page.waitForSelector('#gramlist');
     check('phím g mở trang Ngữ pháp', true);
     check('không có lỗi JS', errors.length === 0, errors.join('|'));
@@ -46,8 +48,33 @@ export default async ({ session }) => {
   await session({ ...SEED, oldSchema: true }, async ({ page, check, errors }) => {
     await page.waitForSelector('#view');
     check('schema cũ: app vẫn vào được', (await page.locator('#tabs').count()) === 1);
-    await page.click('#tabs [data-tab=more]'); await page.click('[data-name=grammar]'); await page.waitForSelector('.empty');
+    await page.click('#tabs [data-tab=grammar]'); await page.waitForSelector('.empty');
     check('báo cần chạy schema.sql bản 7, không có nút thêm', (await page.locator('.empty').innerText()).includes('schema.sql') && (await page.locator('.fab').count()) === 0);
     check('không có lỗi JS', errors.length === 0, errors.join('|'));
   }, { name: 'grammar-old', });
+
+  // Thanh bên: Bộ thủ + Thống kê là mục chính; điện thoại giữ 5 mục dưới và vào 3 mục này qua Khác
+  await session(GSEED, async ({ page, check, errors }) => {
+    await page.waitForSelector('#view');
+    if (process.env.SHOT2) await page.screenshot({ path: process.env.SHOT2 });
+    await page.click('#tabs [data-tab=radicals]'); await page.waitForSelector('.empty, #view .list');
+    check('Bộ thủ mở từ thanh bên, không có nút ←', (await page.locator('.topbar h1').innerText()) === 'Bộ thủ' && (await page.locator('.topbar [data-act=back]').count()) === 0);
+    await page.click('#tabs [data-tab=stats]');
+    check('Thống kê mở từ thanh bên', (await page.locator('.topbar h1').innerText()) === 'Thống kê' && (await page.getAttribute('#tabs [data-tab=stats]', 'aria-current')) === 'page');
+    await page.click('#tabs [data-tab=more]');
+    check('Khác trên màn hình rộng không lặp lại 3 mục đã ra thanh bên', (await page.locator('.item[data-name=grammar]:visible, .item[data-name=stats]:visible, .item[data-name=radicals]:visible').count()) === 0);
+    await page.click('#tabs [data-tab=today]'); await page.keyboard.press('8');
+    check('phím 8 → Thống kê, phím 6 → Ngữ pháp', (await page.locator('.topbar h1').innerText()) === 'Thống kê' && (await (async () => { await page.keyboard.press('6'); return page.locator('.topbar h1').innerText(); })()) === 'Ngữ pháp');
+    check('không có lỗi JS', errors.length === 0, errors.join('|'));
+  }, { name: 'sidebar' });
+  await session(GSEED, async ({ page, check, errors }) => {
+    await page.waitForSelector('#view');
+    check('điện thoại: thanh dưới vẫn 5 mục', (await page.locator('#tabs button:visible').count()) === 5);
+    await page.click('#tabs [data-tab=more]');
+    check('điện thoại: Khác có đủ Ngữ pháp, Bộ thủ, Thống kê', (await page.locator('.item[data-name=grammar]:visible, .item[data-name=stats]:visible, .item[data-name=radicals]:visible').count()) === 3);
+    await page.click('.item[data-name=grammar]'); await page.waitForSelector('#gramlist');
+    check('điện thoại: Ngữ pháp có nút ← và quay lại được', (await page.locator('.topbar [data-act=back]').count()) === 1);
+    await page.click('.topbar [data-act=back]'); await page.waitForSelector('.item[data-name=stats]');
+    check('không có lỗi JS', errors.length === 0, errors.join('|'));
+  }, { name: 'sidebar-mobile', viewport: { width: 390, height: 800 } });
 };
