@@ -26,6 +26,8 @@ async function session(seed, fn, opts = {}) {
   const context = await browser.newContext({ serviceWorkers: 'block', viewport: opts.viewport || { width: 1280, height: 800 } });
   await context.route('**/vendor/supabase.js', r => r.fulfill({ contentType: 'text/javascript', body: `window.__SEED = ${JSON.stringify(seed || {})};\n` + FAKE }));
   await context.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());                       // test không cần mạng
+  // test không phụ thuộc cấu hình thật trong js/config.js: mặc định phục vụ bản trống (opts.baked để thử chế độ đã nhúng sẵn)
+  if (!opts.baked) await context.route('**/js/config.js', r => r.fulfill({ contentType: 'text/javascript', body: 'window.JP_CONFIG = { url: "", key: "" };' }));
   await context.route('**/api/jisho*', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify(opts.jisho || { data: [] }) }));
   await context.route('https://api.mymemory.translated.net/**', r => r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(opts.mymemory || { responseStatus: 403, responseData: { translatedText: '' } }) }));
   await context.route(/^https?:\/\/fake\.supabase\.test\/auth\/v1\/settings/, r => r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' }, status: r.request().headers()['apikey'] === 'anon' ? 200 : 401, body: '{}' }));
