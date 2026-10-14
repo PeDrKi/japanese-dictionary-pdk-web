@@ -65,3 +65,27 @@ test('Nhãn từ loại: viết đủ, không viết tắt khó hiểu', () => {
 test('Hàng đợi offline: lượt ôn được lưu và gom lại khi mất mạng', () => {
   assert.equal(typeof app.get('flushQueue'), 'function');
 });
+
+// ── Ngữ pháp ──
+test('parseExamples: tách "JP | VI", bỏ dòng trống, dòng không có | vẫn giữ', () => {
+  const r = JSON.parse(JSON.stringify(app.run('parseExamples')('食べてから、寝ます。 | Ăn rồi ngủ.\n\n  出かけます。  \r\nA | B | C')));
+  assert.deepEqual(r, [{ jp: '食べてから、寝ます。', vi: 'Ăn rồi ngủ.' }, { jp: '出かけます。', vi: '' }, { jp: 'A', vi: 'B | C' }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(app.run('parseExamples')(null))), []);
+});
+test('filterGrammar: theo JLPT và từ khóa (mọi từ phải khớp)', () => {
+  S.grammar_points = [{ id: 1, title: '〜てから', meaning_vi: 'Sau khi', jlpt_level: 'N5', examples: '食べてから' }, { id: 2, title: '〜ながら', meaning_vi: 'Vừa… vừa', jlpt_level: 'N4' }];
+  const g = o => Array.from(app.run('filterGrammar')(o), x => x.id);
+  assert.deepEqual(g({}), [1, 2]); assert.deepEqual(g({ jlpt: 'N4' }), [2]);
+  assert.deepEqual(g({ search: 'sau khi' }), [1]); assert.deepEqual(g({ search: 'sau vừa' }), []);
+  assert.deepEqual(g({ search: '食べて' }), [1]);
+});
+
+test('filterCards: theo danh mục (gộp thẻ của mọi bộ trong danh mục; _none = bộ chưa phân loại)', () => {
+  S.cats = [{ id: 'k1', name: 'GT' }];
+  S.decks = [{ id: 'd1', name: 'A', category_id: 'k1', deleted_at: null }, { id: 'd2', name: 'B', category_id: null, deleted_at: null }, { id: 'd3', name: 'C', category_id: 'k1', deleted_at: '2026-01-01' }];
+  S.deckCards = [{ deck_id: 'd1', card_id: '食べる', deleted_at: null }, { deck_id: 'd2', card_id: '水', deleted_at: null }, { deck_id: 'd3', card_id: '日', deleted_at: null }];
+  app.run('reindex()');
+  assert.deepEqual(f({ cat: 'k1' }), ['食べる']);          // bộ đã xóa (d3) không tính
+  assert.deepEqual(f({ cat: '_none' }), ['水']);
+  assert.deepEqual(f({ cat: 'k1', jlpt: 'N4' }), []);      // kết hợp được với bộ lọc khác
+});

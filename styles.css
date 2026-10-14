@@ -252,3 +252,18 @@ nav#tabs button[aria-current="page"]::before { content: ''; position: absolute; 
 .item .t { font-size: 16.5px; }
 .item .s { font-size: 13.5px; }
 .page:has(+ .fab) { padding-bottom: 72px; }   /* nút + không che thẻ cuối danh sách */
+
+/* Phân trang danh sách thẻ */
+.pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; }
+.pager .btn { min-width: 44px; min-height: 44px; padding: 0 12px; }
+.pager .pg { flex: 1; text-align: center; font-size: 14px; color: var(--mute, inherit); white-space: nowrap; }
+.pager .btn[disabled] { opacity: .35; }
+
+/* Bộ thẻ: ô biểu tượng, tiêu đề danh mục, nút ôn nhanh */
+.deckicon { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 12px; font-size: 24px; }
+.cathead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 16px 2px 6px; }
+.catfold { background: none; border: 0; padding: 8px 2px; min-height: 44px; display: flex; align-items: center; gap: 6px; text-align: left; color: var(--text); font: inherit; }
+.catgroup:first-child .cathead { margin-top: 8px; }
+.deckgo { min-width: 44px; min-height: 44px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 15px; }
+.deckrow .deckgo { margin-right: 2px; }
+#dsort { min-height: 44px; }

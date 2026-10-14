@@ -54,6 +54,14 @@ ACT.cfJisho = async el => {
     const s = openSheet(`<h2>Kết quả Jisho</h2><div class="list">${res.map((r, i) => `<button class="item" data-act="jishoPick" data-i="${i}"><span class="big jp ${[...r.word].length > 3 ? 'long' : ''}">${esc(r.word)}</span>
       <span class="grow"><span class="t jp">${esc(r.reading)}</span><br><span class="s">${esc(r.en)}</span></span>${r.jlpt ? `<span class="tag ${r.jlpt.toLowerCase()}">${r.jlpt}</span>` : ''}</button>`).join('')}</div>`);
     window._jr = { res, form, s };
+    const items = [...s.el.querySelectorAll('[data-act=jishoPick]')];
+    setTimeout(() => items[0] && items[0].focus(), 80);
+    s.el.addEventListener('keydown', e => {   // ↑ ↓ chọn, Enter chốt, 1–8 chọn nhanh
+      const i = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(items.length - 1, i + 1)].focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); items[Math.max(0, i - 1)].focus(); }
+      else if (/^[1-8]$/.test(e.key) && items[+e.key - 1] && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); items[+e.key - 1].click(); }
+    });
   } catch (e) { toast('Không tra được Jisho: ' + e.message + ' (tính năng này cần chạy trên Vercel)', true); }
   finally { el.disabled = false; el.textContent = '🔍 Tra Jisho'; }
 };
@@ -62,15 +70,38 @@ ACT.jishoPick = async el => {
   form.dataset.type = type; syncFormType(form); const set = (n, v) => { if (form.elements[n] && v) form.elements[n].value = v; };
   set('character', r.word); set('meaning_en', r.en); set('jlpt_level', r.jlpt); set('pos', r.pos);
   if (type === 'kanji') set('reading_kun', r.reading); else set('reading_kana', r.reading);
-  set('romaji', kanaToRomaji(r.reading)); s.close();
-  const box = $('#cf-suggest', form); if (r.en && !form.elements.meaning_vi.value) {
+  set('romaji', kanaToRomaji(r.reading)); s.close(); updateAdvSummary(form);
+  focusNextField(form);
+  const box = $('#cf-suggest', form); form._viSuggest = ''; if (r.en && !form.elements.meaning_vi.value) {
     box.textContent = 'Đang gợi ý nghĩa tiếng Việt…';
     try {
       const vi = await suggestVi(r.en.split(',')[0]);
-      if (vi) { box.innerHTML = `Gợi ý nghĩa VN: <b>${esc(vi)}</b> <button type="button" class="btn small" data-act="useSuggest" data-v="${esc(vi)}">Dùng</button> <span class="mute">(dịch máy, hãy kiểm tra lại)</span>`; } else box.textContent = '';
+      if (vi) { form._viSuggest = vi; box.innerHTML = `Gợi ý nghĩa VN: <b>${esc(vi)}</b> <button type="button" class="btn small" data-act="useSuggest" data-v="${esc(vi)}">Dùng</button> <span class="mute">(dịch máy · Ctrl + . để dùng)</span>`; } else box.textContent = '';
     } catch { box.textContent = ''; }
   }
 };
+// Sau khi chọn từ Jisho: đưa con trỏ tới ô cần nhập kế tiếp (nghĩa tiếng Việt nếu còn trống), Tab để đi tiếp
+function focusNextField(form) {
+  const mv = form.elements.meaning_vi, ch = form.elements.character;
+  const target = mv && !mv.value.trim() ? mv : ch && !ch.value.trim() ? ch : (form.querySelector('[type=submit]') || mv);
+  setTimeout(() => { if (target && target.focus) { target.focus({ preventScroll: false }); if (target.select) target.select(); } }, 80);
+}
+// Ctrl + . : dùng bản dịch tiếng Việt gợi ý cho ô nghĩa (lấy sẵn nếu đã có, nếu chưa thì tra từ nghĩa tiếng Anh)
+async function useViSuggestion(form) {
+  const mv = form.elements.meaning_vi, box = $('#cf-suggest', form); if (!mv) return;
+  let vi = form._viSuggest;
+  if (!vi) {
+    const en = (form.elements.meaning_en.value || '').split(',')[0].trim();
+    if (!en) { toast('Chưa có nghĩa tiếng Anh để dịch — hãy tra Jisho trước', true); return; }
+    if (box) box.textContent = 'Đang dịch…';
+    try { vi = await suggestVi(en); } catch { vi = ''; }
+    if (!vi) { if (box) box.textContent = ''; toast('Chưa gợi ý được nghĩa tiếng Việt — hãy tự nhập', true); return; }
+    form._viSuggest = vi;
+  }
+  mv.value = vi; form._auto && form._auto.add('meaning_vi'); mv.classList.add('auto'); $('#w-meaning_vi', form)?.classList.remove('err');
+  if (box) box.innerHTML = 'Đã dùng bản dịch máy — <b>hãy kiểm tra lại</b>, rồi Ctrl + Enter để lưu.';
+  mv.focus(); mv.select();
+}
 ACT.useSuggest = el => { const f = el.closest('form'); f.elements.meaning_vi.value = el.dataset.v; el.parentElement.textContent = ''; };
 
 // Dòng tóm tắt của mục "Tùy chọn thêm": cho thấy từ loại / JLPT đã được điền để khỏi phải mở ra xem
@@ -85,6 +116,9 @@ function wireAutofill(form) {
   const box = $('#cf-suggest', form), mv = $('#w-meaning_vi', form);
   const set = (n, v) => { const el = form.elements[n]; if (!el || !v) return false; if (el.value && !form._auto.has(n)) return false; el.value = v; form._auto.add(n); return true; };
   form.addEventListener('input', e => { const n = e.target.name; if (n && n !== 'character') { form._auto.delete(n); if (n === 'meaning_vi') mv.classList.remove('auto'); } });
+  form.elements.character.addEventListener('keydown', e => {   // Enter trong ô chữ: mở danh sách Jisho thay vì lưu form
+    if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.isComposing && form.elements.character.value.trim()) { e.preventDefault(); const b = $('[data-act=cfJisho]', form); if (b && !b.disabled) b.click(); }
+  });
   form.elements.character.addEventListener('input', () => {
     clearTimeout(timer); const kw = form.elements.character.value.trim(), my = ++token;
     if (!kw || /[A-Za-z]/.test(kw)) { box.textContent = ''; return; }   // đang gõ romaji dở dang → chờ
@@ -103,6 +137,7 @@ function wireAutofill(form) {
         if (r.en && (!form.elements.meaning_vi.value || form._auto.has('meaning_vi'))) {
           let vi = ''; try { vi = await suggestVi(r.en.split(',')[0]); } catch { /* bỏ qua */ }
           if (my !== token) return;
+          if (vi) form._viSuggest = vi;
           if (vi && set('meaning_vi', vi)) { mv.classList.add('auto'); box.innerHTML = 'Đã điền tự động từ Jisho. <b>Nghĩa tiếng Việt là dịch máy</b> — hãy kiểm tra lại rồi bấm Lưu.'; }
           else if (!form.elements.meaning_vi.value) box.textContent = 'Đã điền cách đọc từ Jisho. Chưa gợi ý được nghĩa tiếng Việt — hãy tự nhập.';
         }

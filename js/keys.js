@@ -2,8 +2,8 @@
    Phím đơn chỉ chạy khi KHÔNG đang gõ trong ô nhập và KHÔNG có hộp thoại/màn hình ôn tập đang mở. */
 'use strict';
 const SHORTCUTS = [
-  ['Chung', [['1 – 5', 'Chuyển tab: Hôm nay, Thư viện, Ôn tập, Bộ thẻ, Khác'], ['/', 'Tìm trong Thư viện'], ['n', 'Thêm thẻ mới'], ['r', 'Ôn các thẻ đến hạn hôm nay'], ['t', 'Đổi giao diện sáng / tối'], ['?', 'Mở bảng phím tắt này'], ['Esc', 'Đóng hộp thoại / xóa ô tìm kiếm']]],
-  ['Khi nhập liệu', [['Ctrl + Enter', 'Lưu form đang mở'], ['Ctrl + `', 'Bật / tắt gõ tiếng Nhật (A → あ → ア)'], ['nn', 'Gõ ん (khi đang bật gõ tiếng Nhật)']]],
+  ['Chung', [['1 – 5', 'Chuyển tab: Hôm nay, Thư viện, Ôn tập, Bộ thẻ, Khác'], ['/', 'Tìm trong Thư viện'], ['n', 'Thêm thẻ mới'], ['g', 'Mở trang Ngữ pháp'], ['r', 'Ôn các thẻ đến hạn hôm nay'], ['t', 'Đổi giao diện sáng / tối'], ['?', 'Mở bảng phím tắt này'], ['Esc', 'Đóng hộp thoại / xóa ô tìm kiếm']]],
+  ['Khi nhập liệu', [['Ctrl + Enter', 'Lưu form đang mở'], ['Enter (ở ô Chữ)', 'Tra Jisho — ↑ ↓ hoặc 1–8 để chọn, con trỏ tự nhảy sang ô nghĩa'], ['Ctrl + .', 'Dùng bản dịch tiếng Việt gợi ý cho ô nghĩa'], ['Ctrl + `', 'Bật / tắt gõ tiếng Nhật (A → あ → ア)'], ['nn', 'Gõ ん (khi đang bật gõ tiếng Nhật)']]],
   ['Khi ôn tập', [['Space / Enter', 'Lật thẻ'], ['← hoặc 1', 'Chưa nhớ'], ['→ hoặc 2', 'Đã nhớ'], ['1 – 4', 'Chọn đáp án (Quiz)'], ['Esc', 'Thoát phiên ôn tập']]],
 ];
 function openShortcuts() {
@@ -30,6 +30,12 @@ ACT.shortcuts = openShortcuts;
       if (f && f.requestSubmit) { e.preventDefault(); f.requestSubmit(); }
       return;
     }
+    // Ctrl + . : dùng bản dịch tiếng Việt gợi ý (trong form thêm/sửa thẻ)
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && (k === '.' || e.code === 'Period')) {
+      const f = t && t.closest && t.closest('#cf');
+      if (f) { e.preventDefault(); useViSuggestion(f); }
+      return;
+    }
     // Esc trong ô tìm kiếm: xóa & rời ô
     if (k === 'Escape' && t && t.id === 'q') {
       if (t.value) { t.value = ''; t.dispatchEvent(new Event('input', { bubbles: true })); } else t.blur();
@@ -43,6 +49,7 @@ ACT.shortcuts = openShortcuts;
     switch (k) {
       case '/': e.preventDefault(); goTab('cards'); { const q = $('#q'); if (q) { q.focus(); q.select(); } } break;
       case 'n': e.preventDefault(); ACT.newCard(); break;
+      case 'g': e.preventDefault(); goTab('more'); ACT.sub({ dataset: { name: 'grammar' } }); break;
       case 'r': e.preventDefault(); goTab('today'); { const b = $('[data-act=startDue]'); if (b) b.click(); else toast('Hôm nay chưa có thẻ nào đến hạn ôn'); } break;
       case 't': e.preventDefault(); themeCycle(); break;
     }

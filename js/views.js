@@ -5,7 +5,7 @@ function render() {
   const v = $('#view'); if (!v) return;
   const sub = NAV.sub;
   if (sub) {
-    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
+    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
   } else {
     v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, more: viewMore }[NAV.tab]();
   }
@@ -67,11 +67,11 @@ function viewToday() {
 ACT.startDue = el => startStudy({ mode: el.dataset.mode, due: true, limit: SC.limit, ask: SC.ask, typing: SC.typing, split: SC.split });
 
 // ═══ THẺ ═══════════════════════════════════════════════════════════════════
-function currentList() { return filterCards({ search: FILT.search, type: FILT.type, jlpt: FILT.jlpt, pos: FILT.pos, status: FILT.status, fav: FILT.fav, due: FILT.due, deck: FILT.deck }); }
+function currentList() { return filterCards({ search: FILT.search, type: FILT.type, jlpt: FILT.jlpt, pos: FILT.pos, status: FILT.status, fav: FILT.fav, due: FILT.due, deck: FILT.deck, cat: FILT.cat }); }
 function viewCards() {
-  const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck].filter(Boolean).length;
-  const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck);
-  return `<div class="page">${pageTop(deck ? `${deck.icon || ''} ${deck.name}` : 'Thư viện', false,
+  const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
+  const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck), cat = FILT.cat && catName(FILT.cat);
+  return `<div class="page">${pageTop(deck ? `${deck.icon || ''} ${deck.name}` : cat || 'Thư viện', false,
     `<button class="btn tool${FILT.select ? ' on' : ''}" data-act="toggleSelect" aria-pressed="${FILT.select}">${FILT.select ? '✕ Xong' : '☑ Chọn'}</button>
      <button class="btn tool${active ? ' on' : ''}" data-act="openFilter">⚙ Lọc${active ? ` <b class="cnt">${active}</b>` : ''}</button>`)}
   <div class="search"><input class="input" id="q" type="search" placeholder="Tìm chữ, nghĩa, romaji, cách đọc…" value="${esc(FILT.search)}" autocomplete="off" aria-label="Tìm thẻ"></div>
@@ -88,23 +88,34 @@ function selectBar() {
     <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
 }
 function cardsBody() {
-  const list = currentList(), shown = list.slice(0, FILT.shown);
-  const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck].filter(Boolean).length;
+  const list = currentList(), pages = pageMode() === 'pages';
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if (FILT.page > totalPages - 1) FILT.page = totalPages - 1;
+  const shown = pages ? list.slice(FILT.page * PAGE_SIZE, (FILT.page + 1) * PAGE_SIZE) : list.slice(0, FILT.shown);
+  const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck);
-  return `<div class="mute small countrow"><span>${list.length} thẻ${deck ? ` · <a href="#" data-act="clearDeck" style="color:var(--accent)">bỏ lọc bộ thẻ</a>` : ''}</span>
+  const pager = () => { const p = FILT.page, b = (n, label, dis, aria) => `<button class="btn tool" data-act="cardsPage" data-p="${n}" aria-label="${aria}" ${dis ? 'disabled' : ''}>${label}</button>`;
+    return `<nav class="pager" aria-label="Phân trang">${b(0, '«', p === 0, 'Trang đầu')}${b(p - 1, '‹', p === 0, 'Trang trước')}<span class="pg" aria-live="polite">Trang ${p + 1} / ${totalPages}</span>${b(p + 1, '›', p >= totalPages - 1, 'Trang sau')}${b(totalPages - 1, '»', p >= totalPages - 1, 'Trang cuối')}</nav>`; };
+  const more = list.length > shown.length;
+  return `<div class="mute small countrow"><span>${list.length} thẻ${deck ? ` · <a href="#" data-act="clearDeck" style="color:var(--accent)">bỏ lọc bộ thẻ</a>` : ''}${FILT.cat ? ` · danh mục ${esc(catName(FILT.cat) || '')} · <a href="#" data-act="clearCat" style="color:var(--accent)">bỏ lọc</a>` : ''}</span>
   <span class="legend" aria-label="Ý nghĩa chấm màu">${STATUSES.map(k => `<span class="row" style="gap:4px"><span class="st ${k}"></span>${STATUS_LABEL[k]}</span>`).join('')}</span></div>
   <div class="list" id="cardlist">${shown.map(c => cardRow(c)).join('') || emptyBox('空', FILT.search || active ? 'Không có thẻ khớp bộ lọc' : 'Chưa có thẻ nào', 'Bấm nút + để thêm thẻ đầu tiên.')}</div>
-  ${list.length > shown.length ? `<button class="btn block" style="margin-top:12px" data-act="moreCards">Xem thêm (${list.length - shown.length})</button>` : ''}`;
+  ${pages ? (totalPages > 1 ? pager() : '') : (more ? `<button class="btn block" style="margin-top:12px" data-act="moreCards">Xem thêm (${list.length - shown.length})</button>` : '')}
+  ${list.length > PAGE_SIZE ? `<p class="small mute" style="text-align:center;margin:10px 0 0"><button type="button" class="linkbtn" data-act="pageMode">${pages ? 'Chuyển sang kiểu "Xem thêm"' : 'Chuyển sang phân trang'}</button></p>` : ''}`;
 }
 // Gõ tìm kiếm chỉ cập nhật phần danh sách — KHÔNG dựng lại ô nhập, để bộ gõ tiếng Nhật (IME) không bị ngắt giữa chừng
 let qTimer;
 document.addEventListener('input', e => {
   if (e.target.id !== 'q') return; clearTimeout(qTimer);
-  qTimer = setTimeout(() => { FILT.search = e.target.value; FILT.shown = 50; const b = $('#cardsbody'); if (b) b.innerHTML = cardsBody(); }, 200);
+  qTimer = setTimeout(() => { FILT.search = e.target.value; resetPaging(); const b = $('#cardsbody'); if (b) b.innerHTML = cardsBody(); }, 200);
 });
-ACT.setType = el => { FILT.type = el.dataset.v; FILT.shown = 50; render(); };
+ACT.setType = el => { FILT.type = el.dataset.v; resetPaging(); render(); };
+ACT.cardsPage = el => { FILT.page = Math.max(0, +el.dataset.p || 0); const b = $('#cardsbody'); if (b) b.innerHTML = cardsBody(); const l = $('#cardlist'); if (l) l.scrollIntoView({ block: 'start' }); };
+ACT.pageMode = () => { LS.set('jp_pagemode', pageMode() === 'pages' ? 'more' : 'pages'); resetPaging(); const b = $('#cardsbody'); if (b) b.innerHTML = cardsBody(); };
 ACT.moreCards = () => { FILT.shown += 100; const y = $('#view').scrollTop; render(); $('#view').scrollTop = y; };
 ACT.clearDeck = () => { FILT.deck = ''; render(); };
+ACT.clearCat = () => { FILT.cat = ''; resetPaging(); render(); };
+function catName(id) { if (id === '_none') return 'Chưa phân loại'; const c = S.cats.find(x => x.id === id); return c ? `${c.icon || ''} ${c.name}`.trim() : ''; }
 ACT.toggleSelect = () => { FILT.select = !FILT.select; FILT.sel.clear(); render(); };
 ACT.selAll = () => { const l = currentList(); if (FILT.sel.size === l.length) FILT.sel.clear(); else l.forEach(c => FILT.sel.add(c.id)); render(); };
 ACT.openCard = el => {
@@ -119,14 +130,15 @@ ACT.openFilter = () => {
     <div class="field"><span>Từ loại</span><div class="chips" style="flex-wrap:wrap">${chip('pos', '', 'Tất cả')}${POS.map(j => chip('pos', j, POS_LABEL[j])).join('')}</div></div>
     <div class="field"><span>Trạng thái</span><div class="chips" style="flex-wrap:wrap">${chip('status', '', 'Tất cả')}${STATUSES.map(j => chip('status', j, STATUS_LABEL[j])).join('')}</div></div>
     <label class="field"><span>Bộ thẻ</span><select id="f-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${FILT.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>
+    ${S.cats.length ? `<label class="field"><span>Danh mục</span><select id="f-cat"><option value="">Tất cả</option>${S.cats.map(c => `<option value="${c.id}" ${FILT.cat === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}<option value="_none" ${FILT.cat === '_none' ? 'selected' : ''}>Chưa phân loại</option></select></label>` : ''}
     <div class="row wrap" style="margin-bottom:14px"><button class="chip ${FILT.fav ? 'on' : ''}" data-act="ftoggle" data-k="fav">★ Yêu thích</button><button class="chip ${FILT.due ? 'on' : ''}" data-act="ftoggle" data-k="due">Đến hạn ôn</button></div>
     <div class="row"><button class="btn grow" data-act="fclear">Xóa lọc</button><button class="btn primary grow" data-act="fapply">Áp dụng</button></div>`);
   window._fs = s;
 };
 ACT.fset = el => { FILT[el.dataset.k] = el.dataset.v; $$('[data-act=fset]', _fs.el).filter(b => b.dataset.k === el.dataset.k).forEach(b => b.classList.toggle('on', b === el)); };
 ACT.ftoggle = el => { FILT[el.dataset.k] = !FILT[el.dataset.k]; el.classList.toggle('on', FILT[el.dataset.k]); };
-ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', shown: 50 }); _fs.close(); render(); };
-ACT.fapply = () => { FILT.deck = $('#f-deck', _fs.el).value; FILT.shown = 50; _fs.close(); NAV.tab = 'cards'; render(); };
+ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', cat: '', shown: PAGE_SIZE, page: 0 }); _fs.close(); render(); };
+ACT.fapply = () => { FILT.deck = $('#f-deck', _fs.el).value; FILT.cat = $('#f-cat', _fs.el)?.value || ''; resetPaging(); _fs.close(); NAV.tab = 'cards'; render(); };
 
 // ── Thao tác hàng loạt ──
 ACT.bulkStatus = () => {
@@ -267,23 +279,73 @@ ACT.cfRomaji = el => {
 ACT.cfKana = el => openKanaPad(el.closest('form'));
 
 // ═══ BỘ THẺ ════════════════════════════════════════════════════════════════
-function viewDecks() {
-  const ds = liveDecks(), cats = S.cats, none = ds.filter(d => !d.category_id || !cats.some(c => c.id === d.category_id));
-  const deckRow = d => {
-    const ids = S.cardsOfDeck.get(d.id) || [], known = ids.filter(i => S.byId.get(i)?.status === 'known').length, due = ids.filter(i => { const c = S.byId.get(i); return c && alive(c) && isDue(c); }).length;
-    return `<div class="item" style="padding:0"><button class="row grow" style="background:none;border:0;padding:12px;text-align:left;min-width:0" data-act="openDeck" data-id="${d.id}">
-      <span style="font-size:26px;width:36px;text-align:center">${esc(d.icon || '📁')}</span>
-      <span class="grow"><span class="t" style="display:block">${esc(d.name)}</span><span class="s" style="display:block">${ids.length} thẻ${due ? ` · ${due} cần ôn` : ''}</span>
-        <span class="meter" style="margin-top:6px;height:5px"><i style="width:${ids.length ? known / ids.length * 100 : 0}%;background:${esc(d.color || '#4A90D9')}"></i></span></span></button>
+// ── Bộ thẻ: tìm, lọc theo danh mục, sắp xếp, thu gọn từng danh mục, ôn nhanh từng bộ ──
+const DFILT = { search: '', cat: '', sort: LS.get('jp_decksort', 'name') };
+const DECK_SORTS = [['name', 'Tên A→Z'], ['due', 'Cần ôn nhiều nhất'], ['size', 'Nhiều thẻ nhất'], ['new', 'Mới tạo gần đây']];
+const catCollapsed = () => new Set(LS.get('jp_catcollapsed', []));
+function deckStats(d) {
+  const ids = (S.cardsOfDeck.get(d.id) || []).filter(i => { const c = S.byId.get(i); return c && alive(c); });
+  const known = ids.filter(i => S.byId.get(i).status === 'known').length, due = ids.filter(i => isDue(S.byId.get(i))).length;
+  return { n: ids.length, known, due };
+}
+function deckRow(d, st) {
+  const col = d.color || '#4A90D9', pct = st.n ? Math.round(st.known / st.n * 100) : 0;
+  return `<div class="item deckrow" style="padding:0"><button class="row grow" style="background:none;border:0;padding:12px;text-align:left;min-width:0;gap:12px" data-act="openDeck" data-id="${d.id}">
+      <span class="deckicon" style="background:color-mix(in srgb, ${esc(col)} 22%, var(--surface2))">${esc(d.icon || '📁')}</span>
+      <span class="grow" style="min-width:0"><span class="t" style="display:block">${esc(d.name)}</span>
+        <span class="s" style="display:block">${st.n} thẻ${pct ? ` · thuộc ${pct}%` : ''}${st.due ? ` · <b style="color:var(--accent)">${st.due} cần ôn</b>` : ''}</span>
+        ${d.description ? `<span class="s" style="display:block;opacity:.8">${esc(d.description)}</span>` : ''}
+        <span class="meter" style="margin-top:6px;height:5px"><i style="width:${pct}%;background:${esc(col)}"></i></span></span></button>
+      ${st.due ? `<button class="iconbtn deckgo" style="border:0" data-act="studyDeck" data-id="${d.id}" aria-label="Ôn ${st.due} thẻ đến hạn của bộ ${esc(d.name)}" title="Ôn ${st.due} thẻ đến hạn">▶</button>` : ''}
       <button class="iconbtn" style="border:0;background:none" data-act="editDeck" data-id="${d.id}" aria-label="Sửa bộ thẻ">⋯</button></div>`;
-  };
-  const group = (title, list) => list.length ? `<div class="mute small" style="margin:14px 2px 6px">${title}</div><div class="list">${list.map(deckRow).join('')}</div>` : '';
-  return `<div class="page">${pageTop('Bộ thẻ', false, `<button class="iconbtn" data-act="manageCats" aria-label="Danh mục">🗂</button>`)}
-  ${ds.length ? cats.map(c => group(`${esc(c.icon || '')} ${esc(c.name)}`, ds.filter(d => d.category_id === c.id))).join('') + group(cats.length ? 'Chưa phân loại' : '', none)
-    : emptyBox('組', 'Chưa có bộ thẻ nào', 'Gom thẻ theo sách, bài học hoặc chủ đề để ôn gọn hơn.')}
+}
+function decksBody() {
+  const all = liveDecks(), cats = S.cats, catIds = new Set(cats.map(c => c.id));
+  const inCat = d => (d.category_id && catIds.has(d.category_id)) ? d.category_id : '_none';
+  const toks = DFILT.search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const stat = new Map(all.map(d => [d.id, deckStats(d)]));
+  const ord = { name: (a, b) => (a.name || '').localeCompare(b.name || '', 'vi'), due: (a, b) => stat.get(b.id).due - stat.get(a.id).due || (a.name || '').localeCompare(b.name || '', 'vi'),
+    size: (a, b) => stat.get(b.id).n - stat.get(a.id).n, new: (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) }[DFILT.sort] || (() => 0);
+  const match = d => (!DFILT.cat || inCat(d) === DFILT.cat) && (!toks.length || toks.every(t => ((d.name || '') + ' ' + (d.description || '')).toLowerCase().includes(t)));
+  const shown = all.filter(match).sort(ord);
+  if (!all.length) return emptyBox('組', 'Chưa có bộ thẻ nào', 'Gom thẻ theo sách, bài học hoặc chủ đề để ôn gọn hơn. Bấm + để tạo bộ đầu tiên.');
+  if (!shown.length) return emptyBox('組', 'Không có bộ thẻ khớp', 'Thử đổi danh mục hoặc từ khóa. <button class="linkbtn" data-act="decksClear">Xóa lọc</button>');
+  const groups = [...cats.map(c => ({ id: c.id, title: `${esc(c.icon || '🗂️')} ${esc(c.name)}` })), { id: '_none', title: cats.length ? 'Chưa phân loại' : '' }];
+  const col = catCollapsed(), filtering = !!(DFILT.cat || toks.length);
+  return groups.map(g => {
+    const list = shown.filter(d => inCat(d) === g.id); if (!list.length) return '';
+    const closed = !filtering && col.has(g.id), dueSum = list.reduce((n, d) => n + stat.get(d.id).due, 0);
+    const head = g.title ? `<div class="cathead"><button class="catfold" data-act="catFold" data-id="${g.id}" aria-expanded="${!closed}"><span class="mute">${closed ? '▸' : '▾'}</span> <b>${g.title}</b> <span class="mute small">${list.length} bộ${dueSum ? ` · ${dueSum} cần ôn` : ''}</span></button>
+      ${g.id !== '_none' ? `<button class="linkbtn small" data-act="catCards" data-id="${g.id}">Xem thẻ ›</button>` : ''}</div>` : '';
+    return `<section class="catgroup">${head}${closed ? '' : `<div class="list">${list.map(d => deckRow(d, stat.get(d.id))).join('')}</div>`}</section>`;
+  }).join('');
+}
+function viewDecks() {
+  const all = liveDecks(), cats = S.cats, catIds = new Set(cats.map(c => c.id));
+  if (DFILT.cat && DFILT.cat !== '_none' && !catIds.has(DFILT.cat)) DFILT.cat = '';   // danh mục đã bị xóa
+  const cnt = id => all.filter(d => ((d.category_id && catIds.has(d.category_id)) ? d.category_id : '_none') === id).length;
+  const totalCards = new Set(all.flatMap(d => S.cardsOfDeck.get(d.id) || [])).size, dueTotal = all.reduce((n, d) => n + deckStats(d).due, 0);
+  const chip = (id, label) => `<button class="chip ${DFILT.cat === id ? 'on' : ''}" data-act="decksCat" data-v="${id}">${label}</button>`;
+  return `<div class="page">${pageTop('Bộ thẻ', false, `<button class="iconbtn" data-act="manageCats" aria-label="Quản lý danh mục">🗂</button>`)}
+  ${all.length ? `<p class="small mute" style="margin:-4px 2px 10px">${all.length} bộ · ${totalCards} thẻ${dueTotal ? ` · <b style="color:var(--accent)">${dueTotal} cần ôn</b>` : ''}</p>
+  <div class="row" style="gap:8px"><div class="search grow" style="margin:0"><input class="input" id="dq" type="search" placeholder="Tìm bộ thẻ…" value="${esc(DFILT.search)}" autocomplete="off" aria-label="Tìm bộ thẻ"></div>
+    <select id="dsort" class="input" style="width:auto;max-width:46%" aria-label="Sắp xếp">${DECK_SORTS.map(([k, l]) => `<option value="${k}" ${DFILT.sort === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+  ${cats.length ? `<div class="chips" style="margin-top:8px">${chip('', `Tất cả ${all.length}`)}${cats.map(c => chip(c.id, `${esc(c.icon || '')} ${esc(c.name)} ${cnt(c.id)}`)).join('')}${cnt('_none') ? chip('_none', `Chưa phân loại ${cnt('_none')}`) : ''}</div>` : ''}` : ''}
+  <div id="decksbody">${decksBody()}</div>
   </div><button class="fab" data-act="newDeck" aria-label="Thêm bộ thẻ">+</button>`;
 }
-ACT.openDeck = el => { FILT.deck = el.dataset.id; FILT.shown = 50; NAV.tab = 'cards'; render(); };
+let dqTimer;
+document.addEventListener('input', e => {   // chỉ vẽ lại phần danh sách để ô nhập không mất con trỏ / bộ gõ
+  if (e.target.id !== 'dq') return; clearTimeout(dqTimer);
+  dqTimer = setTimeout(() => { DFILT.search = e.target.value; const b = $('#decksbody'); if (b) b.innerHTML = decksBody(); }, 150);
+});
+document.addEventListener('change', e => { if (e.target.id === 'dsort') { DFILT.sort = e.target.value; LS.set('jp_decksort', DFILT.sort); const b = $('#decksbody'); if (b) b.innerHTML = decksBody(); } });
+ACT.decksCat = el => { DFILT.cat = el.dataset.v; const y = $('#view').scrollTop; render(); $('#view').scrollTop = y; };
+ACT.decksClear = () => { DFILT.cat = ''; DFILT.search = ''; render(); };
+ACT.catFold = el => { const c = catCollapsed(); if (c.has(el.dataset.id)) c.delete(el.dataset.id); else c.add(el.dataset.id); LS.set('jp_catcollapsed', [...c]); const b = $('#decksbody'); if (b) b.innerHTML = decksBody(); };
+ACT.catCards = el => { Object.assign(FILT, { deck: '', cat: el.dataset.id }); resetPaging(); NAV.tab = 'cards'; render(); $('#view').scrollTop = 0; };
+ACT.studyDeck = el => startStudy({ mode: SC.mode, ask: SC.ask, typing: SC.typing, split: SC.split, source: 'due', deck: el.dataset.id, limit: SC.limit });
+ACT.openDeck = el => { FILT.deck = el.dataset.id; FILT.cat = ''; resetPaging(); NAV.tab = 'cards'; render(); };
 ACT.newDeck = () => openDeckForm(null);
 ACT.editDeck = el => openDeckForm(el.dataset.id);
 function openDeckForm(id) {
@@ -338,6 +400,7 @@ function viewMore() {
   return `<div class="page">${pageTop('Khác')}
   <div class="list">
     ${link('計', 'Thống kê', 'Tiến độ, độ chính xác, 30 ngày gần đây', 'stats')}
+    ${link('文', 'Ngữ pháp', `Mẫu câu, cấu tạo, ví dụ · ${S.grammar_points.length} mẫu`, 'grammar')}
     ${link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ, tra nhanh', 'radicals')}
     ${act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa" để tạo hàng loạt', 'quickAdd')}
     ${act('入', 'Nhập / xuất CSV', 'Trao đổi dữ liệu với Excel, Anki, …', 'csvTools')}

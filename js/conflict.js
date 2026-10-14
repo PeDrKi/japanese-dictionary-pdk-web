@@ -7,6 +7,7 @@ const FIELD_LABEL = {
   example_jp: 'Câu ví dụ', example_vi: 'Dịch câu ví dụ', stroke_count: 'Số nét', jlpt_level: 'JLPT', status: 'Trạng thái',
   source: 'Nguồn', notes: 'Ghi chú', is_favorite: 'Yêu thích', name: 'Tên', description: 'Mô tả', color: 'Màu', icon: 'Biểu tượng',
   category_id: 'Danh mục', pos: 'Từ loại',
+  title: 'Mẫu câu', structure: 'Cấu tạo', explanation: 'Giải thích', examples: 'Ví dụ',
 };
 function fmtVal(field, v) {
   if (v === null || v === undefined || v === '') return '(trống)';

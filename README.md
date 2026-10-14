@@ -150,3 +150,16 @@ npm run test:all    # cả hai
 - `tests/fixtures/parity.json` sinh từ bản desktop Python để đảm bảo web và desktop tính SRS giống nhau.
 - Test E2E không gọi Supabase/Jisho thật. Kiểm tra RLS trên Postgres thật chưa nằm trong dự án.
 - GitHub Actions (`.github/workflows/web-tests.yml`) chạy `npm run test:all` mỗi lần push.
+
+## v3.18 — Phân trang và nhập thẻ bằng bàn phím
+- Thư viện có 2 kiểu xem, đổi bằng liên kết dưới danh sách (chỉ hiện khi hơn 50 thẻ) và được nhớ lại: **Xem thêm** (như cũ) hoặc **Phân trang** (50 thẻ/trang, « ‹ Trang x/y › »).
+- Form thêm thẻ: gõ chữ → **Enter** (hoặc Tab tới nút rồi Enter) để tra Jisho → **↑ ↓ / 1–8** chọn, **Enter** chốt → con trỏ tự nhảy sang ô nghĩa tiếng Việt → **Tab** đi tiếp → **Ctrl + .** dùng bản dịch tiếng Việt gợi ý → **Ctrl + Enter** lưu.
+
+## v3.19 — Trang Ngữ pháp (cần nâng cấp schema)
+- **Khác → Ngữ pháp** (hoặc phím `g`): lưu mẫu câu (vd 〜てから), nghĩa, cấu tạo, giải thích, ví dụ (mỗi dòng `câu tiếng Nhật | nghĩa`), cấp JLPT. Có tìm kiếm, lọc N5–N1, sửa/xóa. Sửa từ 2 thiết bị cùng lúc được gộp giống thẻ.
+- **Bắt buộc một lần:** vào Supabase → SQL Editor → dán lại TOÀN BỘ `schema.sql` → Run (chạy lại nhiều lần vẫn an toàn). Nếu chưa chạy, mọi tính năng cũ vẫn dùng bình thường; trang Ngữ pháp chỉ báo cần nâng cấp.
+- Dữ liệu ngữ pháp thuộc riêng từng tài khoản (RLS) và bị xóa cùng tài khoản. Chưa có trong bản desktop, chưa có trong nhập/xuất CSV.
+
+## v3.20 — Bộ thẻ gọn hơn, lọc theo danh mục
+- **Bộ thẻ:** ô tìm, chip lọc theo danh mục (có số bộ), sắp xếp (tên / cần ôn nhiều nhất / nhiều thẻ nhất / mới tạo), thu gọn từng danh mục (được nhớ), nút ▶ ôn nhanh các thẻ đến hạn của một bộ (dùng kiểu ôn đang chọn ở tab Ôn tập), liên kết "Xem thẻ ›" của danh mục.
+- **Thư viện:** Bộ lọc có thêm **Danh mục** (thẻ thuộc bất kỳ bộ nào trong danh mục), kết hợp được với các lọc khác; có liên kết "bỏ lọc".

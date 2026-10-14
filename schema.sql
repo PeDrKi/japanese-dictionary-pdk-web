@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- 日本語 Web — schema Supabase (Postgres) · phiên bản 5 (xung đột nhiều thiết bị + từ loại)
+-- 日本語 Web — schema Supabase (Postgres) · phiên bản 7 (xung đột nhiều thiết bị + từ loại + vai trò + ngữ pháp)
 -- Chạy: Supabase Dashboard → SQL Editor → New query → dán TOÀN BỘ → Run
 -- Dùng được cho cả cài mới LẪN nâng cấp từ bản đầu (an toàn khi chạy lại nhiều lần).
 -- Cấu trúc bám sát japanese.db của bản desktop (8 bảng, khoá chính UUID),
@@ -133,6 +133,22 @@ create table if not exists public.study_sessions (
 create index if not exists study_user_time on public.study_sessions (user_id, studied_at desc);
 create index if not exists study_card_time on public.study_sessions (card_id, studied_at desc);
 
+-- ── Ngữ pháp (v7) ──────────────────────────────────────────────────────────
+create table if not exists public.grammar_points (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title        text not null check (length(title) between 1 and 200),   -- mẫu câu, vd 〜てから
+  meaning_vi   text not null default '',
+  structure    text,                                                      -- cấu tạo, vd V-て + から
+  explanation  text,                                                      -- giải thích / cách dùng / lưu ý
+  examples     text,                                                      -- mỗi dòng: câu tiếng Nhật | nghĩa tiếng Việt
+  jlpt_level   text check (jlpt_level is null or jlpt_level in ('N5','N4','N3','N2','N1')),
+  version      bigint not null default 1,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index if not exists grammar_user on public.grammar_points (user_id);
+
 -- ════════════ PHIÊN BẢN 2: XỬ LÝ XUNG ĐỘT ════════════════════════════════════
 
 -- Số phiên bản của từng hàng (server tăng sau mỗi lần sửa)
@@ -176,7 +192,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['cards','decks','radicals']
+  foreach t in array array['cards','decks','radicals','grammar_points']
   loop
     execute format('drop trigger if exists trg_touch on public.%I', t);
     execute format('create trigger trg_touch before insert or update on public.%I
@@ -423,7 +439,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['deck_categories','decks','cards','deck_cards','radicals',
-                           'radical_cards','user_decompositions','study_sessions']
+                           'radical_cards','user_decompositions','study_sessions','grammar_points']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "own rows" on public.%I', t);
@@ -443,7 +459,7 @@ alter table public.cards add constraint cards_pos_check
 
 -- ── Phiên bản schema (app kiểm tra khi khởi động để báo "chưa chạy schema mới") ──
 create or replace function public.jp_schema_version() returns integer
-language sql stable as $$ select 6 $$;
+language sql stable as $$ select 7 $$;
 
 -- Chữ ký nhẹ của toàn bộ dữ liệu của bạn: app hỏi cái này mỗi ~60 giây thay vì tải lại tất cả.
 -- Đổi khi có thêm / xóa / sửa bất kỳ hàng nào (chạy với quyền của người gọi nên RLS chỉ tính dữ liệu của bạn).
@@ -457,6 +473,7 @@ language sql stable set search_path = public as $$
     (select count(*)::text || coalesce(max(updated_at)::text, '') from radical_cards),
     (select count(*)::text || coalesce(max(updated_at)::text, '') from user_decompositions),
     (select count(*)::text || coalesce(max(studied_at)::text, '') from study_sessions),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from grammar_points),
     (select coalesce(md5(string_agg(id::text || name || coalesce(icon, '') || sort_order::text, ',' order by id)), '') from deck_categories)
   )) $$;
 

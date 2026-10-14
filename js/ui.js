@@ -3,7 +3,10 @@
 
 const ACT = {};      // data-act → handler(el, event)
 const NAV = { tab: 'today', sub: null, stack: [], depth: 0 };   // depth = số mục history do màn phụ đã đẩy vào
-const FILT = { search: '', type: '', jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', shown: 50, select: false, sel: new Set() };
+const FILT = { search: '', type: '', jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', cat: '', shown: 50, page: 0, select: false, sel: new Set() };
+const PAGE_SIZE = 50;
+const pageMode = () => (LS.get('jp_pagemode', 'more') === 'pages' ? 'pages' : 'more');   // 'more' = nút Xem thêm · 'pages' = phân trang
+function resetPaging() { FILT.shown = PAGE_SIZE; FILT.page = 0; }
 
 // ── Toast ───────────────────────────────────────────────────────────────────
 let toastTimer;

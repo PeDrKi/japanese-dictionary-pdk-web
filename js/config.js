@@ -3,6 +3,6 @@
    Anon key là khóa CÔNG KHAI, an toàn nhờ RLS. TUYỆT ĐỐI KHÔNG dán khóa service_role / secret vào đây.
    Để trống → app tự hỏi lần đầu (cách cũ). Khi cập nhật app bằng bản zip mới, nhớ giữ lại file này của bạn. */
 window.JP_CONFIG = {
-  url: 'https://efuhmeypsmnbkofptaiu.supabase.co',   // ví dụ 'https://abcdxyz.supabase.co'
-  key: 'sb_publishable_Ksxg7fKf3oVorJS1MFgKXw_rfwT35mb',   // ví dụ 'eyJhbGciOi…' hoặc 'sb_publishable_…'
+  url: '',   // ví dụ 'https://abcdxyz.supabase.co'
+  key: '',   // ví dụ 'eyJhbGciOi…' hoặc 'sb_publishable_…'
 };
