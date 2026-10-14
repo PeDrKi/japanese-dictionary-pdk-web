@@ -95,7 +95,11 @@ const IME = (() => {
     place();
     if (typeof toast === 'function') toast(mode === 0 ? 'Đã tắt gõ tiếng Nhật' : mode === 1 ? 'Gõ tiếng Nhật: hiragana (あ) — gõ romaji, vd taberu → たべる' : 'Gõ tiếng Nhật: katakana (ア) — vd kohi- → コヒー');
     const s = document.getElementById('imestate'); if (s) s.textContent = describe();
+    syncSide();
   }
+  // Chỉ báo trạng thái ở cuối thanh bên (màn hình rộng): A = tắt, あ = hiragana, ア = katakana; bấm để đổi
+  const side = () => `<span class="g jp">${label()}</span><span class="l">${mode === 0 ? 'Gõ JP: tắt' : mode === 1 ? 'Hiragana' : 'Katakana'}</span>`;
+  function syncSide() { const b = document.getElementById('imeside'); if (!b) return; b.innerHTML = side(); b.dataset.on = mode ? '1' : '0'; b.title = title(); b.setAttribute('aria-label', title()); }
   const describe = () => mode === 0 ? 'Đang tắt' : mode === 1 ? 'Hiragana あ' : 'Katakana ア';
 
   function init() {
@@ -112,5 +116,5 @@ const IME = (() => {
     }, true);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-  return { cycle, describe, convertTail, get mode() { return mode; } };
+  return { cycle, describe, convertTail, side, syncSide, get mode() { return mode; } };
 })();

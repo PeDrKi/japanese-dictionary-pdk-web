@@ -285,3 +285,11 @@ nav#tabs button.desk { display: none; }
 .dp input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
 .dp span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #dp-list { max-height: 52vh; overflow-y: auto; margin-top: 8px; }
+
+/* Chỉ báo bàn phím tiếng Nhật ở cuối thanh bên (chỉ màn hình rộng) */
+nav#tabs .imeside { display: none; }
+@media (min-width: 900px) {
+  nav#tabs .imeside { display: flex; flex: none; margin-top: auto; height: 62px; border-top: 1px solid var(--line); width: 100%; }
+  nav#tabs .imeside[data-on="1"] { color: var(--accent); }
+  nav#tabs .imeside[data-on="0"] .g { opacity: .55; }
+}

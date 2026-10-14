@@ -147,7 +147,8 @@ function screenAuth(msg = '') {
 }
 function shell() {
   root().innerHTML = `<div id="app"><main id="view"></main><nav id="tabs" aria-label="Điều hướng chính">${TABS.map(([k, g, l, x]) =>
-    `<button data-act="tab" data-tab="${k}" aria-label="${l}"${x ? ' class="desk"' : ''}><span class="g jp">${g}</span><span class="l">${l}</span>${k === 'today' ? '<span class="badge hidden" id="duebadge"></span>' : ''}</button>`).join('')}</nav></div>`;
+    `<button data-act="tab" data-tab="${k}" aria-label="${l}"${x ? ' class="desk"' : ''}><span class="g jp">${g}</span><span class="l">${l}</span>${k === 'today' ? '<span class="badge hidden" id="duebadge"></span>' : ''}</button>`).join('')}<button type="button" id="imeside" class="imeside" data-act="imeCycle" data-on="0" aria-label="Gõ tiếng Nhật">${IME.side()}</button></nav></div>`;
+  IME.syncSide();
 }
 function screenBlocked() {
   root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Tài khoản đang bị khóa</h1><p class="mute">Quản trị viên đã tạm khóa tài khoản này nên bạn chưa truy cập được dữ liệu. Dữ liệu của bạn vẫn được giữ nguyên. Hãy liên hệ quản trị viên để được mở khóa.</p>

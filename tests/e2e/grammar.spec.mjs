@@ -7,7 +7,7 @@ const GSEED = { ...SEED, grammar_points: [
 export default async ({ session }) => {
   await session(GSEED, async ({ page, check, db, errors }) => {
     await page.waitForSelector('#view');
-    const side = await page.locator('#tabs button:visible').allInnerTexts();
+    const side = await page.locator('#tabs button[data-tab]:visible').allInnerTexts();
     check('màn hình rộng: thanh bên có 8 mục, Ngữ pháp / Bộ thủ / Thống kê ngang hàng với Thư viện', side.length === 8 && ['Ngữ pháp', 'Bộ thủ', 'Thống kê'].every(t => side.join('|').includes(t)), side.join('|'));
     await page.click('#tabs [data-tab=grammar]'); await page.waitForSelector('#gramlist');
     check('Ngữ pháp là mục chính: sáng đúng mục thanh bên, không có nút ←', (await page.getAttribute('#tabs [data-tab=grammar]', 'aria-current')) === 'page' && (await page.locator('.topbar [data-act=back]').count()) === 0);
@@ -65,11 +65,23 @@ export default async ({ session }) => {
     check('Khác trên màn hình rộng không lặp lại 3 mục đã ra thanh bên', (await page.locator('.item[data-name=grammar]:visible, .item[data-name=stats]:visible, .item[data-name=radicals]:visible').count()) === 0);
     await page.click('#tabs [data-tab=today]'); await page.keyboard.press('8');
     check('phím 8 → Thống kê, phím 6 → Ngữ pháp', (await page.locator('.topbar h1').innerText()) === 'Thống kê' && (await (async () => { await page.keyboard.press('6'); return page.locator('.topbar h1').innerText(); })()) === 'Ngữ pháp');
+    // chỉ báo bàn phím tiếng Nhật ở cuối thanh bên
+    if (process.env.SHOT4) { await page.keyboard.press('Control+Backquote'); await page.screenshot({ path: process.env.SHOT4 }); await page.keyboard.press('Control+Backquote'); await page.keyboard.press('Control+Backquote'); }
+    const ime = () => page.locator('#imeside .g').innerText();
+    const box = await page.locator('#tabs').boundingBox(), ib = await page.locator('#imeside').boundingBox();
+    check('chỉ báo bàn phím nằm ở cuối thanh bên, mặc định "A"', (await ime()) === 'A' && ib.y + ib.height > box.y + box.height - 4, JSON.stringify([ib, box]));
+    await page.keyboard.press('Control+Backquote');
+    check('Ctrl+` → あ', (await ime()) === 'あ' && (await page.getAttribute('#imeside', 'data-on')) === '1');
+    await page.keyboard.press('Control+Backquote');
+    check('Ctrl+` lần nữa → ア', (await ime()) === 'ア');
+    await page.click('#imeside');
+    check('bấm vào chỉ báo → quay về A (đổi được bằng chuột)', (await ime()) === 'A');
     check('không có lỗi JS', errors.length === 0, errors.join('|'));
   }, { name: 'sidebar' });
   await session(GSEED, async ({ page, check, errors }) => {
     await page.waitForSelector('#view');
-    check('điện thoại: thanh dưới vẫn 5 mục', (await page.locator('#tabs button:visible').count()) === 5);
+    check('điện thoại: không hiện chỉ báo ở thanh dưới (đã có nút nổi khi gõ)', !(await page.locator('#imeside').isVisible()));
+    check('điện thoại: thanh dưới vẫn 5 mục', (await page.locator('#tabs button[data-tab]:visible').count()) === 5);
     await page.click('#tabs [data-tab=more]');
     check('điện thoại: Khác có đủ Ngữ pháp, Bộ thủ, Thống kê', (await page.locator('.item[data-name=grammar]:visible, .item[data-name=stats]:visible, .item[data-name=radicals]:visible').count()) === 3);
     await page.click('.item[data-name=grammar]'); await page.waitForSelector('#gramlist');

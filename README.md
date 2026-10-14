@@ -171,3 +171,6 @@ npm run test:all    # cả hai
 ## v3.22 — Chọn bộ thẻ gọn hơn (form thêm/sửa thẻ)
 - Form không còn bày ra mọi bộ thẻ thành hàng chip. Chỉ hiện các bộ **đã chọn** (bấm chip để bỏ), tối đa 4 bộ **dùng gần đây** (thẻ mới, chạm 1 lần để chọn) và nút **＋ Chọn bộ thẻ**.
 - Hộp chọn: có ô tìm, nhóm theo danh mục, ô tích; gõ tên rồi **Enter** để chọn bộ khớp đầu tiên; **Xong** để đóng.
+
+## v3.23 — Chỉ báo bàn phím tiếng Nhật ở thanh bên
+- Cuối thanh bên (màn hình rộng) luôn hiện trạng thái gõ tiếng Nhật: **A** (tắt) · **あ** (hiragana) · **ア** (katakana). Đổi bằng `Ctrl + `` ` `` hoặc bấm thẳng vào chỉ báo.
