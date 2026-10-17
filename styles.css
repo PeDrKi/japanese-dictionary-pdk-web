@@ -293,3 +293,11 @@ nav#tabs .imeside { display: none; }
   nav#tabs .imeside[data-on="1"] { color: var(--accent); }
   nav#tabs .imeside[data-on="0"] .g { opacity: .55; }
 }
+
+/* Nhiều âm đọc: mỗi âm một ô */
+.mr-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+.mr-row input { flex: 1; min-width: 0; }
+.mr-x { flex: none; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--mute); font-size: 18px; line-height: 1; cursor: pointer; }
+.mr-x:hover { color: var(--bad, #d33); border-color: currentColor; }
+.mrgrid { align-items: start; }
+@media (max-width: 420px) { .mrgrid { grid-template-columns: 1fr; } }

@@ -174,3 +174,21 @@ npm run test:all    # cả hai
 
 ## v3.23 — Chỉ báo bàn phím tiếng Nhật ở thanh bên
 - Cuối thanh bên (màn hình rộng) luôn hiện trạng thái gõ tiếng Nhật: **A** (tắt) · **あ** (hiragana) · **ア** (katakana). Đổi bằng `Ctrl + `` ` `` hoặc bấm thẳng vào chỉ báo.
+
+## v3.24 — Bảo mật
+- **Mật khẩu:** app KHÔNG tự lưu hay băm mật khẩu. Đăng nhập do Supabase Auth xử lý (mật khẩu được băm bằng bcrypt ở phía Supabase, app không bao giờ thấy mật khẩu đã lưu). Không nên tự viết lại phần này.
+- **Giới hạn đăng nhập sai / gửi email:** do Supabase Auth giới hạn theo IP ở phía máy chủ (app đã hiển thị thông báo "thao tác quá nhanh"). Chỉnh trong Supabase → Authentication → Rate Limits. Nên đặt độ dài mật khẩu tối thiểu ở Authentication → Sign In / Providers (Email).
+- **Proxy `/api/jisho`:** giới hạn 30 yêu cầu/phút/IP, chỉ nhận GET, lọc ký tự lạ trong từ khóa, có timeout 8 giây. (Giới hạn nằm trong bộ nhớ từng instance của Vercel nên chỉ là lớp chặn cơ bản; muốn chặt hơn hãy bật Rate Limiting/WAF của Vercel.)
+- **Hết hạn phiên:** không dùng quá **30 ngày** hoặc đăng nhập quá **90 ngày** thì phải đăng nhập lại (kể cả tab mở sẵn rồi bỏ quên). Đổi bằng `idleDays` / `maxDays` trong `js/config.js`. Token truy cập của Supabase vẫn tự làm mới ngắn hạn như bình thường.
+- **Kiểm tra dữ liệu ở server (schema.sql, phiên bản 8):** giới hạn độ dài các trường, số lần SRS, cấp JLPT, số nét… bằng ràng buộc CHECK. Dữ liệu cũ đang có không bị kiểm tra lại (`not valid`), chỉ dữ liệu ghi/sửa từ nay. Cần chạy lại toàn bộ `schema.sql` một lần để bật.
+
+## v3.25 — Sao lưu & khôi phục toàn bộ
+- **Khác → Sao lưu & khôi phục → Sao lưu toàn bộ** tải về 1 file `jpdic_backup_NGÀY.json` gồm: thẻ (cả thẻ trong thùng rác), bộ thẻ, danh mục, liên kết bộ–thẻ, bộ thủ, tách bộ tự định nghĩa, ngữ pháp và toàn bộ lịch sử ôn tập. File đọc mới từ máy chủ nên luôn đầy đủ; không chứa email hay mật khẩu.
+- **Khôi phục từ file sao lưu** chỉ **thêm phần còn thiếu**, không ghi đè dữ liệu đang có (khôi phục 2 lần không bị nhân đôi). Bộ thẻ / danh mục / bộ thủ trùng tên với cái đang có thì gộp vào cái đang có. Dùng được để chuyển sang tài khoản mới.
+- **Nhắc sao lưu:** khi có từ 20 thẻ trở lên mà chưa sao lưu hoặc đã quá 30 ngày, trang Hôm nay hiện thẻ nhắc (có nút "Để sau 7 ngày").
+- Nên lưu file sao lưu ở nơi khác máy (Drive, email cho chính mình). Bản sao lưu của Supabase miễn phí không tự động tải về được.
+- Không cần chạy lại schema.sql.
+
+## v3.26 — Mỗi âm đọc một ô (kanji)
+- Form thêm/sửa thẻ kanji: **Âm On** và **Âm Kun** mỗi âm nằm trong một ô riêng. **Enter** ở ô cuối (đã có chữ) tạo ô mới và nhảy sang; hoặc bấm **+ Thêm âm On / Kun**; **×** xóa ô; **Tab** đi qua các ô; **Ctrl+Enter** vẫn là Lưu.
+- Dữ liệu vẫn lưu thành một chuỗi cách nhau bằng "、" (ví dụ `げつ、がつ`) nên thẻ cũ, CSV, bản desktop, chế độ ôn tập đều không đổi. Thẻ cũ tự tách thành từng ô khi mở sửa. Không cần chạy lại schema.sql.

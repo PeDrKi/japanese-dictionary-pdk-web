@@ -47,6 +47,7 @@ function viewToday() {
     <div><h2>${due ? `${due} thẻ cần ôn hôm nay` : 'Hôm nay đã ôn xong'}</h2>
     <div class="mute small">${live.length ? `Trong tổng ${live.length} thẻ` : 'Chưa có thẻ nào — hãy thêm thẻ đầu tiên'}</div></div></div>
   </div>
+  ${backupStale(live.length) ? `<div class="card small" style="margin-bottom:12px"><b>Nên sao lưu dữ liệu</b><p class="mute" style="margin:4px 0 10px">${esc(backupLabel())}. Tải về 1 file để phòng khi mất tài khoản hoặc xóa nhầm.</p><div class="row"><button class="btn primary grow" data-act="backupExport">Sao lưu ngay</button><button class="btn grow" data-act="backupSnooze">Để sau 7 ngày</button></div></div>` : ''}
   ${live.length ? (due ? `<button class="btn primary block cta" data-act="startDue" data-mode="flash">Ôn ${Math.min(due, SC.limit || due)} thẻ ngay</button>
     <p class="small mute" style="margin:14px 2px 6px">Hoặc ôn theo cách khác:</p>` : `<p class="small mute" style="margin:6px 2px 10px">Chưa có thẻ nào đến hạn. Bạn vẫn có thể luyện thêm ở tab Ôn tập.</p>`) + `<div class="mode3${due ? '' : ' dim'}">
     <button data-act="startDue" data-mode="flash" ${due ? '' : 'disabled'}><span class="g">札</span>Flashcard<small>Lật thẻ, tự chấm</small></button>
@@ -205,8 +206,9 @@ function openCardForm(id, preset = {}) {
     <div class="chips" style="flex-wrap:wrap" id="cf-types">${TYPES.map(t => `<button type="button" class="chip ${c.type === t ? 'on' : ''}" data-act="cfType" data-v="${t}">${TYPE_LABEL[t]}</button>`).join('')}</div>
     <label class="field" id="w-character"><span>Chữ / từ *</span><input name="character" class="jp" style="font-size:20px" value="${v('character')}" maxlength="50" ${id ? '' : 'autofocus'}></label>
     <div class="row" style="margin:-4px 0 12px"><button type="button" class="btn ghost small" data-act="cfJisho">🔍 Chọn kết quả khác</button><button type="button" class="btn ghost small" data-act="cfKana">あ Bàn phím kana</button></div>
-    <div class="grid2" data-for="kanji"><label class="field"><span>Âm On (ON-yomi)</span><input name="reading_on" class="jp" value="${v('reading_on')}" placeholder="げつ、がつ"></label>
-      <label class="field"><span>Âm Kun (KUN-yomi)</span><input name="reading_kun" class="jp" value="${v('reading_kun')}" placeholder="つき"></label></div>
+    <div class="grid2 mrgrid" data-for="kanji">
+      <div class="field" data-mr="reading_on"><span>Âm On (ON-yomi)</span><input type="hidden" name="reading_on" value="${v('reading_on')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_on">+ Thêm âm On</button></div>
+      <div class="field" data-mr="reading_kun"><span>Âm Kun (KUN-yomi)</span><input type="hidden" name="reading_kun" value="${v('reading_kun')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_kun">+ Thêm âm Kun</button></div></div>
     <label class="field" data-for="vocab hiragana katakana"><span>Cách đọc (kana)</span><input name="reading_kana" class="jp" value="${v('reading_kana')}"></label>
     <label class="field" id="w-meaning_vi"><span>Nghĩa tiếng Việt *</span><input name="meaning_vi" value="${v('meaning_vi')}" maxlength="200"></label>
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>
@@ -228,7 +230,7 @@ function openCardForm(id, preset = {}) {
     <div class="row sheet-actions"><button type="button" class="btn grow" data-close>Hủy</button><button type="submit" class="btn primary grow">Lưu thẻ</button></div>
   </form>`, { sticky: true });
   const form = s.$('#cf'); form.dataset.type = c.type; form._deckSel = decks; form._isNew = !id; form._id = id; form._sheet = s;
-  syncFormType(form); updateAdvSummary(form); renderDeckField(form);
+  initMultiRead(form); syncFormType(form); updateAdvSummary(form); renderDeckField(form);
   form.addEventListener('change', () => updateAdvSummary(form));
   if (!id) wireAutofill(form);
   form.addEventListener('submit', async e => {
@@ -305,6 +307,36 @@ ACT.cfDeckPick = el => {
     const first = s.$('#dp-list input[type=checkbox]'); if (first) { const id = first.dataset.id; form._deckSel.has(id) ? form._deckSel.delete(id) : form._deckSel.add(id); redraw(); }
   });
   s.el.addEventListener('change', e => { const id = e.target.dataset?.id; if (!id) return; e.target.checked ? form._deckSel.add(id) : form._deckSel.delete(id); e.target.closest('.dp')?.classList.toggle('on', e.target.checked); upd(); });
+};
+// ── Nhiều âm đọc (On / Kun): mỗi âm một ô riêng. Dữ liệu vẫn lưu 1 chuỗi cách nhau bởi "、" nên mọi chỗ khác không đổi. ──
+const MR_SPLIT = /[、,，;；\/／]/;
+const MR_SET = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set, MR_GET = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').get;
+function initMultiRead(form) {
+  $$('[data-mr]', form).forEach(box => {
+    const name = box.dataset.mr, hid = box.querySelector('input[type=hidden]'), rows = box.querySelector('.mr-rows');
+    const draw = (list, focusLast) => {
+      if (!list.length) list = [''];
+      rows.innerHTML = list.map(x => `<div class="mr-row"><input class="jp" data-mrin="${name}" value="${esc(x)}" autocomplete="off"><button type="button" class="mr-x" tabindex="-1" aria-label="Xóa ô này" data-act="mrDel">×</button></div>`).join('');
+      if (focusLast) rows.querySelector('.mr-row:last-child input').focus();
+    };
+    const collect = () => [...rows.querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean).join('、');
+    box._draw = draw; box._collect = collect;
+    // form.elements.reading_on.value = '…' (autofill, Jisho) tự cập nhật các ô
+    Object.defineProperty(hid, 'value', { get() { return MR_GET.call(this); }, set(v) { MR_SET.call(this, v); draw(String(v || '').split(MR_SPLIT).map(x => x.trim()).filter(Boolean)); }, configurable: true });
+    draw(String(MR_GET.call(hid) || '').split(MR_SPLIT).map(x => x.trim()).filter(Boolean));
+    box.addEventListener('input', e => { if (!e.target.dataset.mrin) return; MR_SET.call(hid, collect()); if (form._auto) form._auto.delete(name); });
+    box.addEventListener('keydown', e => {   // Enter: sang ô kế (tạo mới nếu đang ở ô cuối và ô có chữ); Ctrl+Enter vẫn là Lưu
+      if (!e.target.dataset.mrin || e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.isComposing) return;
+      e.preventDefault(); const row = e.target.closest('.mr-row'), next = row.nextElementSibling;
+      if (next) next.querySelector('input').focus(); else if (e.target.value.trim()) draw([...rows.querySelectorAll('input')].map(i => i.value).concat(['']), true);
+    });
+  });
+}
+ACT.mrAdd = el => { const box = el.closest('[data-mr]'); const list = [...box.querySelectorAll('.mr-rows input')].map(i => i.value); if (list.length && !list[list.length - 1].trim()) { box.querySelector('.mr-row:last-child input').focus(); return; } box._draw(list.concat(['']), true); };
+ACT.mrDel = el => {
+  const box = el.closest('[data-mr]'), hid = box.querySelector('input[type=hidden]'); el.closest('.mr-row').remove();
+  const list = [...box.querySelectorAll('.mr-rows input')].map(i => i.value); box._draw(list);
+  MR_SET.call(hid, box._collect()); const f = box.closest('form'); if (f && f._auto) f._auto.delete(box.dataset.mr);
 };
 ACT.cfRomaji = el => {
   const f = el.closest('form'), g = n => f.elements[n]?.value || '';
@@ -439,6 +471,7 @@ function viewMore() {
     ${link('文', 'Ngữ pháp', `Mẫu câu, cấu tạo, ví dụ · ${S.grammar_points.length} mẫu`, 'grammar')}
     ${link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ, tra nhanh', 'radicals')}
     ${act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa" để tạo hàng loạt', 'quickAdd')}
+    ${act('備', 'Sao lưu & khôi phục', esc(backupLabel()) + ' · tải toàn bộ dữ liệu về 1 file', 'backupTools')}
     ${act('入', 'Nhập / xuất CSV', 'Trao đổi dữ liệu với Excel, Anki, …', 'csvTools')}
     ${act('移', 'Nhập từ bản desktop', 'Chuyển toàn bộ japanese.db lên web', 'importDb')}
     ${link('組', 'Bộ thẻ mẫu', 'Thêm bộ từ vựng, kanji có sẵn vào thẻ của bạn', 'starters')}

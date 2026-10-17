@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- 日本語 Web — schema Supabase (Postgres) · phiên bản 7 (xung đột nhiều thiết bị + từ loại + vai trò + ngữ pháp)
+-- 日本語 Web — schema Supabase (Postgres) · phiên bản 8 (xung đột nhiều thiết bị + từ loại + vai trò + ngữ pháp + kiểm tra dữ liệu ở server)
 -- Chạy: Supabase Dashboard → SQL Editor → New query → dán TOÀN BỘ → Run
 -- Dùng được cho cả cài mới LẪN nâng cấp từ bản đầu (an toàn khi chạy lại nhiều lần).
 -- Cấu trúc bám sát japanese.db của bản desktop (8 bảng, khoá chính UUID),
@@ -541,6 +541,28 @@ grant execute on function public.jp_schema_version() to authenticated, anon;
 grant execute on function public.jp_sync_sig() to authenticated;
 revoke execute on function public.log_study(uuid, uuid, text, timestamptz, date) from public, anon;
 revoke execute on function public.jp_sync_sig() from public, anon;
+
+-- ══ PHIÊN BẢN 8: KIỂM TRA DỮ LIỆU Ở SERVER ═══════════════════════════════════════════════════════
+-- App đã kiểm tra dữ liệu ở trình duyệt, nhưng ai cũng có thể gọi API trực tiếp → server phải tự kiểm tra lại.
+-- Giới hạn ở đây rộng hơn giới hạn của app (để không chặn nhầm dữ liệu hợp lệ), chỉ nhằm chặn dữ liệu phi lý / quá lớn.
+-- "not valid" = chỉ áp dụng cho dữ liệu GHI MỚI/SỬA; dữ liệu cũ đang có không bị kiểm tra lại nên không thể làm hỏng việc chạy schema.
+do $$
+declare r record;
+begin
+  for r in select * from (values
+    ('cards',          'cards_len_chk',    'length(character) between 1 and 200 and length(meaning_vi) <= 800 and coalesce(length(meaning_en),0) <= 800 and coalesce(length(reading_on),0) <= 400 and coalesce(length(reading_kun),0) <= 400 and coalesce(length(reading_kana),0) <= 400 and coalesce(length(reading_hanviet),0) <= 400 and coalesce(length(romaji),0) <= 400 and coalesce(length(example_jp),0) <= 2000 and coalesce(length(example_vi),0) <= 2000 and coalesce(length(source),0) <= 400 and coalesce(length(notes),0) <= 4000'),
+    ('cards',          'cards_num_chk',    'srs_interval between 0 and 3650 and srs_ease between 1 and 5 and (stroke_count is null or stroke_count between 1 and 100) and (jlpt_level is null or jlpt_level in (''N5'',''N4'',''N3'',''N2'',''N1''))'),
+    ('decks',          'decks_len_chk',    'length(name) between 1 and 200 and coalesce(length(description),0) <= 1000 and coalesce(length(icon),0) <= 16 and coalesce(length(color),0) <= 32'),
+    ('deck_categories','cats_len_chk',     'length(name) between 1 and 200 and coalesce(length(icon),0) <= 16'),
+    ('radicals',       'radicals_len_chk', 'length(character) between 1 and 16 and coalesce(length(name),0) <= 200 and coalesce(length(color),0) <= 32'),
+    ('user_decompositions','decomp_len_chk','length(character) between 1 and 16 and length(parts) <= 400'),
+    ('grammar_points', 'grammar_len_chk',  'length(meaning_vi) <= 600 and coalesce(length(structure),0) <= 600 and coalesce(length(explanation),0) <= 6000 and coalesce(length(examples),0) <= 8000')
+  ) as t(tbl, cname, expr)
+  loop
+    execute format('alter table public.%I drop constraint if exists %I', r.tbl, r.cname);
+    execute format('alter table public.%I add constraint %I check (%s) not valid', r.tbl, r.cname, r.expr);
+  end loop;
+end $$;
 
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';

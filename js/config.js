@@ -5,4 +5,6 @@
 window.JP_CONFIG = {
   url: 'https://efuhmeypsmnbkofptaiu.supabase.co',   // ví dụ 'https://abcdxyz.supabase.co'
   key: 'sb_publishable_Ksxg7fKf3oVorJS1MFgKXw_rfwT35mb',   // ví dụ 'eyJhbGciOi…' hoặc 'sb_publishable_…'
+  // idleDays: 30,   // không dùng quá số ngày này → phải đăng nhập lại (mặc định 30)
+  // maxDays: 90,    // đăng nhập quá số ngày này → phải đăng nhập lại dù đang dùng (mặc định 90)
 };

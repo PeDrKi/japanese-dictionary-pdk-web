@@ -36,7 +36,7 @@ async function session(seed, fn, opts = {}) {
   page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   const check = (name, cond, extra = '') => { results.push([name, !!cond]); if (!cond) failed++; console.log((cond ? 'PASS ' : 'FAIL ') + name + (cond ? '' : '  ' + extra)); };
   try { await page.goto(BASE + '/index.html'); await fn({ page, check, errors, db: () => page.evaluate(() => window.__DB), wait: ms => page.waitForTimeout(ms) }); }
-  catch (e) { failed++; console.log('FAIL (lỗi test) ' + (opts.name || '') + ': ' + e.message.split('\n')[0]); }
+  catch (e) { failed++; console.log('FAIL (lỗi test) ' + (opts.name || '') + ': ' + e.stack.split('\n').slice(0,3).join(' / ')); }
   await context.close();
 }
 

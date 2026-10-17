@@ -154,13 +154,40 @@ function screenBlocked() {
   root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Tài khoản đang bị khóa</h1><p class="mute">Quản trị viên đã tạm khóa tài khoản này nên bạn chưa truy cập được dữ liệu. Dữ liệu của bạn vẫn được giữ nguyên. Hãy liên hệ quản trị viên để được mở khóa.</p>
   <div class="row"><button class="btn primary grow" onclick="boot()">Thử lại</button><button class="btn grow" data-act="logout">Đăng xuất</button></div></div>`;
 }
+// ── Hết hạn phiên đăng nhập ─────────────────────────────────────────────────
+// Supabase tự gia hạn token vô thời hạn nên app tự đặt thêm 2 giới hạn (đổi trong js/config.js: idleDays, maxDays):
+//  • không dùng quá idleDays ngày (mặc định 30) → phải đăng nhập lại
+//  • đăng nhập quá maxDays ngày (mặc định 90) → phải đăng nhập lại dù vẫn đang dùng
+const SESSION_IDLE_MS = (Number(window.JP_CONFIG && window.JP_CONFIG.idleDays) || 30) * 864e5;
+const SESSION_MAX_MS = (Number(window.JP_CONFIG && window.JP_CONFIG.maxDays) || 90) * 864e5;
+function sessionExpiredReason(uid, now = Date.now()) {
+  let rec = LS.get('jp_session', null);
+  if (!rec || rec.uid !== uid || !rec.login || !rec.last) { rec = { uid, login: now, last: now }; LS.set('jp_session', rec); return ''; }   // lần đầu / đổi tài khoản: bắt đầu tính từ bây giờ
+  if (now - rec.last > SESSION_IDLE_MS) return `Bạn không dùng app hơn ${Math.round(SESSION_IDLE_MS / 864e5)} ngày — hãy đăng nhập lại.`;
+  if (now - rec.login > SESSION_MAX_MS) return `Phiên đăng nhập đã quá ${Math.round(SESSION_MAX_MS / 864e5)} ngày — hãy đăng nhập lại.`;
+  return '';
+}
+async function expireSession(msg) {
+  try { await sb.auth.signOut(); } catch { /* bỏ qua */ }
+  LS.set('jp_pending', []); LS.set('jp_session', null); LS.set('jp_notice', msg); location.reload();
+}
+let lastTouch = 0;
+function touchActivity() {   // ghi nhận có dùng app (tối đa 1 lần/phút). Quá hạn thì KHÔNG gia hạn mà đăng xuất ngay
+  if (document.visibilityState !== 'visible' || !S.user) return;
+  const now = Date.now(); if (now - lastTouch < 60000) return; lastTouch = now;
+  const why = sessionExpiredReason(S.user.id, now); if (why) return expireSession(why);
+  const rec = LS.get('jp_session', null); if (rec && rec.uid === S.user.id) { rec.last = now; LS.set('jp_session', rec); }
+}
+['pointerdown', 'keydown', 'visibilitychange'].forEach(ev => document.addEventListener(ev, touchActivity, { passive: true }));
+
 async function boot() {
   if (!initSupabase()) return screenConfig();
   root().innerHTML = '<div class="auth"><div class="logo jp">日本語</div><p class="mute">Đang tải…</p></div>';
   const hashRes = await takeAuthHash();
   if (hashRes && hashRes.type === 'recovery') return screenNewPassword();
   const { data } = await sb.auth.getSession();
-  if (!data.session) return screenAuth(hashRes && hashRes.error || '');
+  if (!data.session) { const n = LS.get('jp_notice', ''); if (n) LS.set('jp_notice', ''); return screenAuth(hashRes && hashRes.error || n || ''); }
+  const why = sessionExpiredReason(data.session.user.id); if (why) return expireSession(why);
   S.user = data.session.user;
   try { migratePending(); await checkSchema(); S.me = await fetchMe(); if (S.me.status === 'blocked') return screenBlocked(); await loadAll(); SYNC.last = Date.now(); }
   catch (e) {
@@ -176,6 +203,7 @@ async function boot() {
 let autoTimer, stale = false;
 async function autoRefresh(force) {
   if (!S.user || !$('#view')) return;
+  const why = sessionExpiredReason(S.user.id); if (why) return expireSession(why);   // tab mở rất lâu vẫn bị kiểm tra
   const r = await refreshData({ force });
   if (r === 'changed') stale = !softRender();          // đang mở form/ô nhập → để lần sau vẽ lại, không bỏ sót
   else if (r === 'same' && stale) stale = !softRender();
