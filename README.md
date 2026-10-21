@@ -192,3 +192,14 @@ npm run test:all    # cả hai
 ## v3.26 — Mỗi âm đọc một ô (kanji)
 - Form thêm/sửa thẻ kanji: **Âm On** và **Âm Kun** mỗi âm nằm trong một ô riêng. **Enter** ở ô cuối (đã có chữ) tạo ô mới và nhảy sang; hoặc bấm **+ Thêm âm On / Kun**; **×** xóa ô; **Tab** đi qua các ô; **Ctrl+Enter** vẫn là Lưu.
 - Dữ liệu vẫn lưu thành một chuỗi cách nhau bằng "、" (ví dụ `げつ、がつ`) nên thẻ cũ, CSV, bản desktop, chế độ ôn tập đều không đổi. Thẻ cũ tự tách thành từng ô khi mở sửa. Không cần chạy lại schema.sql.
+
+## v3.27 — Trạng thái thẻ theo số lần học (schema phiên bản 9)
+- **Chưa học** = 0 lần · **Đang học** = 1–19 lần · **Đã nhớ** = từ 20 lần trở lên. Mỗi lượt ôn (đúng hay sai) đều tính là 1 lần học; trả lời sai không làm tụt trạng thái nữa. (Mốc 20 tính là Đã nhớ.)
+- Số lần học lưu ở cột mới `cards.study_count`; server tự tính `status` từ cột này (trigger), nên mọi thiết bị luôn khớp nhau. Vì vậy **đã bỏ** ô chọn Trạng thái trong form thẻ và nút "Trạng thái" ở thao tác hàng loạt. Chi tiết thẻ hiện "Đang học · 7 lần học".
+- **Cần chạy lại toàn bộ `schema.sql`** trong Supabase SQL Editor (an toàn, không mất dữ liệu): tự đếm lại số lần học của thẻ cũ từ lịch sử ôn đã có và cập nhật trạng thái theo quy tắc mới — thẻ nào từng được đặt tay "Đã nhớ" nhưng chưa đủ 20 lượt sẽ chuyển về "Đang học" / "Chưa học".
+- Bản desktop chưa theo quy tắc này (vẫn tự đổi trạng thái theo đúng/sai).
+
+## v3.28 — Điểm học đúng +1 / sai −1, thêm nhiều biểu tượng (schema phiên bản 9, cập nhật)
+- **Cách đếm mới** (thay cho v3.27): mỗi lần trả lời **đúng +1**, **sai −1**; đã về 0 thì giữ 0, không âm. **Chưa học** = 0 · **Đang học** = 1–19 · **Đã nhớ** = từ 20 trở lên. Thẻ đã nhớ (20) trả lời sai một lần sẽ tụt về 19 = Đang học.
+- **Chạy lại toàn bộ `schema.sql`** (an toàn, không mất dữ liệu): điểm học của thẻ cũ được tính lại bằng cách phát lại lịch sử ôn theo thời gian với đúng quy tắc trên.
+- **Biểu tượng** của Bộ thẻ và Danh mục: hơn 300 emoji chia 11 nhóm (Học tập, Nhật Bản, Đồ ăn, Thiên nhiên, Động vật, Con người, Nhà & đời sống, Du lịch, Công việc, Giải trí, Biểu tượng). Bấm tab nhóm rồi bấm biểu tượng; hoặc gõ / dán emoji khác vào ô lớn ở trên.

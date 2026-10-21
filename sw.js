@@ -1,5 +1,5 @@
 /* Service worker: mở nhanh + chạy được khi mất mạng (giao diện); dữ liệu luôn lấy từ Supabase. */
-const VERSION = 'jpdic-v3.26';
+const VERSION = 'jpdic-v3.28';
 const SHELL = ['./', 'index.html', 'styles.css', 'manifest.json', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'vendor/supabase.js', 'vendor/sql-wasm.js', 'vendor/sql-wasm.wasm', 'data/kanji_ids.tsv', 'js/config.js', 'js/core.js', 'js/data.js', 'js/conflict.js', 'js/ui.js', 'js/views.js', 'js/study.js', 'js/tools.js', 'js/backup.js', 'js/grammar.js', 'js/admin.js', 'js/ime.js', 'js/keys.js', 'js/main.js'];
 

@@ -564,5 +564,93 @@ begin
   end loop;
 end $$;
 
+-- ══ PHIÊN BẢN 9: TRẠNG THÁI THẸ TÍNH THEO SỐ LẦN HỌC ═══════════════════════════════════════════════
+-- study_count = điểm học của thẻ: trả lời đúng +1, trả lời sai −1 (không xuống dưới 0).
+-- Chưa học = 0 · Đang học = 1–19 · Đã nhớ = từ 20 trở lên.
+-- Cột status do server tự tính từ study_count (trigger), nên không thiết bị nào đặt sai được.
+alter table public.cards add column if not exists study_count integer not null default 0;
+
+create or replace function public.jp_status_of(n integer) returns text
+language sql immutable as $$ select case when coalesce(n, 0) <= 0 then 'new' when n < 20 then 'learning' else 'known' end $$;
+
+create or replace function public.jp_cards_status() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  new.study_count := greatest(coalesce(new.study_count, 0), 0);
+  new.status := public.jp_status_of(new.study_count);
+  return new;
+end $$;
+drop trigger if exists cards_status on public.cards;
+create trigger cards_status before insert or update on public.cards
+  for each row execute function public.jp_cards_status();
+
+-- Tính lại điểm học từ lịch sử ôn đã có (phát lại theo thời gian, đúng +1 / sai −1, không xuống dưới 0). Chạy lại an toàn.
+do $$
+declare r record; n int; cur uuid := null;
+begin
+  update public.cards set study_count = 0 where study_count <> 0 and not exists (select 1 from public.study_sessions s where s.card_id = cards.id);
+  for r in select card_id, result from public.study_sessions order by card_id, studied_at, id loop
+    if cur is distinct from r.card_id then
+      if cur is not null then update public.cards set study_count = n where id = cur and study_count <> n; end if;
+      cur := r.card_id; n := 0;
+    end if;
+    n := case when r.result = 'correct' then n + 1 else greatest(0, n - 1) end;
+  end loop;
+  if cur is not null then update public.cards set study_count = n where id = cur and study_count <> n; end if;
+end $$;
+update public.cards set study_count = study_count where status is distinct from public.jp_status_of(study_count);
+
+create or replace function public.log_study(
+  p_id uuid, p_card uuid, p_result text,
+  p_at timestamptz default now(), p_today date default current_date
+) returns public.cards
+language plpgsql
+set search_path = public
+as $$
+declare
+  c public.cards;
+  last_at timestamptz;
+  iv int; ez double precision; ne double precision; ni int;
+begin
+  if p_result not in ('correct', 'incorrect') then
+    raise exception 'p_result phải là correct hoặc incorrect';
+  end if;
+  if not public.jp_is_active() then raise exception 'Tài khoản đang bị khóa' using errcode = '42501'; end if;
+  if p_at > now() then p_at := now(); end if;
+  select * into c from public.cards where id = p_card for update;
+  if not found then return null; end if;
+
+  select max(studied_at) into last_at from public.study_sessions where card_id = p_card;
+
+  insert into public.study_sessions (id, card_id, result, studied_at)
+  values (p_id, p_card, p_result, p_at)
+  on conflict (id) do nothing;
+  if not found then return c; end if;                  -- lượt này đã được ghi trước đó (gửi lại)
+
+  if last_at is not null and p_at < last_at then       -- lượt ôn cũ hơn lượt gần nhất: vẫn tính điểm học, giữ lịch mới
+    update public.cards set study_count = case when p_result = 'correct' then study_count + 1 else greatest(0, study_count - 1) end where id = p_card returning * into c;
+    return c;
+  end if;
+
+  iv := coalesce(nullif(c.srs_interval, 0), 1);
+  ez := coalesce(nullif(c.srs_ease, 0), 2.5::double precision);
+  if p_result = 'correct' then
+    ne := least(ez + 0.1::double precision, 2.8::double precision);
+    ni := least(greatest(iv + 1, round(iv * ne)::int), 90);
+  else
+    ne := greatest(ez - 0.2::double precision, 1.3::double precision);
+    ni := 1;
+  end if;
+
+  update public.cards
+     set study_count = case when p_result = 'correct' then study_count + 1 else greatest(0, study_count - 1) end, srs_interval = ni, srs_ease = ne, srs_due_date = p_today + ni
+   where id = p_card
+  returning * into c;                                  -- trigger tự đặt status theo study_count
+  return c;
+end $$;
+
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 9 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';

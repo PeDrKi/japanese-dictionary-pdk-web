@@ -18,8 +18,13 @@ test('SRS: khớp bản desktop với 120 tổ hợp (interval × ease × kết 
     assert.ok(Math.abs(e - v.ease_out) < 1e-6, `ease ${JSON.stringify(v)} → ${e}`);
   }
 });
-test('Trạng thái thẻ: khớp desktop', () => {
-  for (const v of parity.status) assert.equal(g('nextStatus')(v.cur, v.result), v.out, JSON.stringify(v));
+test('Điểm học: đúng +1, sai −1, không xuống dưới 0', () => {
+  const f = g('nextCount');
+  assert.equal(f(0, 'correct'), 1); assert.equal(f(5, 'incorrect'), 4); assert.equal(f(1, 'incorrect'), 0); assert.equal(f(0, 'incorrect'), 0); assert.equal(f(undefined, 'incorrect'), 0); assert.equal(f(19, 'correct'), 20);
+});
+test('Trạng thái thẻ theo số lần học: 0 = Chưa học, 1–19 = Đang học, từ 20 = Đã nhớ', () => {
+  const f = g('statusFromCount');
+  for (const [n, st] of [[0, 'new'], [undefined, 'new'], [null, 'new'], [1, 'learning'], [19, 'learning'], [20, 'known'], [21, 'known'], [500, 'known']]) assert.equal(f(n), st, String(n));
 });
 test('kana → romaji: khớp desktop', () => {
   for (const v of parity.romaji) assert.equal(g('kanaToRomaji')(v.kana), v.romaji, v.kana);

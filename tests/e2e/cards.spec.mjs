@@ -31,8 +31,8 @@ export default async ({ session }) => {
     const saved = (await db()).cards.find(c => c.character === '猫');
     check('Ctrl+Enter lưu thẻ mới', saved && saved.meaning_vi === 'mèo nhà' && saved.pos === 'noun', JSON.stringify(saved));
     // trùng → hỏi xác nhận
-    await page.click('.fab'); await page.waitForSelector('#cf'); await page.fill('#cf [name=character]', '水'); await page.fill('#cf [name=meaning_vi]', 'nước 2');
-    await page.click('#cf button[type=submit]'); await page.waitForSelector('text=đã tồn tại');
+    await page.click('.fab'); await page.waitForSelector('#cf'); await page.waitForTimeout(500); await page.fill('#cf [name=character]', '水'); await page.fill('#cf [name=meaning_vi]', 'nước 2');
+    await page.waitForTimeout(900); await page.click('#cf button[type=submit]'); await page.waitForSelector('text=đã tồn tại');
     check('thẻ trùng → có hộp xác nhận', true); await page.locator('.scrim').last().locator('[data-close]').click(); await page.locator('#cf [data-close]').click(); await page.waitForSelector('#cf', { state: 'detached' });
     // sửa thẻ
     await page.click('#cardlist .item >> text=ăn'); await page.waitForSelector('.sheet');

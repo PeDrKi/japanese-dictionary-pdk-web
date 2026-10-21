@@ -87,7 +87,7 @@ function viewCards() {
 function selectBar() {
   const n = FILT.sel.size;
   return `<div class="selbar"><button class="btn ghost" data-act="selAll">${n ? `Đã chọn ${n}` : 'Chọn tất cả'}</button>
-    <button class="btn" data-act="bulkStatus" ${n ? '' : 'disabled'}>Trạng thái</button><button class="btn" data-act="bulkFav" ${n ? '' : 'disabled'}>★</button>
+    <button class="btn" data-act="bulkFav" ${n ? '' : 'disabled'}>★</button>
     <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
 }
 function cardsBody() {
@@ -144,10 +144,6 @@ ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', status: '', fav: f
 ACT.fapply = () => { FILT.deck = $('#f-deck', _fs.el).value; FILT.cat = $('#f-cat', _fs.el)?.value || ''; resetPaging(); _fs.close(); NAV.tab = 'cards'; render(); };
 
 // ── Thao tác hàng loạt ──
-ACT.bulkStatus = () => {
-  const s = openSheet(`<h2>Đổi trạng thái ${FILT.sel.size} thẻ</h2><div class="list">${STATUSES.map(st => `<button class="item" data-act="bulkStatusSet" data-v="${st}"><span class="st ${st}"></span><b>${STATUS_LABEL[st]}</b></button>`).join('')}</div>`); window._bs = s;
-};
-ACT.bulkStatusSet = async el => { await guard(() => updateCards([...FILT.sel], { status: el.dataset.v }), 'Đã cập nhật'); _bs.close(); FILT.sel.clear(); render(); };
 ACT.bulkFav = async () => { await guard(() => toggleFavorite([...FILT.sel]), 'Đã đổi yêu thích'); FILT.sel.clear(); render(); };
 ACT.bulkDel = async () => { if (!await confirmBox(`Chuyển ${FILT.sel.size} thẻ vào thùng rác?`, 'Xóa', true)) return; await guard(() => softDeleteCards([...FILT.sel]), 'Đã chuyển vào thùng rác'); FILT.sel.clear(); FILT.select = false; render(); };
 ACT.bulkDeck = () => {
@@ -167,7 +163,7 @@ function openCardDetail(id) {
   const s = openSheet(`
     <div class="paper" style="max-width:200px"><span class="corner">${TYPE_LABEL[c.type]}</span><span class="corner2">${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}</span><div class="ch${long}">${esc(c.character)}</div></div>
     <div style="text-align:center;margin:10px 0 14px"><div style="font-size:21px;font-weight:700">${esc(c.meaning_vi)}</div>
-      <div class="row" style="justify-content:center;margin-top:4px"><span class="st ${c.status}"></span><span class="mute small">${STATUS_LABEL[c.status]}</span></div></div>
+      <div class="row" style="justify-content:center;margin-top:4px"><span class="st ${c.status}"></span><span class="mute small">${STATUS_LABEL[c.status]} · ${c.study_count || 0} lần học</span></div></div>
     <dl class="kv">${kv.map(([k, v]) => `<dt>${k}</dt><dd class="${/On|Kun|đọc|Ví dụ$/.test(k) ? 'jp' : ''}">${esc(v)}</dd>`).join('')}
       <dt>Lịch ôn</dt><dd>${dueInfo(c)}<br><span class="mute small">${easeLabel(c.srs_ease)} · giãn cách ${c.srs_interval} ngày</span></dd></dl>
     ${decks.length || rads.length ? `<div class="row wrap" style="margin-top:10px">${decks.map(d => `<span class="tag">${esc(d.icon || '')} ${esc(d.name)}</span>`).join('')}${rads.map(r => `<span class="tag jp">部 ${esc(r.character)}</span>`).join('')}</div>` : ''}
@@ -215,8 +211,7 @@ function openCardForm(id, preset = {}) {
     ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks"></div></div>` : ''}
     <details class="adv" id="cf-adv" ${id ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
     <label class="field"><span>Từ loại</span><select name="pos"><option value="">— chưa chọn —</option>${POS.map(j => `<option value="${j}" ${c.pos === j ? 'selected' : ''}>${POS_LABEL[j]}</option>`).join('')}</select></label>
-    <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label>
-      <label class="field"><span>Trạng thái</span><select name="status">${STATUSES.map(j => `<option value="${j}" ${c.status === j ? 'selected' : ''}>${STATUS_LABEL[j]}</option>`).join('')}</select></label></div>
+    <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div>
     <div class="grid2 fit" data-for="kanji vocab"><label class="field"><span>Âm Hán Việt</span><input name="reading_hanviet" value="${v('reading_hanviet')}"></label>
       <label class="field" data-for="kanji"><span>Số nét</span><input name="stroke_count" type="number" inputmode="numeric" min="1" max="60" value="${v('stroke_count')}"></label></div>
     <div class="row" style="align-items:flex-end"><label class="field grow"><span>Romaji</span><input name="romaji" value="${v('romaji')}"></label><button type="button" class="btn" style="margin-bottom:12px" data-act="cfRomaji">⚡ Tự tạo</button></div>
@@ -243,7 +238,7 @@ function openCardForm(id, preset = {}) {
       reading_on: t === 'kanji' ? f.reading_on : null, reading_kun: t === 'kanji' ? f.reading_kun : null,
       reading_kana: t !== 'kanji' ? f.reading_kana : null, reading_hanviet: (t === 'kanji' || t === 'vocab') ? f.reading_hanviet : null,
       romaji: f.romaji, meaning_en: f.meaning_en, example_jp: f.example_jp, example_vi: f.example_vi, stroke_count: t === 'kanji' ? f.stroke_count : null,
-      jlpt_level: f.jlpt_level, pos: f.pos, status: f.status, is_favorite: !!f.is_favorite, source: f.source, notes: f.notes,
+      jlpt_level: f.jlpt_level, pos: f.pos, status: (id && base ? base.status : 'new'), is_favorite: !!f.is_favorite, source: f.source, notes: f.notes,
     });
     // Trường bạn không đụng tới giữ NGUYÊN giá trị gốc (không bị cắt độ dài / chuẩn hoá lại → không sinh xung đột giả, không mất chữ)
     if (id && base) for (const k of Object.keys(data)) if (typeof data[k] === 'string' && k in f && base[k] != null && String(f[k]).trim() === String(base[k]).trim()) data[k] = base[k];
@@ -414,6 +409,17 @@ ACT.catFold = el => { const c = catCollapsed(); if (c.has(el.dataset.id)) c.dele
 ACT.catCards = el => { Object.assign(FILT, { deck: '', cat: el.dataset.id }); resetPaging(); NAV.tab = 'cards'; render(); $('#view').scrollTop = 0; };
 ACT.studyDeck = el => startStudy({ mode: SC.mode, ask: SC.ask, typing: SC.typing, split: SC.split, source: 'due', deck: el.dataset.id, limit: SC.limit });
 ACT.openDeck = el => { FILT.deck = el.dataset.id; FILT.cat = ''; resetPaging(); NAV.tab = 'cards'; render(); };
+// ── Chọn biểu tượng: theo nhóm, bấm để chọn; có thể gõ/dán emoji khác vào ô nhỏ ──
+function iconPicker(cur) {
+  const g0 = Math.max(0, ICON_GROUPS.findIndex(g => g[1].includes(cur)));
+  return `<div class="field ipick" data-g="${g0}"><span>Biểu tượng</span>
+    <div class="ip-top"><input name="icon" class="ip-cur" value="${esc(cur || '')}" maxlength="8" aria-label="Biểu tượng đang chọn (gõ emoji khác nếu muốn)"><span class="mute small">Chọn bên dưới hoặc gõ emoji khác</span></div>
+    <div class="ip-tabs">${ICON_GROUPS.map((g, i) => `<button type="button" class="chip ${i === g0 ? 'on' : ''}" data-act="ipGroup" data-i="${i}">${esc(g[0])}</button>`).join('')}</div>
+    <div class="ip-grid">${iconGrid(g0, cur)}</div></div>`;
+}
+const iconGrid = (gi, cur) => ICON_GROUPS[gi][1].map(i => `<button type="button" class="ip-i ${i === cur ? 'on' : ''}" data-act="ipPick" data-v="${i}" aria-label="${i}">${i}</button>`).join('');
+ACT.ipGroup = el => { const b = el.closest('.ipick'), i = +el.dataset.i; b.dataset.g = i; $$('.ip-tabs .chip', b).forEach(x => x.classList.toggle('on', x === el)); b.querySelector('.ip-grid').innerHTML = iconGrid(i, b.querySelector('.ip-cur').value); };
+ACT.ipPick = el => { const b = el.closest('.ipick'); b.querySelector('.ip-cur').value = el.dataset.v; $$('.ip-i', b).forEach(x => x.classList.toggle('on', x === el)); };
 ACT.newDeck = () => openDeckForm(null);
 ACT.editDeck = el => openDeckForm(el.dataset.id);
 function openDeckForm(id) {
@@ -421,17 +427,17 @@ function openDeckForm(id) {
   const s = openSheet(`<h2>${id ? 'Sửa bộ thẻ' : 'Bộ thẻ mới'}</h2><form id="df">
     <label class="field"><span>Tên *</span><input name="name" value="${esc(d.name)}" maxlength="60" autofocus></label>
     <label class="field"><span>Mô tả</span><input name="description" value="${esc(d.description || '')}"></label>
-    <div class="field"><span>Biểu tượng</span><div class="row wrap">${DECK_ICONS.map(i => `<button type="button" class="chip ${d.icon === i ? 'on' : ''}" data-act="dfPick" data-k="icon" data-v="${i}" style="font-size:18px">${i}</button>`).join('')}</div></div>
+    ${iconPicker(d.icon)}
     <div class="field"><span>Màu</span><div class="row wrap">${DECK_COLORS.map(i => `<button type="button" class="chip ${d.color === i ? 'on' : ''}" data-act="dfPick" data-k="color" data-v="${i}" style="background:${i};width:34px;height:34px;padding:0;border-color:${d.color === i ? 'var(--text)' : 'transparent'}" aria-label="${i}"></button>`).join('')}</div></div>
     ${S.cats.length ? `<label class="field"><span>Danh mục</span><select name="category_id"><option value="">Chưa phân loại</option>${S.cats.map(c => `<option value="${c.id}" ${d.category_id === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}</select></label>` : ''}
     <div class="row">${id ? '<button type="button" class="btn danger" data-act="dfDelete">Xóa</button>' : ''}<button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow">Lưu</button></div></form>`);
   const base = id ? { ...d } : null;
-  const f = s.$('#df'); f._v = { icon: d.icon, color: d.color }; f._id = id; f._s = s;
+  const f = s.$('#df'); f._v = { color: d.color }; f._id = id; f._s = s;
   f.addEventListener('submit', async e => {
     e.preventDefault(); const x = Object.fromEntries(new FormData(f)); if (!x.name.trim()) return toast('Cần nhập tên bộ thẻ', true);
     let note = 'Đã lưu bộ thẻ';
     const ok = await guard(async () => {
-      const r = await saveDeck(id, { name: x.name.trim(), description: x.description?.trim() || null, icon: f._v.icon, color: f._v.color, category_id: x.category_id || null }, base, askConflict);
+      const r = await saveDeck(id, { name: x.name.trim(), description: x.description?.trim() || null, icon: (x.icon || '').trim() || '📁', color: f._v.color, category_id: x.category_id || null }, base, askConflict);
       if (r.cancelled) note = 'Đã giữ bản từ thiết bị khác, thay đổi của bạn không được lưu'; else if (r.merged) note = 'Đã lưu — đã gộp với thay đổi từ thiết bị khác';
     });
     if (ok !== undefined) { toast(note); s.close(); render(); }
@@ -452,7 +458,7 @@ const catRedraw = () => { _cat.s.sheet.innerHTML = '<div class="grab"></div>' + 
 ACT.catEdit = el => {
   const id = el.dataset.id, c = id ? S.cats.find(x => x.id === id) : { name: '', icon: '🗂️' };
   const s = openSheet(`<h2>${id ? 'Sửa' : 'Thêm'} danh mục</h2><form id="cform"><label class="field"><span>Tên *</span><input name="name" value="${esc(c.name)}" autofocus></label>
-    <label class="field"><span>Biểu tượng</span><input name="icon" value="${esc(c.icon || '')}" maxlength="4"></label>
+    ${iconPicker(c.icon || '🗂️')}
     <div class="row"><button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow">Lưu</button></div></form>`);
   s.$('#cform').addEventListener('submit', async e => {
     e.preventDefault(); const x = Object.fromEntries(new FormData(e.target)); if (!x.name.trim()) return;

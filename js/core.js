@@ -29,7 +29,20 @@ const POS_ALIAS = { 'danh từ': 'noun', 'danh tu': 'noun', 'meishi': 'noun', n:
   'thán từ': 'interjection', 'than tu': 'interjection', 'kandoushi': 'interjection' };
 const safePos = v => { const s = String(v ?? '').trim().toLowerCase(); return POS.includes(s) ? s : (POS_ALIAS[s] || null); };
 const DECK_COLORS = ['#3ECFCF', '#F0B429', '#E85D5D', '#9B7FE8', '#4ECB85', '#4A90D9', '#FF6B9D'];
-const DECK_ICONS = ['📁', '📚', '🌸', '🎌', '⭐', '🔥', '💎', '🎯'];
+const ICON_GROUPS = [
+  ['Học tập', '📁 📚 📖 📘 📗 📙 📕 📓 📒 📝 ✏️ 🖊️ 🎓 🏫 🧠 💡 🔍 🗂️ 📌 📎 🔖 🧾 📊 🗒️ 🧮 🔤 🔠 🔡 🈁 🈯 🈳 🈶 🈚 🈸 🈺 🈷️ 🉐 🉑 🀄'],
+  ['Nhật Bản', '🎌 🗾 🌸 🏯 ⛩️ 🗻 🍣 🍙 🍱 🍜 🍡 🍵 🎍 🎎 🎏 🎐 🎑 🎋 🎆 🎇 🧧 🎴 👘 🥋 🏮 🍶 🥢 🛕 🚄 🎭 🪷 🎨 ⛰️ 🐟 🦀 🌊'],
+  ['Đồ ăn', '🍎 🍊 🍋 🍌 🍉 🍇 🍓 🍑 🍒 🍍 🥝 🍅 🥕 🌽 🥔 🍆 🥦 🍞 🧀 🥚 🍳 🥞 🍗 🍖 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍲 🍛 🍤 🍦 🍩 🍪 🎂 🍰 🍫 🍬 ☕ 🥛 🍺 🍷 🧃'],
+  ['Thiên nhiên', '🌳 🌲 🌴 🌵 🌿 🍀 🍁 🍂 🍃 🌺 🌻 🌼 🌷 🌹 💐 🌾 ☀️ 🌙 ⭐ 🌟 ☁️ ⛅ 🌧️ ⛈️ ❄️ ☃️ 🌈 💧 🔥 🌍 🏔️ 🏖️ 🌋'],
+  ['Động vật', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🐺 🐴 🦄 🐝 🦋 🐌 🐞 🐢 🐍 🐙 🐠 🐬 🐳 🦈 🐘 🦒 🐇 🐿️'],
+  ['Con người', '👤 👥 👨 👩 🧑 👶 👴 👵 🙂 😀 😊 😍 🤔 😴 😭 😡 💪 👀 👂 👃 👄 🖐️ 👍 🙏 ❤️ 🦷 🦴 🧍 🏃 🚶 👋 ✋ 🤝'],
+  ['Nhà & đời sống', '🏠 🏢 🏥 🏦 🏪 🛒 🛏️ 🚪 🪑 🛁 🚿 🧹 🧺 👕 👗 👟 🎒 👜 👓 ⌚ 📱 💻 📷 🔑 💰 💳 ✉️ 📞 🕐 📅 🧴 🪥 🧼 💡'],
+  ['Du lịch', '🚗 🚕 🚌 🚆 🚲 🛵 ✈️ 🚢 🚀 🗺️ 🧭 ⛽ 🏨 🎫 🛂 🧳 🌏 🏝️ ⛺ 🚉 🚏 🗼 🗽 🎡 🎢'],
+  ['Công việc', '💼 🏭 🔧 🔨 ⚙️ 🧰 🖥️ ⌨️ 🖨️ 📈 📉 🗄️ 📋 📣 📢 ⚖️ 🔬 🧪 💊 ⚕️ 🩺 🏗️ 🚜 📦 🛠️'],
+  ['Giải trí', '⚽ 🏀 🎾 🏐 ⛳ 🏊 🚴 🎮 🎲 🎯 🎵 🎶 🎤 🎧 🎸 🎹 🥁 🎬 📺 🧩 ♟️ 🎁 🎉 🎈 📻 🎻 🎺'],
+  ['Biểu tượng', '⭐ 💎 🔥 ⚡ ❤️ 🧡 💛 💚 💙 💜 🖤 ✅ ❌ ❗ ❓ ♾️ 🔔 🔒 🏆 🥇 🎖️ 🚩 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🆕 🆗 🔰'],
+].map(([name, list]) => [name, list.split(' ')]);
+const DECK_ICONS = ICON_GROUPS.flatMap(g => g[1]);
 const LIMITS = { character: 50, meaning: 200, reading: 100, example: 500, notes: 1000, source: 100 };
 
 // SRS (SM-2 rút gọn) — y hệt domain/srs.py
@@ -82,10 +95,11 @@ function computeSrsUpdate(interval, ease, result) {
   }
   return [1, Math.max(ease - SRS.PENALTY, SRS.MIN_EASE)];
 }
-function nextStatus(cur, result) {
-  if (result === 'correct') return cur === 'new' ? 'learning' : 'known';
-  return cur === 'known' ? 'learning' : 'new';
-}
+// Trạng thái theo số lần học: 0 = Chưa học · 1–19 = Đang học · từ 20 = Đã nhớ
+const KNOWN_AT = 20;
+// Số lần học: trả lời đúng +1; trả lời sai −1 (không xuống dưới 0)
+function nextCount(n, result) { n = Number(n) || 0; return result === 'correct' ? n + 1 : Math.max(0, n - 1); }
+function statusFromCount(n) { n = Number(n) || 0; return n <= 0 ? 'new' : n < KNOWN_AT ? 'learning' : 'known'; }
 // ── Gộp 3 chiều: so sánh theo trường ────────────────────────────────────────
 const sameVal = (a, b) => nz(a) === nz(b);
 function diffFields(a, b, fields) { const o = {}; for (const f of fields) if (!sameVal(a[f], b[f])) o[f] = nz(b[f]); return o; }

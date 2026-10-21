@@ -163,7 +163,8 @@ function logStudy(cardId, result) {
   const c = S.byId.get(cardId); if (!c) return;
   const now = new Date();
   const [iv, ease] = computeSrsUpdate(c.srs_interval, c.srs_ease, result);
-  Object.assign(c, { status: nextStatus(c.status, result), srs_interval: iv, srs_ease: ease, srs_due_date: addDays(iv) });
+  c.study_count = nextCount(c.study_count, result);
+  Object.assign(c, { status: statusFromCount(c.study_count), srs_interval: iv, srs_ease: ease, srs_due_date: addDays(iv) });
   S.daily.push({ result, day: localDate(now) }); S.sessTotal++; if (result === 'correct') S.sessCorrect++;
   MUT.n++;
   enqueue({ op: 'study', id: uuid7(), card_id: cardId, result, at: now.toISOString(), today: localDate(now) });

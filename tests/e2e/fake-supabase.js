@@ -76,13 +76,14 @@
     const ne = ok ? Math.min(ez + 0.1, 2.8) : Math.max(ez - 0.2, 1.3), ni = ok ? Math.min(Math.max(iv + 1, half(iv * ne)), 90) : 1;
     const d = new Date(a.p_today + 'T00:00:00'); d.setDate(d.getDate() + ni);
     const due = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    Object.assign(c, { srs_interval: ni, srs_ease: Math.round(ne * 10) / 10, srs_due_date: due, status: ok ? (c.status === 'new' ? 'learning' : 'known') : (c.status === 'known' ? 'learning' : 'new'), version: c.version + 1 });
+    Object.assign(c, { srs_interval: ni, srs_ease: Math.round(ne * 10) / 10, srs_due_date: due, study_count: ok ? (c.study_count || 0) + 1 : Math.max(0, (c.study_count || 0) - 1), version: c.version + 1 });
+    c.status = c.study_count <= 0 ? 'new' : c.study_count < 20 ? 'learning' : 'known';
     DB.study_sessions.push({ id: a.p_id, card_id: c.id, result: a.p_result, studied_at: a.p_at, user_id: USER.id }); bump();
     return { data: JSON.parse(JSON.stringify(c)), error: null };
   }
   const session = () => ({ access_token: 'fake', refresh_token: 'fake', expires_at: Math.floor(Date.now() / 1000) + 3600, user: USER });
   const RPC = {
-    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 7, error: null }),
+    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 9, error: null }),
     jp_sync_sig: () => ({ data: 'sig-' + DB.n, error: null }),
     jp_me: () => ({ data: [DB.me], error: null }),
     log_study: logStudy,

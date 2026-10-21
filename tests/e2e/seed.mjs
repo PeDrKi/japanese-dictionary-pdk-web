@@ -4,9 +4,9 @@ const base = { deleted_at: null, version: 1, created_at: '2026-01-01T00:00:00Z',
 const card = (n, o) => ({ ...base, id: `c0000000-0000-4000-8000-${String(n).padStart(12, '0')}`, ...o });
 export const SEED = {
   cards: [
-    card(1, { type: 'vocab', character: '食べる', meaning_vi: 'ăn', reading_kana: 'たべる', romaji: 'taberu', jlpt_level: 'N5', pos: 'verb2', status: 'learning', is_favorite: true, srs_due_date: day(-2) }),
+    card(1, { type: 'vocab', character: '食べる', meaning_vi: 'ăn', reading_kana: 'たべる', romaji: 'taberu', jlpt_level: 'N5', pos: 'verb2', status: 'learning', study_count: 5, is_favorite: true, srs_due_date: day(-2) }),
     card(2, { type: 'vocab', character: '水', meaning_vi: 'nước', reading_kana: 'みず', romaji: 'mizu', jlpt_level: 'N5', pos: 'noun', srs_due_date: day(5) }),
-    card(3, { type: 'kanji', character: '日', meaning_vi: 'ngày, mặt trời', reading_on: 'ニチ', reading_kun: 'ひ', status: 'known', srs_due_date: day(0) }),
+    card(3, { type: 'kanji', character: '日', meaning_vi: 'ngày, mặt trời', reading_on: 'ニチ', reading_kun: 'ひ', status: 'known', study_count: 25, srs_due_date: day(0) }),
     card(4, { type: 'hiragana', character: 'あ', meaning_vi: 'a' }),
   ],
   decks: [{ ...base, id: 'd0000000-0000-4000-8000-000000000001', name: 'Từ vựng N5', icon: '📘', color: '#4A90D9', category_id: null, description: '' }],

@@ -301,3 +301,13 @@ nav#tabs .imeside { display: none; }
 .mr-x:hover { color: var(--bad, #d33); border-color: currentColor; }
 .mrgrid { align-items: start; }
 @media (max-width: 420px) { .mrgrid { grid-template-columns: 1fr; } }
+
+/* Chọn biểu tượng */
+.ip-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.field .ip-cur { width: 64px; flex: none; text-align: center; font-size: 24px; padding: 4px; }
+.ip-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; scrollbar-width: thin; }
+.ip-tabs .chip { flex: none; white-space: nowrap; }
+.ip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px; max-height: 176px; overflow-y: auto; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.ip-i { height: 40px; border: 1px solid transparent; border-radius: 10px; background: none; font-size: 22px; line-height: 1; }
+.ip-i:hover { background: var(--surface2); }
+.ip-i.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
