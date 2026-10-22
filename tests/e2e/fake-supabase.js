@@ -2,15 +2,15 @@
    Mô phỏng đủ phần của supabase-js mà app dùng: auth, from().select/insert/update/upsert/delete + eq/in/gte/order/range, rpc().
    Dữ liệu nằm trong window.__DB (test đọc/ghi trực tiếp để kiểm tra). Dữ liệu ban đầu: window.__SEED. */
 (() => {
-  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points'];
+  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells'];
   const seed = window.__SEED || {};
   const DB = window.__DB = { n: 0, calls: [], me: seed.me || { role: 'user', status: 'active' }, fail: null };
   for (const t of TABLES) DB[t] = JSON.parse(JSON.stringify(seed[t] || []));
-  if (seed.oldSchema) delete DB.grammar_points;   // mô phỏng máy chủ chưa chạy schema v7
+  if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; }   // mô phỏng máy chủ chưa chạy schema v7
   const USER = { id: '11111111-1111-4111-8111-111111111111', email: seed.email || 'test@example.com' };
   const nowIso = () => new Date().toISOString();
   const bump = () => { DB.n++; };
-  const KEYS = { deck_cards: ['deck_id', 'card_id'], radical_cards: ['radical_id', 'card_id'], user_decompositions: ['character'], cards: ['id'] };
+  const KEYS = { deck_cards: ['deck_id', 'card_id'], radical_cards: ['radical_id', 'card_id'], user_decompositions: ['character'], conj_cells: ['verb_id', 'form_id'], cards: ['id'] };
   const keyOf = (t, r) => (KEYS[t] || ['id']).map(k => r[k]).join('|');
   const err = (message, code = 'XX000') => ({ data: null, error: { message, code } });
 
@@ -61,7 +61,12 @@
         const hit = tab.filter(match); hit.forEach(r => { Object.assign(r, this.patch, { version: (r.version || 1) + 1, updated_at: nowIso() }); });
         if (hit.length) bump(); return { data: this.sel ? JSON.parse(JSON.stringify(hit)) : null, error: null };
       }
-      if (this.op === 'delete') { const keep = tab.filter(r => !match(r)); if (keep.length !== tab.length) bump(); DB[this.t] = keep; return { data: null, error: null }; }
+      if (this.op === 'delete') {
+        const gone = tab.filter(match), keep = tab.filter(r => !match(r)); if (keep.length !== tab.length) bump(); DB[this.t] = keep;
+        const cascade = { conj_forms: ['conj_cells', 'form_id'], conj_verbs: ['conj_cells', 'verb_id'] }[this.t];   // on delete cascade như schema.sql
+        if (cascade && DB[cascade[0]]) DB[cascade[0]] = DB[cascade[0]].filter(r => !gone.some(g => g.id === r[cascade[1]]));
+        return { data: null, error: null };
+      }
       return err('unsupported ' + this.op);
     }
   }
@@ -83,7 +88,7 @@
   }
   const session = () => ({ access_token: 'fake', refresh_token: 'fake', expires_at: Math.floor(Date.now() / 1000) + 3600, user: USER });
   const RPC = {
-    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 9, error: null }),
+    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 10, error: null }),
     jp_sync_sig: () => ({ data: 'sig-' + DB.n, error: null }),
     jp_me: () => ({ data: [DB.me], error: null }),
     log_study: logStudy,

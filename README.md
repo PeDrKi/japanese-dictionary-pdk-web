@@ -203,3 +203,12 @@ npm run test:all    # cả hai
 - **Cách đếm mới** (thay cho v3.27): mỗi lần trả lời **đúng +1**, **sai −1**; đã về 0 thì giữ 0, không âm. **Chưa học** = 0 · **Đang học** = 1–19 · **Đã nhớ** = từ 20 trở lên. Thẻ đã nhớ (20) trả lời sai một lần sẽ tụt về 19 = Đang học.
 - **Chạy lại toàn bộ `schema.sql`** (an toàn, không mất dữ liệu): điểm học của thẻ cũ được tính lại bằng cách phát lại lịch sử ôn theo thời gian với đúng quy tắc trên.
 - **Biểu tượng** của Bộ thẻ và Danh mục: hơn 300 emoji chia 11 nhóm (Học tập, Nhật Bản, Đồ ăn, Thiên nhiên, Động vật, Con người, Nhà & đời sống, Du lịch, Công việc, Giải trí, Biểu tượng). Bấm tab nhóm rồi bấm biểu tượng; hoặc gõ / dán emoji khác vào ô lớn ở trên.
+
+## v3.29 — Bảng chia động từ (schema phiên bản 10)
+- Mục mới **Chia động từ** (thanh bên trên máy tính, phím **9** hoặc **v**; trên điện thoại: Khác → Chia động từ).
+- **Bảng:** cột đầu là thể **ます** (kèm nhóm 1 / 2 / 3 và nghĩa), các cột sau là các thể khác. **Sửa nội dung bất kỳ ô nào ngay trên bảng** (rời ô hoặc Enter là lưu; Enter nhảy xuống ô dưới; Esc hoàn tác; xóa chữ = xóa ô). Bấm tên động từ để sửa / xóa; bấm tên cột để sửa / xóa; nút **+** cuối hàng tiêu đề thêm cột.
+- **Cột:** thêm / sửa / xóa, **ẩn / hiện** (👁), đổi thứ tự (↑ ↓) trong **Cột…**; trạng thái ẩn lưu trên máy chủ nên đồng bộ mọi thiết bị. "Thêm thể thông dụng" tạo sẵn 11 cột: 辞書形, ない形, て形, た形, 可能形, 意向形, 命令形, 受身形, 使役形, ば形, 禁止形 (ngoài ra có thêm ません形, ました形, なかった形). Cột chọn "Cột tự đặt" thì tự nhập nội dung.
+- **Tự điền theo quy tắc chia** (nhóm 1 五段, nhóm 2 一段, nhóm 3 します・来ます, kể cả ngoại lệ 行く → 行って, ある → ない): khi thêm động từ, khi thêm cột có loại thể, hoặc nút **Tự điền ô trống**. Không bao giờ ghi đè ô đã có chữ (trừ khi bạn chọn "Điền lại TOÀN BỘ"). Bạn luôn sửa lại được từng ô.
+- **Lấy từ thẻ:** thêm nhanh các thẻ có từ loại Động từ nhóm 1 / 2 / 3 trong thư viện (tự đổi sang thể ます).
+- Có lọc theo nhóm và ô tìm (tìm cả trong các thể đã chia). Sao lưu / khôi phục toàn bộ đã bao gồm bảng này.
+- **Cần chạy lại toàn bộ `schema.sql`** (thêm 3 bảng conj_forms, conj_verbs, conj_cells; không ảnh hưởng dữ liệu cũ).

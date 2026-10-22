@@ -135,3 +135,43 @@ test('CSV: nhận tên từ loại tiếng Việt, báo dòng thiếu dữ liệ
   assert.equal(r.valid.length, 1);
   assert.equal(r.invalid ? r.invalid.length : r.errors.length, 1);
 });
+
+// ── Chia động từ ──
+const CONJ_TABLE = {   // thể ます, nhóm → dict nai te ta potential volitional imperative passive causative ba prohibitive
+  '食べます|2': '食べる 食べない 食べて 食べた 食べられる 食べよう 食べろ 食べられる 食べさせる 食べれば 食べるな',
+  '飲みます|1': '飲む 飲まない 飲んで 飲んだ 飲める 飲もう 飲め 飲まれる 飲ませる 飲めば 飲むな',
+  '書きます|1': '書く 書かない 書いて 書いた 書ける 書こう 書け 書かれる 書かせる 書けば 書くな',
+  '行きます|1': '行く 行かない 行って 行った 行ける 行こう 行け 行かれる 行かせる 行けば 行くな',
+  '泳ぎます|1': '泳ぐ 泳がない 泳いで 泳いだ 泳げる 泳ごう 泳げ 泳がれる 泳がせる 泳げば 泳ぐな',
+  '話します|1': '話す 話さない 話して 話した 話せる 話そう 話せ 話される 話させる 話せば 話すな',
+  '待ちます|1': '待つ 待たない 待って 待った 待てる 待とう 待て 待たれる 待たせる 待てば 待つな',
+  '死にます|1': '死ぬ 死なない 死んで 死んだ 死ねる 死のう 死ね 死なれる 死なせる 死ねば 死ぬな',
+  '遊びます|1': '遊ぶ 遊ばない 遊んで 遊んだ 遊べる 遊ぼう 遊べ 遊ばれる 遊ばせる 遊べば 遊ぶな',
+  '帰ります|1': '帰る 帰らない 帰って 帰った 帰れる 帰ろう 帰れ 帰られる 帰らせる 帰れば 帰るな',
+  '買います|1': '買う 買わない 買って 買った 買える 買おう 買え 買われる 買わせる 買えば 買うな',
+  'します|3': 'する しない して した できる しよう しろ される させる すれば するな',
+  '勉強します|3': '勉強する 勉強しない 勉強して 勉強した 勉強できる 勉強しよう 勉強しろ 勉強される 勉強させる 勉強すれば 勉強するな',
+  '来ます|3': '来る 来ない 来て 来た 来られる 来よう 来い 来られる 来させる 来れば 来るな',
+  'きます|3': 'くる こない きて きた こられる こよう こい こられる こさせる くれば くるな',
+};
+test('Chia động từ: 11 thể thông dụng đúng cho từng nhóm (cả ngoại lệ 行く, する, 来る)', () => {
+  const kinds = g('CONJ_DEFAULT_KINDS'), conj = g('conjugate');
+  assert.equal(kinds.length, 11);
+  for (const [key, want] of Object.entries(CONJ_TABLE)) {
+    const [m, grp] = key.split('|');
+    assert.equal(Array.from(kinds, k => conj(m, +grp, k)).join(' '), want, key);
+  }
+});
+test('Chia động từ: ます / ません / ました / なかった, ある, và dữ liệu thiếu', () => {
+  const conj = g('conjugate');
+  assert.equal(conj('食べます', 2, 'masu_neg'), '食べません'); assert.equal(conj('食べます', 2, 'masu_ta'), '食べました'); assert.equal(conj('飲みます', 1, 'nakatta'), '飲まなかった');
+  assert.equal(conj('あります', 1, 'nai'), 'ない'); assert.equal(conj('あります', 1, 'potential'), '');
+  assert.equal(conj('食べます', 0, 'te'), ''); assert.equal(conj('食べる', 2, 'te'), ''); assert.equal(conj('', 1, 'te'), ''); assert.equal(conj('食べます', 2, 'khong-co'), '');
+});
+test('dictToMasu: ngược lại với masuToDict', () => {
+  const d2m = g('dictToMasu'), m2d = g('masuToDict');
+  for (const [d, grp, m] of [['食べる', 2, '食べます'], ['飲む', 1, '飲みます'], ['買う', 1, '買います'], ['する', 3, 'します'], ['勉強する', 3, '勉強します'], ['来る', 3, '来ます'], ['くる', 3, 'きます'], ['行く', 1, '行きます']]) {
+    assert.equal(d2m(d, grp), m, d); assert.equal(m2d(m, grp), d, m);
+  }
+  assert.equal(d2m('りんご', 1), null); assert.equal(d2m('食べる', 3), null);
+});

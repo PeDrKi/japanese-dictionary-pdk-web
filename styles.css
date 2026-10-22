@@ -311,3 +311,23 @@ nav#tabs .imeside { display: none; }
 .ip-i { height: 40px; border: 1px solid transparent; border-radius: 10px; background: none; font-size: 22px; line-height: 1; }
 .ip-i:hover { background: var(--surface2); }
 .ip-i.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+
+/* Bảng chia động từ */
+.page.wide { max-width: none; }
+.conjwrap { overflow: auto; max-height: calc(100dvh - 250px); border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-top: 10px; }
+table.conj { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+table.conj th, table.conj td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 0; text-align: left; vertical-align: middle; background: var(--surface); }
+table.conj thead th { position: sticky; top: 0; z-index: 2; background: var(--surface2); white-space: nowrap; }
+table.conj .c-first { position: sticky; left: 0; z-index: 1; min-width: 150px; max-width: 190px; background: var(--surface2); }
+table.conj thead .c-first { z-index: 3; padding: 10px 12px; font-weight: 600; }
+table.conj .c-head { width: 100%; min-width: 96px; padding: 10px 12px; border: 0; background: none; font-weight: 600; font-size: 15px; text-align: left; }
+table.conj .c-head:hover, table.conj .c-verb:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+table.conj .c-verb { display: block; width: 100%; padding: 8px 12px; border: 0; background: none; text-align: left; }
+table.conj .c-verb .masu { font-size: 17px; margin-right: 6px; }
+table.conj .c-verb .s { display: block; font-size: 12px; color: var(--mute); }
+table.conj td input.cell { width: 100%; min-width: 96px; border: 0; background: transparent; padding: 11px 12px; font-size: 16px; border-radius: 0; min-height: 0; }
+table.conj td input.cell:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--surface2); }
+table.conj .c-add { padding: 4px 8px; background: var(--surface2); }
+.gtag { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; font-size: 11px; text-align: center; line-height: 18px; color: #fff; vertical-align: 2px; }
+.gtag.g1 { background: #4a90d9; } .gtag.g2 { background: #4ecb85; color: #0b2b19; } .gtag.g3 { background: #e0675b; } .gtag.g0 { background: var(--mute); }
+.item.dim { opacity: .55; }

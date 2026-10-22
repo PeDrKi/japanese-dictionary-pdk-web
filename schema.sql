@@ -652,5 +652,89 @@ end $$;
 create or replace function public.jp_schema_version() returns integer
 language sql stable as $$ select 9 $$;
 
+-- ══ PHIÊN BẢN 10: BẢNG CHIA ĐỘNG TỪ ══════════════════════════════════════════════════════════════
+-- conj_forms : các cột của bảng (thể て, thể ない…), có thể thêm / sửa / xóa / ẩn / đổi thứ tự. kind = loại thể chuẩn (để tự điền), null = cột tự đặt
+-- conj_verbs : mỗi hàng là 1 động từ ở thể ます (cột đầu), grp = nhóm 1 / 2 / 3
+-- conj_cells : nội dung từng ô (động từ × thể)
+create table if not exists public.conj_forms (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name        text not null check (length(name) between 1 and 60),
+  kind        text,
+  hidden      boolean not null default false,
+  sort_order  integer not null default 0,
+  version     bigint not null default 1,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists conj_forms_user on public.conj_forms (user_id);
+
+create table if not exists public.conj_verbs (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  masu        text not null check (length(masu) between 1 and 100),
+  meaning_vi  text,
+  grp         smallint check (grp is null or grp in (1, 2, 3)),
+  sort_order  integer not null default 0,
+  version     bigint not null default 1,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists conj_verbs_user on public.conj_verbs (user_id);
+
+create table if not exists public.conj_cells (
+  verb_id     uuid not null references public.conj_verbs(id) on delete cascade,
+  form_id     uuid not null references public.conj_forms(id) on delete cascade,
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  value       text not null check (length(value) between 1 and 200),
+  updated_at  timestamptz not null default now(),
+  primary key (verb_id, form_id)
+);
+create index if not exists conj_cells_user on public.conj_cells (user_id);
+
+do $$
+declare t text;
+begin
+  foreach t in array array['conj_forms','conj_verbs']
+  loop
+    execute format('drop trigger if exists trg_touch on public.%I', t);
+    execute format('create trigger trg_touch before insert or update on public.%I for each row execute function public.touch_versioned()', t);
+  end loop;
+  execute 'drop trigger if exists trg_touch on public.conj_cells';
+  execute 'create trigger trg_touch before insert or update on public.conj_cells for each row execute function public.touch_updated_at()';
+  foreach t in array array['conj_forms','conj_verbs','conj_cells']
+  loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "own rows" on public.%I', t);
+    execute format('create policy "own rows" on public.%I for all to authenticated
+                    using (user_id = auth.uid() and public.jp_is_active())
+                    with check (user_id = auth.uid() and public.jp_is_active())', t);
+  end loop;
+end $$;
+grant select, insert, update, delete on public.conj_forms, public.conj_verbs, public.conj_cells to authenticated;
+
+-- Chữ ký đồng bộ: thêm 3 bảng mới
+create or replace function public.jp_sync_sig() returns text
+language sql stable set search_path = public as $$
+  select md5(concat_ws('|',
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from decks),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radicals),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from deck_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radical_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from user_decompositions),
+    (select count(*)::text || coalesce(max(studied_at)::text, '') from study_sessions),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from grammar_points),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_forms),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_verbs),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_cells),
+    (select coalesce(md5(string_agg(id::text || name || coalesce(icon, '') || sort_order::text, ',' order by id)), '') from deck_categories)
+  )) $$;
+revoke execute on function public.jp_sync_sig() from public, anon;
+grant execute on function public.jp_sync_sig() to authenticated;
+
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 10 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';

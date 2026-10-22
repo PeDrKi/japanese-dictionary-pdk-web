@@ -2,7 +2,7 @@
 'use strict';
 
 const root = () => $('#root');
-const TABS = [['today', '今', 'Hôm nay'], ['cards', '札', 'Thư viện'], ['study', '習', 'Ôn tập'], ['decks', '組', 'Bộ thẻ'], ['grammar', '文', 'Ngữ pháp', 'desk'], ['radicals', '部', 'Bộ thủ', 'desk'], ['stats', '計', 'Thống kê', 'desk'], ['more', '他', 'Khác']];
+const TABS = [['today', '今', 'Hôm nay'], ['cards', '札', 'Thư viện'], ['study', '習', 'Ôn tập'], ['decks', '組', 'Bộ thẻ'], ['grammar', '文', 'Ngữ pháp', 'desk'], ['radicals', '部', 'Bộ thủ', 'desk'], ['stats', '計', 'Thống kê', 'desk'], ['conj', '活', 'Chia động từ', 'desk'], ['more', '他', 'Khác']];
 // Mục 'desk' chỉ hiện ở thanh bên của màn hình rộng (≥900px); trên điện thoại thanh dưới vẫn 5 mục, các mục này nằm trong Khác
 
 // ── Cấu hình máy chủ: hỏi 1 lần khi dùng lần đầu, sửa được trong Khác → Máy chủ ──

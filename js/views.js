@@ -2,14 +2,14 @@
 'use strict';
 
 // Ngữ pháp / Bộ thủ / Thống kê: là mục của thanh bên trên màn hình rộng (không có nút ← khi đứng ở mục chính)
-const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'stats'].includes(NAV.tab);
+const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'stats', 'conj'].includes(NAV.tab);
 function render() {
   const v = $('#view'); if (!v) return;
   const sub = NAV.sub;
   if (sub) {
-    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
+    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, conj: viewConj, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
   } else {
-    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, more: viewMore }[NAV.tab]();
+    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, conj: viewConj, more: viewMore }[NAV.tab]();
   }
   $$('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === NAV.tab ? 'page' : 'false'));
   const d = dueCount(), bd = $('#duebadge'); if (bd) { bd.textContent = d > 99 ? '99+' : d; bd.classList.toggle('hidden', !d); }
@@ -469,12 +469,13 @@ ACT.catDel = async el => { if (!await confirmBox('Xóa danh mục? Các bộ th�
 
 // ═══ KHÁC ══════════════════════════════════════════════════════════════════
 function viewMore() {
-  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'stats'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
+  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'stats', 'conj'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   const act = (g, t, s, a) => `<button class="item" data-act="${a}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   return `<div class="page">${pageTop('Khác')}
   <div class="list">
     ${link('計', 'Thống kê', 'Tiến độ, độ chính xác, 30 ngày gần đây', 'stats')}
     ${link('文', 'Ngữ pháp', `Mẫu câu, cấu tạo, ví dụ · ${S.grammar_points.length} mẫu`, 'grammar')}
+    ${link('活', 'Chia động từ', `Bảng chia các thể · ${S.conj_verbs.length} động từ`, 'conj')}
     ${link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ, tra nhanh', 'radicals')}
     ${act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa" để tạo hàng loạt', 'quickAdd')}
     ${act('備', 'Sao lưu & khôi phục', esc(backupLabel()) + ' · tải toàn bộ dữ liệu về 1 file', 'backupTools')}

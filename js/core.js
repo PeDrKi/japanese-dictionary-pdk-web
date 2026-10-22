@@ -312,3 +312,67 @@ function csvRowsToCards(rows) {
   });
   return { valid, errors };
 }
+
+// ═══ CHIA ĐỘNG TỪ (thể ます → các thể khác) ═══════════════════════════════════════════════
+// Nhóm 1 (五段: 飲みます), nhóm 2 (一段: 食べます), nhóm 3 (bất quy tắc: します / 来ます). Cột "kind" của bảng chia dùng các mã dưới đây.
+const CONJ_KINDS = [
+  ['dict', '辞書形', 'Thể từ điển'], ['nai', 'ない形', 'Phủ định (ない)'], ['te', 'て形', 'Thể て'], ['ta', 'た形', 'Quá khứ (た)'],
+  ['potential', '可能形', 'Khả năng'], ['volitional', '意向形', 'Ý chí (〜よう)'], ['imperative', '命令形', 'Mệnh lệnh'], ['passive', '受身形', 'Bị động'],
+  ['causative', '使役形', 'Sai khiến'], ['ba', 'ば形', 'Điều kiện (〜ば)'], ['prohibitive', '禁止形', 'Cấm (〜な)'],
+  ['masu_neg', 'ません形', 'ます phủ định'], ['masu_ta', 'ました形', 'ます quá khứ'], ['nakatta', 'なかった形', 'Phủ định quá khứ'],
+];
+const CONJ_DEFAULT_KINDS = CONJ_KINDS.slice(0, 11).map(k => k[0]);
+const CONJ_ROW = { う: 'わいうえお', く: 'かきくけこ', ぐ: 'がぎぐげご', す: 'さしすせそ', つ: 'たちつてと', ぬ: 'なにぬねの', ぶ: 'ばびぶべぼ', む: 'まみむめも', る: 'らりるれろ' };
+const CONJ_I2U = { い: 'う', き: 'く', ぎ: 'ぐ', し: 'す', ち: 'つ', に: 'ぬ', び: 'ぶ', み: 'む', り: 'る' };
+const CONJ_U2I = Object.fromEntries(Object.entries(CONJ_I2U).map(([i, u]) => [u, i]));
+const lastCh = s => s.slice(-1), initCh = s => s.slice(0, -1);
+
+// Thể ます → thể từ điển; null nếu không suy ra được
+function masuToDict(masu, grp) {
+  masu = (masu || '').trim(); if (!masu.endsWith('ます') || masu.length < 3) return null;
+  const stem = masu.slice(0, -2), l = lastCh(stem);
+  if (grp === 2) return stem + 'る';
+  if (grp === 1) return CONJ_I2U[l] ? initCh(stem) + CONJ_I2U[l] : null;
+  if (grp === 3) return l === 'し' ? initCh(stem) + 'する' : l === 'き' ? initCh(stem) + 'くる' : l === '来' ? stem + 'る' : null;
+  return null;
+}
+// Thể từ điển → thể ます (dùng khi lấy động từ từ thẻ trong thư viện)
+function dictToMasu(dict, grp) {
+  dict = (dict || '').trim(); if (dict.length < 2) return null;
+  const l = lastCh(dict), h = initCh(dict);
+  if (grp === 2) return l === 'る' ? h + 'ます' : null;
+  if (grp === 1) return CONJ_U2I[l] ? h + CONJ_U2I[l] + 'ます' : null;
+  if (grp === 3) return dict.endsWith('する') ? initCh(h) + 'します' : dict.endsWith('くる') ? initCh(initCh(h)) + 'きます' : l === 'る' && lastCh(h) === '来' ? h + 'ます' : null;
+  return null;
+}
+// Chia từ thể ます + nhóm sang thể `kind`; trả '' nếu không chia được (cột tự đặt, thiếu nhóm, dạng lạ)
+function conjugate(masu, grp, kind) {
+  masu = (masu || '').trim(); grp = Number(grp);
+  if (kind === 'masu_neg' || kind === 'masu_ta') return masu.endsWith('ます') ? masu.slice(0, -2) + (kind === 'masu_neg' ? 'ません' : 'ました') : '';
+  const d = masuToDict(masu, grp); if (!d) return '';
+  if (kind === 'dict') return d;
+  if (kind === 'prohibitive') return d + 'な';
+  if (kind === 'nakatta') { const n = conjugate(masu, grp, 'nai'); return n ? n.slice(0, -1) + 'かった' : ''; }
+  if (grp === 2) {
+    const st = initCh(d);
+    return { nai: st + 'ない', te: st + 'て', ta: st + 'た', potential: st + 'られる', volitional: st + 'よう', imperative: st + 'ろ', passive: st + 'られる', causative: st + 'させる', ba: st + 'れば' }[kind] || '';
+  }
+  if (grp === 1) {
+    const b = initCh(d), u = lastCh(d), r = CONJ_ROW[u]; if (!r) return '';
+    if (kind === 'nai') return d === 'ある' ? 'ない' : b + r[0] + 'ない';
+    if (kind === 'te' || kind === 'ta') {
+      const t = kind === 'te';
+      if (u === 'く' && (d.endsWith('行く') || d === 'いく' || d.endsWith('逝く'))) return b + (t ? 'って' : 'った');
+      const m = { う: 'っ', つ: 'っ', る: 'っ', ぶ: 'ん', む: 'ん', ぬ: 'ん', く: 'い', ぐ: 'い', す: 'し' }[u], dv = 'ぶむぬぐ'.includes(u);
+      return b + m + (t ? (dv ? 'で' : 'て') : (dv ? 'だ' : 'た'));
+    }
+    if (d === 'ある' && ['potential', 'volitional', 'imperative', 'passive', 'causative'].includes(kind)) return '';   // ある không có các thể này
+    return { potential: b + r[3] + 'る', volitional: b + r[4] + 'う', imperative: b + r[3], passive: b + r[0] + 'れる', causative: b + r[0] + 'せる', ba: b + r[3] + 'ば' }[kind] || '';
+  }
+  if (grp === 3) {
+    if (d.endsWith('する')) { const p = d.slice(0, -2); return { nai: p + 'しない', te: p + 'して', ta: p + 'した', potential: p + 'できる', volitional: p + 'しよう', imperative: p + 'しろ', passive: p + 'される', causative: p + 'させる', ba: p + 'すれば' }[kind] || ''; }
+    const pre = d.slice(0, -2), kanji = d.endsWith('来る'), k = kana => pre + (kanji ? '来' : kana);   // 来る: 来 giữ nguyên; くる: こ / き / く
+    return { nai: k('こ') + 'ない', te: k('き') + 'て', ta: k('き') + 'た', potential: k('こ') + 'られる', volitional: k('こ') + 'よう', imperative: k('こ') + 'い', passive: k('こ') + 'られる', causative: k('こ') + 'させる', ba: k('く') + 'れば' }[kind] || '';
+  }
+  return '';
+}

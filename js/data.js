@@ -28,7 +28,7 @@ function initSupabase() {
 // ── State ───────────────────────────────────────────────────────────────────
 const S = { me: { role: 'user', status: 'active' },
   user: null, cards: [], decks: [], cats: [], deckCards: [], radicals: [], radCards: [], decomps: new Map(),
-  daily: [], sessTotal: 0, sessCorrect: 0, grammar_points: [], grammarOk: true,
+  daily: [], sessTotal: 0, sessCorrect: 0, grammar_points: [], grammarOk: true, conj_forms: [], conj_verbs: [], conj_cells: [], conjMap: new Map(), conjOk: true,
   byId: new Map(), deckOfCard: new Map(), cardsOfDeck: new Map(), radOfCard: new Map(), cardsOfRad: new Map(),
 };
 const alive = x => !x.deleted_at;
@@ -81,6 +81,12 @@ async function loadAll(opts = {}) {
   // Ngữ pháp (schema v7): nếu máy chủ chưa chạy schema mới thì bỏ qua êm, phần còn lại của app vẫn dùng bình thường
   let gram = null; try { gram = await fetchAll('grammar_points', q => q.order('created_at', { ascending: false }).order('id')); } catch { gram = null; }
   S.grammar_points = gram || []; S.grammarOk = !!gram;
+  // Bảng chia động từ (schema v10): chưa chạy schema mới thì bỏ qua êm
+  try {
+    const [cf, cv, cc] = await Promise.all([fetchAll('conj_forms', q => q.order('sort_order')), fetchAll('conj_verbs', q => q.order('sort_order')), fetchAll('conj_cells', q => q.order('verb_id'), 'form_id')]);
+    S.conj_forms = cf; S.conj_verbs = cv; S.conj_cells = cc; S.conjOk = true;
+  } catch { S.conj_forms = []; S.conj_verbs = []; S.conj_cells = []; S.conjOk = false; }
+  reindexConj();
   S.cards = cards; S.decks = decks; S.cats = cats.sort((a, b) => a.sort_order - b.sort_order); S.deckCards = dcs; S.radicals = rads; S.radCards = rcs;
   S.decomps = new Map(dec.filter(alive).map(d => [d.character, d.parts]));
   S.daily = daily.map(s => ({ result: s.result, day: localDate(new Date(s.studied_at)) }));
@@ -386,3 +392,94 @@ function filterCards(f = {}) {
   return list;
 }
 const dueCount = () => filterCards({ due: true }).length;
+
+// ── Bảng chia động từ ───────────────────────────────────────────────────────
+const reindexConj = () => { S.conjMap = new Map(S.conj_cells.map(c => [c.verb_id + '|' + c.form_id, c])); };
+const conjForms = (all = false) => S.conj_forms.filter(f => all || !f.hidden).sort((a, b) => a.sort_order - b.sort_order || (a.created_at > b.created_at ? 1 : -1));
+const conjVerbs = () => S.conj_verbs.slice().sort((a, b) => a.sort_order - b.sort_order || (a.created_at > b.created_at ? 1 : -1));
+const conjCell = (verbId, formId) => S.conjMap.get(verbId + '|' + formId)?.value || '';
+const nextOrder = arr => arr.reduce((m, x) => Math.max(m, x.sort_order || 0), -1) + 1;
+const putConj = (table, row) => { const a = S[table], i = a.findIndex(x => x.id === row.id); if (i >= 0) a[i] = row; else a.push(row); };
+
+async function addConjForm(f) {
+  const [r] = await mut(sb.from('conj_forms').insert({ id: uuid7(), name: f.name, kind: f.kind || null, hidden: !!f.hidden, sort_order: nextOrder(S.conj_forms) }).select());
+  S.conj_forms.push(r); return r;
+}
+// Thêm các thể thông dụng còn thiếu (theo kind). Trả về các cột vừa thêm.
+async function addDefaultConjForms() {
+  const have = new Set(S.conj_forms.map(f => f.kind)); let o = nextOrder(S.conj_forms);
+  const rows = CONJ_KINDS.filter(k => CONJ_DEFAULT_KINDS.includes(k[0]) && !have.has(k[0])).map(k => ({ id: uuid7(), name: k[1], kind: k[0], hidden: false, sort_order: o++ }));
+  if (!rows.length) return [];
+  const out = await mut(sb.from('conj_forms').insert(rows).select()); S.conj_forms.push(...out); return out;
+}
+async function updateConjForm(id, patch) {
+  const [r] = await mut(sb.from('conj_forms').update(patch).eq('id', id).select()); if (r) putConj('conj_forms', r); return r;
+}
+async function deleteConjForm(id) {
+  await mut(sb.from('conj_forms').delete().eq('id', id));
+  S.conj_forms = S.conj_forms.filter(f => f.id !== id); S.conj_cells = S.conj_cells.filter(c => c.form_id !== id); reindexConj();
+}
+async function moveConjForm(id, dir) {   // đổi chỗ với cột kề (tính cả cột đang ẩn)
+  const list = conjForms(true), i = list.findIndex(f => f.id === id), j = i + dir; if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  const changed = list.map((f, n) => [f, n]).filter(([f, n]) => f.sort_order !== n);
+  await Promise.all(changed.map(([f, n]) => updateConjForm(f.id, { sort_order: n })));
+}
+async function addConjVerb(v) {
+  const [r] = await mut(sb.from('conj_verbs').insert({ id: uuid7(), masu: v.masu, meaning_vi: v.meaning_vi || null, grp: v.grp || null, sort_order: nextOrder(S.conj_verbs) }).select());
+  S.conj_verbs.push(r); return r;
+}
+async function addConjVerbs(list) {   // nhiều động từ một lần (lấy từ thẻ)
+  let o = nextOrder(S.conj_verbs); const out = [];
+  for (let i = 0; i < list.length; i += 100) {
+    const rows = list.slice(i, i + 100).map(v => ({ id: uuid7(), masu: v.masu, meaning_vi: v.meaning_vi || null, grp: v.grp || null, sort_order: o++ }));
+    out.push(...await mut(sb.from('conj_verbs').insert(rows).select()));
+  }
+  S.conj_verbs.push(...out); return out;
+}
+async function updateConjVerb(id, patch) {
+  const [r] = await mut(sb.from('conj_verbs').update(patch).eq('id', id).select()); if (r) putConj('conj_verbs', r); return r;
+}
+async function deleteConjVerb(id) {
+  await mut(sb.from('conj_verbs').delete().eq('id', id));
+  S.conj_verbs = S.conj_verbs.filter(v => v.id !== id); S.conj_cells = S.conj_cells.filter(c => c.verb_id !== id); reindexConj();
+}
+// Ghi 1 ô: rỗng → xóa ô; có chữ → thêm / sửa
+async function setConjCell(verbId, formId, value) {
+  value = (value || '').trim(); const cur = S.conjMap.get(verbId + '|' + formId);
+  if ((cur?.value || '') === value) return;
+  if (!value) { await mut(sb.from('conj_cells').delete().eq('verb_id', verbId).eq('form_id', formId)); S.conj_cells = S.conj_cells.filter(c => c !== cur); }
+  else {
+    const [r] = await mut(sb.from('conj_cells').upsert({ verb_id: verbId, form_id: formId, value }, { onConflict: 'verb_id,form_id' }).select());
+    if (cur) Object.assign(cur, r); else S.conj_cells.push(r);
+  }
+  reindexConj();
+}
+// Tự điền các ô theo quy tắc chia (chỉ cột có kind). overwrite=false: giữ nguyên ô đã có chữ. Trả về số ô đã ghi.
+async function fillConj({ verbIds = null, formIds = null, overwrite = false } = {}) {
+  const rows = [];
+  for (const v of conjVerbs()) {
+    if (verbIds && !verbIds.includes(v.id)) continue;
+    for (const f of conjForms(true)) {
+      if (!f.kind || (formIds && !formIds.includes(f.id))) continue;
+      if (!overwrite && conjCell(v.id, f.id)) continue;
+      const val = conjugate(v.masu, v.grp, f.kind); if (val) rows.push({ verb_id: v.id, form_id: f.id, value: val });
+    }
+  }
+  for (let i = 0; i < rows.length; i += 200) {
+    const out = await mut(sb.from('conj_cells').upsert(rows.slice(i, i + 200), { onConflict: 'verb_id,form_id' }).select());
+    for (const r of out) { const cur = S.conjMap.get(r.verb_id + '|' + r.form_id); if (cur) Object.assign(cur, r); else S.conj_cells.push(r); }
+    reindexConj();
+  }
+  return rows.length;
+}
+// Thẻ động từ trong thư viện chưa có trong bảng: [{ card, masu, grp }]
+function conjCandidates() {
+  const have = new Set(S.conj_verbs.map(v => v.masu)), out = [];
+  for (const c of liveCards()) {
+    const grp = { verb1: 1, verb2: 2, verb3: 3 }[c.pos]; if (!grp) continue;
+    const masu = dictToMasu(c.character, grp) || dictToMasu(c.reading_kana, grp); if (!masu || have.has(masu)) continue;
+    have.add(masu); out.push({ card: c, masu, grp });
+  }
+  return out;
+}
