@@ -212,3 +212,16 @@ npm run test:all    # cả hai
 - **Lấy từ thẻ:** thêm nhanh các thẻ có từ loại Động từ nhóm 1 / 2 / 3 trong thư viện (tự đổi sang thể ます).
 - Có lọc theo nhóm và ô tìm (tìm cả trong các thể đã chia). Sao lưu / khôi phục toàn bộ đã bao gồm bảng này.
 - **Cần chạy lại toàn bộ `schema.sql`** (thêm 3 bảng conj_forms, conj_verbs, conj_cells; không ảnh hưởng dữ liệu cũ).
+
+## v3.30 — Bản dịch (schema phiên bản 11)
+- Mục mới **Bản dịch** (thanh bên trên máy tính, phím **0** hoặc **d**; trên điện thoại: Khác → Bản dịch). Dán **một câu hoặc cả đoạn văn tiếng Nhật** (tới ~30.000 chữ, thừa cho một trang A4) rồi tự ghi **nghĩa tiếng Việt** (tới 40.000 chữ). Có tiêu đề, JLPT, ghi chú; ô tìm tìm cả trong tiếng Nhật lẫn tiếng Việt; lọc theo JLPT.
+- **Trang đọc đối chiếu từng đoạn:** nếu mỗi dòng / đoạn tiếng Nhật ứng với một dòng / đoạn tiếng Việt (cùng số đoạn) thì hiện từng cặp Nhật – Việt. Khác số đoạn thì hiện hai khối riêng và báo rõ. Khi gõ, form cho biết số chữ và có khớp đoạn hay chưa.
+- **Tự kiểm tra:** nút **Che bản dịch** làm mờ bản dịch từng đoạn, bấm vào đoạn để hiện — dịch thử trong đầu trước rồi đối chiếu. **Chỉ tiếng Nhật** để đọc thuần.
+- Ctrl+Enter lưu như các form khác; xung đột nhiều thiết bị được gộp giống các mục khác. Sao lưu / khôi phục toàn bộ đã gồm bản dịch.
+- **Cần chạy lại toàn bộ `schema.sql`** (thêm bảng `translations`; không ảnh hưởng dữ liệu cũ).
+
+## v3.31 — Ghi lại từ mới khi đang đọc Bản dịch
+- Ở trang đọc một bài trong **Bản dịch**, **bôi đen** một từ / cụm từ / câu tiếng Nhật → hiện thanh nhỏ với 2 nút:
+  - **＋ Thẻ từ vựng:** mở form thêm thẻ đã điền sẵn chữ vừa bôi đen, **câu chứa từ đó làm câu ví dụ**, bản dịch của câu (khi bài đang ghép cặp đoạn và đoạn chỉ có 1 câu) và **nguồn = tên bài**. Hệ thống tự tra Jisho để gợi ý cách đọc / nghĩa, con trỏ nhảy sẵn tới ô nghĩa tiếng Việt (Ctrl + . dùng nghĩa gợi ý, Ctrl + Enter lưu). Từ đã có trong thư viện thì báo và mở thẻ cũ, không tạo trùng.
+  - **＋ Ví dụ ngữ pháp:** chọn một mẫu ngữ pháp có sẵn (có ô tìm) để **nối vào phần ví dụ** (câu tiếng Nhật | nghĩa); hoặc **tạo mẫu ngữ pháp mới** với câu đó đã điền sẵn. Ví dụ trùng không bị thêm 2 lần. Bôi đen ngắn (dưới 8 chữ) thì lấy cả câu chứa nó; bôi đen cả câu / cụm dài thì lấy đúng đoạn đã bôi.
+- Không cần chạy lại schema.sql.

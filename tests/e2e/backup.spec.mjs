@@ -11,6 +11,7 @@ const BSEED = { ...SEED,
   conj_forms: [{ ...base, id: 'f0000000-0000-4000-8000-000000000001', name: 'て形', kind: 'te', hidden: false, sort_order: 0 }],
   conj_verbs: [{ ...base, id: 'v0000000-0000-4000-8000-000000000001', masu: '食べます', meaning_vi: 'ăn', grp: 2, sort_order: 0 }],
   conj_cells: [{ user_id: U, verb_id: 'v0000000-0000-4000-8000-000000000001', form_id: 'f0000000-0000-4000-8000-000000000001', value: '食べて', updated_at: '2026-01-01T00:00:00Z' }],
+  translations: [{ ...base, id: 't0000000-0000-4000-8000-000000000001', title: 'Câu 1', jp: '私は学生です。', vi: 'Tôi là sinh viên.', note: null, jlpt_level: 'N5' }],
   user_decompositions: [{ user_id: U, character: '明', parts: '日月', updated_at: '2026-01-01T00:00:00Z', deleted_at: null }],
 };
 export default async ({ session }) => {
@@ -25,7 +26,7 @@ export default async ({ session }) => {
     await dl.saveAs(file);
     const b = JSON.parse(fs.readFileSync(file, 'utf8'));
     check('file đủ các bảng: 4 thẻ, 1 bộ, 1 danh mục, 1 liên kết, 1 ngữ pháp, 1 lượt ôn, 1 tách bộ',
-      b.app === 'jpdic-web' && b.counts.cards === 4 && b.counts.decks === 1 && b.counts.deck_categories === 1 && b.counts.deck_cards === 1 && b.counts.grammar_points === 1 && b.counts.study_sessions === 1 && b.counts.user_decompositions === 1 && b.counts.conj_forms === 1 && b.counts.conj_verbs === 1 && b.counts.conj_cells === 1, JSON.stringify(b.counts));
+      b.app === 'jpdic-web' && b.counts.cards === 4 && b.counts.decks === 1 && b.counts.deck_categories === 1 && b.counts.deck_cards === 1 && b.counts.grammar_points === 1 && b.counts.study_sessions === 1 && b.counts.user_decompositions === 1 && b.counts.conj_forms === 1 && b.counts.conj_verbs === 1 && b.counts.conj_cells === 1 && b.counts.translations === 1, JSON.stringify(b.counts));
     check('file không chứa email / mật khẩu', !/@|password/i.test(fs.readFileSync(file, 'utf8')));
     await page.waitForTimeout(300);
     check('ghi nhận thời điểm sao lưu', (await page.locator('#view').innerText()).includes('Lần cuối: hôm nay'));
@@ -42,7 +43,7 @@ export default async ({ session }) => {
     await page.waitForFunction(() => window.__DB.cards.length === 4, null, { timeout: 5000 });
     const d = await db();
     check('khôi phục vào tài khoản trống: đủ thẻ, bộ, danh mục, liên kết, ngữ pháp, lịch sử, tách bộ',
-      d.cards.length === 4 && d.decks.length === 1 && d.deck_categories.length === 1 && d.deck_cards.length === 1 && d.grammar_points.length === 1 && d.study_sessions.length === 1 && d.user_decompositions.length === 1 && d.conj_forms.length === 1 && d.conj_verbs.length === 1 && d.conj_cells.length === 1,
+      d.cards.length === 4 && d.decks.length === 1 && d.deck_categories.length === 1 && d.deck_cards.length === 1 && d.grammar_points.length === 1 && d.study_sessions.length === 1 && d.user_decompositions.length === 1 && d.conj_forms.length === 1 && d.conj_verbs.length === 1 && d.conj_cells.length === 1 && d.translations.length === 1,
       JSON.stringify(Object.fromEntries(Object.entries(d).map(([k, v]) => [k, v && v.length]))));
     check('bộ thẻ giữ liên kết tới danh mục', d.decks[0].category_id === 'k0000000-0000-4000-8000-000000000001');
     // khôi phục lần 2: không nhân đôi

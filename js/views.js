@@ -2,14 +2,14 @@
 'use strict';
 
 // Ngữ pháp / Bộ thủ / Thống kê: là mục của thanh bên trên màn hình rộng (không có nút ← khi đứng ở mục chính)
-const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'stats', 'conj'].includes(NAV.tab);
+const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'stats', 'conj', 'trans'].includes(NAV.tab);
 function render() {
   const v = $('#view'); if (!v) return;
   const sub = NAV.sub;
   if (sub) {
-    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, conj: viewConj, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
+    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, conj: viewConj, trans: viewTrans, transitem: viewTransItem, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
   } else {
-    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, conj: viewConj, more: viewMore }[NAV.tab]();
+    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, conj: viewConj, trans: viewTrans, more: viewMore }[NAV.tab]();
   }
   $$('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === NAV.tab ? 'page' : 'false'));
   const d = dueCount(), bd = $('#duebadge'); if (bd) { bd.textContent = d > 99 ? '99+' : d; bd.classList.toggle('hidden', !d); }
@@ -209,7 +209,7 @@ function openCardForm(id, preset = {}) {
     <label class="field" id="w-meaning_vi"><span>Nghĩa tiếng Việt *</span><input name="meaning_vi" value="${v('meaning_vi')}" maxlength="200"></label>
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>
     ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks"></div></div>` : ''}
-    <details class="adv" id="cf-adv" ${id ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
+    <details class="adv" id="cf-adv" ${id || preset.example_jp || preset.source ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
     <label class="field"><span>Từ loại</span><select name="pos"><option value="">— chưa chọn —</option>${POS.map(j => `<option value="${j}" ${c.pos === j ? 'selected' : ''}>${POS_LABEL[j]}</option>`).join('')}</select></label>
     <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div>
     <div class="grid2 fit" data-for="kanji vocab"><label class="field"><span>Âm Hán Việt</span><input name="reading_hanviet" value="${v('reading_hanviet')}"></label>
@@ -469,13 +469,14 @@ ACT.catDel = async el => { if (!await confirmBox('Xóa danh mục? Các bộ th�
 
 // ═══ KHÁC ══════════════════════════════════════════════════════════════════
 function viewMore() {
-  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'stats', 'conj'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
+  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'stats', 'conj', 'trans'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   const act = (g, t, s, a) => `<button class="item" data-act="${a}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   return `<div class="page">${pageTop('Khác')}
   <div class="list">
     ${link('計', 'Thống kê', 'Tiến độ, độ chính xác, 30 ngày gần đây', 'stats')}
     ${link('文', 'Ngữ pháp', `Mẫu câu, cấu tạo, ví dụ · ${S.grammar_points.length} mẫu`, 'grammar')}
     ${link('活', 'Chia động từ', `Bảng chia các thể · ${S.conj_verbs.length} động từ`, 'conj')}
+    ${link('訳', 'Bản dịch', `Dán đoạn văn tiếng Nhật, ghi nghĩa tiếng Việt · ${S.translations.length} bài`, 'trans')}
     ${link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ, tra nhanh', 'radicals')}
     ${act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa" để tạo hàng loạt', 'quickAdd')}
     ${act('備', 'Sao lưu & khôi phục', esc(backupLabel()) + ' · tải toàn bộ dữ liệu về 1 file', 'backupTools')}

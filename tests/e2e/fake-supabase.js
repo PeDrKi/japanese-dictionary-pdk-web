@@ -2,11 +2,11 @@
    Mô phỏng đủ phần của supabase-js mà app dùng: auth, from().select/insert/update/upsert/delete + eq/in/gte/order/range, rpc().
    Dữ liệu nằm trong window.__DB (test đọc/ghi trực tiếp để kiểm tra). Dữ liệu ban đầu: window.__SEED. */
 (() => {
-  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells'];
+  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells', 'translations'];
   const seed = window.__SEED || {};
   const DB = window.__DB = { n: 0, calls: [], me: seed.me || { role: 'user', status: 'active' }, fail: null };
   for (const t of TABLES) DB[t] = JSON.parse(JSON.stringify(seed[t] || []));
-  if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; }   // mô phỏng máy chủ chưa chạy schema v7
+  if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; delete DB.translations; }   // mô phỏng máy chủ chưa chạy schema v7
   const USER = { id: '11111111-1111-4111-8111-111111111111', email: seed.email || 'test@example.com' };
   const nowIso = () => new Date().toISOString();
   const bump = () => { DB.n++; };
@@ -88,7 +88,7 @@
   }
   const session = () => ({ access_token: 'fake', refresh_token: 'fake', expires_at: Math.floor(Date.now() / 1000) + 3600, user: USER });
   const RPC = {
-    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 10, error: null }),
+    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 11, error: null }),
     jp_sync_sig: () => ({ data: 'sig-' + DB.n, error: null }),
     jp_me: () => ({ data: [DB.me], error: null }),
     log_study: logStudy,

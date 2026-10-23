@@ -331,3 +331,22 @@ table.conj .c-add { padding: 4px 8px; background: var(--surface2); }
 .gtag { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 9px; font-size: 11px; text-align: center; line-height: 18px; color: #fff; vertical-align: 2px; }
 .gtag.g1 { background: #4a90d9; } .gtag.g2 { background: #4ecb85; color: #0b2b19; } .gtag.g3 { background: #e0675b; } .gtag.g0 { background: var(--mute); }
 .item.dim { opacity: .55; }
+
+@media (min-width: 900px) { nav#tabs { overflow-y: auto; } nav#tabs button { height: 62px; } }
+
+/* Bản dịch */
+.tarea { width: 100%; min-height: 160px; resize: vertical; line-height: 1.7; }
+.tpair { padding: 12px 14px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.tjp { margin: 0; font-size: 18px; line-height: 1.9; }
+.tvi { margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--line); line-height: 1.65; }
+.tvi p { margin: 0 0 6px; }
+.tvi.cover { cursor: pointer; color: transparent; text-shadow: 0 0 9px var(--mute); user-select: none; }
+.tvi.cover.shown { color: inherit; text-shadow: none; user-select: text; }
+div.tvi[data-act=transReveal] { cursor: pointer; color: transparent; text-shadow: 0 0 9px var(--mute); user-select: none; }
+div.tvi[data-act=transReveal].shown { color: inherit; text-shadow: none; }
+
+/* Thanh ghi nhanh từ mới (khi bôi đen chữ ở trang Bản dịch) */
+.selnote { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom)); z-index: 12; display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 24px); padding: 8px 10px; background: var(--surface2); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+.selnote-t { max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
+.selnote .btn { white-space: nowrap; padding: 8px 12px; min-height: 0; }
+@media (min-width: 900px) { .selnote { bottom: 28px; left: calc(50% + 46px); } }

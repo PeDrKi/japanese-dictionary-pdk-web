@@ -28,7 +28,7 @@ function initSupabase() {
 // ── State ───────────────────────────────────────────────────────────────────
 const S = { me: { role: 'user', status: 'active' },
   user: null, cards: [], decks: [], cats: [], deckCards: [], radicals: [], radCards: [], decomps: new Map(),
-  daily: [], sessTotal: 0, sessCorrect: 0, grammar_points: [], grammarOk: true, conj_forms: [], conj_verbs: [], conj_cells: [], conjMap: new Map(), conjOk: true,
+  daily: [], sessTotal: 0, sessCorrect: 0, grammar_points: [], grammarOk: true, conj_forms: [], conj_verbs: [], conj_cells: [], conjMap: new Map(), conjOk: true, translations: [], transOk: true,
   byId: new Map(), deckOfCard: new Map(), cardsOfDeck: new Map(), radOfCard: new Map(), cardsOfRad: new Map(),
 };
 const alive = x => !x.deleted_at;
@@ -87,6 +87,8 @@ async function loadAll(opts = {}) {
     S.conj_forms = cf; S.conj_verbs = cv; S.conj_cells = cc; S.conjOk = true;
   } catch { S.conj_forms = []; S.conj_verbs = []; S.conj_cells = []; S.conjOk = false; }
   reindexConj();
+  // Bản dịch (schema v11)
+  try { S.translations = await fetchAll('translations', q => q.order('created_at', { ascending: false })); S.transOk = true; } catch { S.translations = []; S.transOk = false; }
   S.cards = cards; S.decks = decks; S.cats = cats.sort((a, b) => a.sort_order - b.sort_order); S.deckCards = dcs; S.radicals = rads; S.radCards = rcs;
   S.decomps = new Map(dec.filter(alive).map(d => [d.character, d.parts]));
   S.daily = daily.map(s => ({ result: s.result, day: localDate(new Date(s.studied_at)) }));
@@ -186,10 +188,11 @@ const EDIT_FIELDS = {
   decks: ['name', 'description', 'color', 'icon', 'category_id'],
   radicals: ['character', 'name', 'color'],
   grammar_points: ['title', 'meaning_vi', 'structure', 'explanation', 'examples', 'jlpt_level'],
+  translations: ['title', 'jp', 'vi', 'note', 'jlpt_level'],
 };
 function putLocal(table, row) {
   const arr = S[table], i = arr.findIndex(x => x.id === row.id);
-  if (i >= 0) arr[i] = row; else if (table === 'cards' || table === 'grammar_points') arr.unshift(row); else arr.push(row);
+  if (i >= 0) arr[i] = row; else if (table === 'cards' || table === 'grammar_points' || table === 'translations') arr.unshift(row); else arr.push(row);
   reindex();
 }
 async function saveMerged(table, id, base, data, ask) {
@@ -483,3 +486,19 @@ function conjCandidates() {
   }
   return out;
 }
+
+// ── Bản dịch ────────────────────────────────────────────────────────────────
+async function saveTranslation(id, f, base, ask) {
+  if (id) return saveMerged('translations', id, base, f, ask);
+  const [r] = await mut(sb.from('translations').insert({ id: uuid7(), ...f }).select()); S.translations.unshift(r); return { row: r };
+}
+async function deleteTranslation(id) { await mut(sb.from('translations').delete().eq('id', id)); S.translations = S.translations.filter(t => t.id !== id); }
+function filterTranslations({ search = '', jlpt = '' } = {}) {
+  let list = S.translations.slice();
+  if (jlpt) list = list.filter(t => t.jlpt_level === jlpt);
+  const toks = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (toks.length) list = list.filter(t => toks.every(k => ['title', 'jp', 'vi', 'note'].some(f => (t[f] || '').toLowerCase().includes(k))));
+  return list;
+}
+// Tách văn bản thành các đoạn (mỗi dòng / đoạn một mục) để ghép cặp Nhật – Việt
+const splitParas = t => String(t || '').split(/\r?\n+/).map(x => x.trim()).filter(Boolean);

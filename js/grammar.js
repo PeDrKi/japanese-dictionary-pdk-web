@@ -48,8 +48,8 @@ ACT.delGrammar = async el => {
   if (await guard(() => deleteGrammar(g.id), 'Đã xóa') !== undefined) { window._gs?.close(); render(); }
 };
 
-function openGrammarForm(id) {
-  const g = id ? S.grammar_points.find(x => x.id === id) : { title: '', meaning_vi: '', structure: '', explanation: '', examples: '', jlpt_level: GFILT.jlpt || '' };
+function openGrammarForm(id, preset = {}) {
+  const g = id ? S.grammar_points.find(x => x.id === id) : { title: '', meaning_vi: '', structure: '', explanation: '', examples: '', jlpt_level: GFILT.jlpt || '', ...preset };
   if (!g) return;
   const base = id ? { ...g } : null, v = k => esc(g[k] ?? '');
   const s = openSheet(`<h2>${id ? 'Sửa' : 'Thêm'} ngữ pháp</h2>

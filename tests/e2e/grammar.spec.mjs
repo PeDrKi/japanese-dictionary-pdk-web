@@ -8,7 +8,7 @@ export default async ({ session }) => {
   await session(GSEED, async ({ page, check, db, errors }) => {
     await page.waitForSelector('#view');
     const side = await page.locator('#tabs button[data-tab]:visible').allInnerTexts();
-    check('màn hình rộng: thanh bên có 9 mục, Ngữ pháp / Bộ thủ / Thống kê ngang hàng với Thư viện', side.length === 9 && ['Ngữ pháp', 'Bộ thủ', 'Thống kê'].every(t => side.join('|').includes(t)), side.join('|'));
+    check('màn hình rộng: thanh bên có 10 mục, Ngữ pháp / Bộ thủ / Thống kê ngang hàng với Thư viện', side.length === 10 && ['Ngữ pháp', 'Bộ thủ', 'Thống kê'].every(t => side.join('|').includes(t)), side.join('|'));
     await page.click('#tabs [data-tab=grammar]'); await page.waitForSelector('#gramlist');
     check('Ngữ pháp là mục chính: sáng đúng mục thanh bên, không có nút ←', (await page.getAttribute('#tabs [data-tab=grammar]', 'aria-current')) === 'page' && (await page.locator('.topbar [data-act=back]').count()) === 0);
     check('trang Ngữ pháp liệt kê 2 mẫu', (await page.locator('#gramlist .item').count()) === 2);

@@ -736,5 +736,50 @@ grant execute on function public.jp_sync_sig() to authenticated;
 create or replace function public.jp_schema_version() returns integer
 language sql stable as $$ select 10 $$;
 
+-- ══ PHIÊN BẢN 11: BẢN DỊCH (đoạn văn tiếng Nhật + nghĩa tiếng Việt do bạn ghi) ═══════════════════════
+create table if not exists public.translations (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title       text,
+  jp          text not null check (length(jp) between 1 and 30000),     -- văn bản tiếng Nhật (1 câu … cả bài dài)
+  vi          text check (vi is null or length(vi) <= 40000),           -- bản dịch tiếng Việt
+  note        text check (note is null or length(note) <= 3000),
+  jlpt_level  text check (jlpt_level is null or jlpt_level in ('N5','N4','N3','N2','N1')),
+  version     bigint not null default 1,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists translations_user on public.translations (user_id, created_at desc);
+drop trigger if exists trg_touch on public.translations;
+create trigger trg_touch before insert or update on public.translations for each row execute function public.touch_versioned();
+alter table public.translations enable row level security;
+drop policy if exists "own rows" on public.translations;
+create policy "own rows" on public.translations for all to authenticated
+  using (user_id = auth.uid() and public.jp_is_active()) with check (user_id = auth.uid() and public.jp_is_active());
+grant select, insert, update, delete on public.translations to authenticated;
+
+create or replace function public.jp_sync_sig() returns text
+language sql stable set search_path = public as $$
+  select md5(concat_ws('|',
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from decks),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radicals),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from deck_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radical_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from user_decompositions),
+    (select count(*)::text || coalesce(max(studied_at)::text, '') from study_sessions),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from grammar_points),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_forms),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_verbs),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_cells),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from translations),
+    (select coalesce(md5(string_agg(id::text || name || coalesce(icon, '') || sort_order::text, ',' order by id)), '') from deck_categories)
+  )) $$;
+revoke execute on function public.jp_sync_sig() from public, anon;
+grant execute on function public.jp_sync_sig() to authenticated;
+
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 11 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';
