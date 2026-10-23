@@ -5,7 +5,7 @@ export default async ({ session }) => {
   const longVi = Array.from({ length: 6 }, (_, i) => `Đây là đoạn thứ ${i + 1}. Học tiếng Nhật rất vui nhưng kiên trì mỗi ngày thì không dễ.`).join('\n');
   await session(SEED, async ({ page, check, db, errors }) => {
     await page.waitForSelector('#view'); await page.click('#tabs [data-tab=trans]'); await page.waitForSelector('#transbody');
-    check('Bản dịch ở thanh bên (10 mục) và có trạng thái trống', (await page.locator('#tabs button[data-tab]:visible').count()) === 10 && (await page.locator('#transbody').innerText()).includes('Chưa có bản dịch nào'));
+    check('Bản dịch ở thanh bên (8 mục) và có trạng thái trống', (await page.locator('#tabs button[data-tab]:visible').count()) === 8 && (await page.locator('#transbody').innerText()).includes('Chưa có bản dịch nào'));
     await page.click('.topbar [data-act=newTrans]'); await page.waitForSelector('#tf');
     await page.click('#tf button[type=submit]'); check('thiếu tiếng Nhật → báo lỗi, chưa lưu', (await page.locator('#tf').count()) === 1 && (await db()).translations.length === 0);
     await page.fill('#tf [name=jp]', '私は毎日日本語を勉強します。'); await page.fill('#tf [name=vi]', 'Tôi học tiếng Nhật mỗi ngày.');

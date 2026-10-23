@@ -19,7 +19,7 @@ ACT.shortcuts = openShortcuts;
   const wide = () => window.matchMedia && matchMedia('(min-width: 900px)').matches;   // có thanh bên → mở thẳng; điện thoại → qua Khác
   const isTyping = el => !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   const overlay = () => (typeof layers !== 'undefined' && layers.length > 0) || !!document.querySelector('.full');
-  const openTabKey = tab => { if (['grammar', 'radicals', 'stats', 'conj', 'trans'].includes(tab) && !wide()) { goTab('more'); ACT.sub({ dataset: { name: tab } }); } else goTab(tab); };
+  const openTabKey = tab => { if (['stats', 'conj'].includes(tab) || (['grammar', 'radicals', 'trans'].includes(tab) && !wide())) { goTab('more'); ACT.sub({ dataset: { name: tab } }); } else goTab(tab); };
   const goTab = tab => { if (!$('#view')) return false; ACT.tab({ dataset: { tab } }); return true; };
 
   document.addEventListener('keydown', e => {

@@ -5,8 +5,8 @@ export default async ({ session }) => {
   const S1 = { ...SEED, cards: SEED.cards.map(c => c.character === '食べる' ? { ...c, pos: 'verb2' } : c) };
   await session(S1, async ({ page, check, db, errors }) => {
     await page.waitForSelector('#view');
-    await page.click('#tabs [data-tab=conj]'); await page.waitForSelector('#conjbody');
-    check('trang Chia động từ ở thanh bên, chưa có cột → gợi ý thêm thể thông dụng', (await page.locator('[data-act=conjDefaults]').count()) === 1);
+    await page.click('#tabs [data-tab=more]'); await page.click('.item[data-name=conj]'); await page.waitForSelector('#conjbody');
+    check('trang Chia động từ mở từ Khác, chưa có cột → gợi ý thêm thể thông dụng', (await page.locator('[data-act=conjDefaults]').count()) === 1);
     await page.click('[data-act=conjDefaults]'); await page.waitForSelector('table.conj');
     const heads = await page.locator('table.conj thead .c-head').allInnerTexts();
     check('tạo sẵn 11 cột thể thông dụng', heads.length === 11 && heads[0] === '辞書形' && heads[2] === 'て形', heads.join('|'));
@@ -73,7 +73,7 @@ export default async ({ session }) => {
   }, { name: 'chia động từ' });
 
   await session({ ...SEED, oldSchema: true }, async ({ page, check, errors }) => {
-    await page.waitForSelector('#view'); await page.click('#tabs [data-tab=conj]'); await page.waitForSelector('#conjbody');
+    await page.waitForSelector('#view'); await page.click('#tabs [data-tab=more]'); await page.click('.item[data-name=conj]'); await page.waitForSelector('#conjbody');
     check('chưa chạy schema mới → báo rõ, không lỗi', (await page.locator('#conjbody').innerText()).includes('schema.sql') && errors.length === 0, errors.join('|'));
   }, { name: 'chia động từ schema cũ' });
 };

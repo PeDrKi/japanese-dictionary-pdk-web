@@ -225,3 +225,8 @@ npm run test:all    # cả hai
   - **＋ Thẻ từ vựng:** mở form thêm thẻ đã điền sẵn chữ vừa bôi đen, **câu chứa từ đó làm câu ví dụ**, bản dịch của câu (khi bài đang ghép cặp đoạn và đoạn chỉ có 1 câu) và **nguồn = tên bài**. Hệ thống tự tra Jisho để gợi ý cách đọc / nghĩa, con trỏ nhảy sẵn tới ô nghĩa tiếng Việt (Ctrl + . dùng nghĩa gợi ý, Ctrl + Enter lưu). Từ đã có trong thư viện thì báo và mở thẻ cũ, không tạo trùng.
   - **＋ Ví dụ ngữ pháp:** chọn một mẫu ngữ pháp có sẵn (có ô tìm) để **nối vào phần ví dụ** (câu tiếng Nhật | nghĩa); hoặc **tạo mẫu ngữ pháp mới** với câu đó đã điền sẵn. Ví dụ trùng không bị thêm 2 lần. Bôi đen ngắn (dưới 8 chữ) thì lấy cả câu chứa nó; bôi đen cả câu / cụm dài thì lấy đúng đoạn đã bôi.
 - Không cần chạy lại schema.sql.
+
+## v3.32 — Gọn thanh bên
+- **Thống kê** và **Chia động từ** chuyển vào mục **Khác** (cả máy tính lẫn điện thoại). Thanh bên máy tính còn 8 mục: Hôm nay, Thư viện, Ôn tập, Bộ thẻ, Ngữ pháp, Bộ thủ, Bản dịch, Khác.
+- Phím tắt giữ nguyên: **8** = Thống kê, **9** hoặc **v** = Chia động từ (tự mở qua Khác). Bấm ← để quay lại Khác.
+- Không cần chạy lại schema.sql.

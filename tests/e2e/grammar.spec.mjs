@@ -8,7 +8,7 @@ export default async ({ session }) => {
   await session(GSEED, async ({ page, check, db, errors }) => {
     await page.waitForSelector('#view');
     const side = await page.locator('#tabs button[data-tab]:visible').allInnerTexts();
-    check('màn hình rộng: thanh bên có 10 mục, Ngữ pháp / Bộ thủ / Thống kê ngang hàng với Thư viện', side.length === 10 && ['Ngữ pháp', 'Bộ thủ', 'Thống kê'].every(t => side.join('|').includes(t)), side.join('|'));
+    check('màn hình rộng: thanh bên có 8 mục: Ngữ pháp / Bộ thủ / Bản dịch ngang hàng với Thư viện; Thống kê và Chia động từ nằm trong Khác', side.length === 8 && ['Ngữ pháp', 'Bộ thủ', 'Bản dịch'].every(t => side.join('|').includes(t)) && !side.join('|').includes('Thống kê') && !side.join('|').includes('Chia động từ'), side.join('|'));
     await page.click('#tabs [data-tab=grammar]'); await page.waitForSelector('#gramlist');
     check('Ngữ pháp là mục chính: sáng đúng mục thanh bên, không có nút ←', (await page.getAttribute('#tabs [data-tab=grammar]', 'aria-current')) === 'page' && (await page.locator('.topbar [data-act=back]').count()) === 0);
     check('trang Ngữ pháp liệt kê 2 mẫu', (await page.locator('#gramlist .item').count()) === 2);
@@ -59,10 +59,10 @@ export default async ({ session }) => {
     if (process.env.SHOT2) await page.screenshot({ path: process.env.SHOT2 });
     await page.click('#tabs [data-tab=radicals]'); await page.waitForSelector('.empty, #view .list');
     check('Bộ thủ mở từ thanh bên, không có nút ←', (await page.locator('.topbar h1').innerText()) === 'Bộ thủ' && (await page.locator('.topbar [data-act=back]').count()) === 0);
-    await page.click('#tabs [data-tab=stats]');
-    check('Thống kê mở từ thanh bên', (await page.locator('.topbar h1').innerText()) === 'Thống kê' && (await page.getAttribute('#tabs [data-tab=stats]', 'aria-current')) === 'page');
     await page.click('#tabs [data-tab=more]');
-    check('Khác trên màn hình rộng không lặp lại 3 mục đã ra thanh bên', (await page.locator('.item[data-name=grammar]:visible, .item[data-name=stats]:visible, .item[data-name=radicals]:visible').count()) === 0);
+    check('Khác trên màn hình rộng: có Thống kê + Chia động từ, không lặp Ngữ pháp / Bộ thủ / Bản dịch đã ra thanh bên', (await page.locator('.item[data-name=stats]:visible, .item[data-name=conj]:visible').count()) === 2 && (await page.locator('.item[data-name=grammar]:visible, .item[data-name=radicals]:visible, .item[data-name=trans]:visible').count()) === 0);
+    await page.click('.item[data-name=stats]'); await page.waitForSelector('.topbar [data-act=back]');
+    check('Thống kê mở từ Khác, có nút ←', (await page.locator('.topbar h1').innerText()) === 'Thống kê');
     await page.click('#tabs [data-tab=today]'); await page.keyboard.press('8');
     check('phím 8 → Thống kê, phím 6 → Ngữ pháp', (await page.locator('.topbar h1').innerText()) === 'Thống kê' && (await (async () => { await page.keyboard.press('6'); return page.locator('.topbar h1').innerText(); })()) === 'Ngữ pháp');
     // chỉ báo bàn phím tiếng Nhật ở cuối thanh bên

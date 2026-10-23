@@ -2,7 +2,7 @@
 'use strict';
 
 // Ngữ pháp / Bộ thủ / Thống kê: là mục của thanh bên trên màn hình rộng (không có nút ← khi đứng ở mục chính)
-const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'stats', 'conj', 'trans'].includes(NAV.tab);
+const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'trans'].includes(NAV.tab);
 function render() {
   const v = $('#view'); if (!v) return;
   const sub = NAV.sub;
@@ -469,7 +469,7 @@ ACT.catDel = async el => { if (!await confirmBox('Xóa danh mục? Các bộ th�
 
 // ═══ KHÁC ══════════════════════════════════════════════════════════════════
 function viewMore() {
-  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'stats', 'conj', 'trans'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
+  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'trans'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   const act = (g, t, s, a) => `<button class="item" data-act="${a}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
   return `<div class="page">${pageTop('Khác')}
   <div class="list">
