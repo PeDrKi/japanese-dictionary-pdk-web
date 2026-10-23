@@ -188,7 +188,7 @@ const EDIT_FIELDS = {
   decks: ['name', 'description', 'color', 'icon', 'category_id'],
   radicals: ['character', 'name', 'color'],
   grammar_points: ['title', 'meaning_vi', 'structure', 'explanation', 'examples', 'jlpt_level'],
-  translations: ['title', 'jp', 'vi', 'note', 'jlpt_level'],
+  translations: ['title', 'jp', 'vi', 'note', 'jlpt_level', 'glossary'],
 };
 function putLocal(table, row) {
   const arr = S[table], i = arr.findIndex(x => x.id === row.id);

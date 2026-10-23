@@ -1,6 +1,6 @@
 import { SEED } from './seed.mjs';
 const U = '11111111-1111-4111-8111-111111111111';
-const T = { id: 't1', user_id: U, title: '日記', jp: '今日は友達と映画を見に行きました。\nその映画はとても面白かったです。', vi: 'Hôm nay tôi đi xem phim với bạn.\nBộ phim đó rất thú vị.', note: null, jlpt_level: 'N4', version: 1, created_at: '2026-01-01T00:00:00Z' };
+const T = { id: 't1', user_id: U, title: '日記', jp: '今日は友達と映画を見に行きました。\nその映画はとても面白かったです。', vi: 'Hôm nay tôi đi xem phim với bạn.\nBộ phim đó rất thú vị.', note: null, glossary: null, jlpt_level: 'N4', version: 1, created_at: '2026-01-01T00:00:00Z' };
 const G = { id: 'g0000000-0000-4000-8000-000000000001', user_id: U, title: '〜と', meaning_vi: 'cùng với', structure: 'N + と', explanation: null, examples: '母と買い物に行きます。 | Tôi đi mua sắm với mẹ.', jlpt_level: 'N5', version: 1, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z' };
 const sel = (page, word, idx = 0) => page.evaluate(([w, i]) => {
   const p = document.querySelectorAll('.tjp')[i], tn = [...p.childNodes].find(n => n.nodeType === 3 && n.textContent.includes(w));
@@ -9,13 +9,14 @@ const sel = (page, word, idx = 0) => page.evaluate(([w, i]) => {
 }, [word, idx]);
 export default async ({ session }) => {
   await session({ ...SEED, translations: [T], grammar_points: [G] }, async ({ page, check, db, errors }) => {
-    await page.waitForSelector('#view'); await page.click('#tabs [data-tab=trans]'); await page.click('#translist .item'); await page.waitForSelector('.tpair');
+    await page.waitForSelector('#view'); await page.click('#tabs [data-tab=trans]'); await page.click('#translist .item'); await page.waitForSelector('.tpassage');
     check('chưa bôi đen → không có thanh ghi nhanh', (await page.locator('#selnote').count()) === 0);
+    await page.click('[data-act=transMode][data-v=pair]'); await page.waitForSelector('.tpair');
     await page.evaluate(() => { const p = document.querySelector('.tvi'), r = document.createRange(); r.selectNodeContents(p); getSelection().removeAllRanges(); getSelection().addRange(r); }); await page.waitForTimeout(400);
     check('bôi đen bản dịch tiếng Việt → không hiện thanh', (await page.locator('#selnote').count()) === 0);
     // từ vựng
     await sel(page, '友達'); await page.waitForSelector('#selnote');
-    check('bôi đen 友達 → hiện thanh với 2 nút', (await page.locator('#selnote button').count()) === 2);
+    check('bôi đen 友達 → hiện thanh với 3 nút', (await page.locator('#selnote button').count()) === 3);
     await page.click('[data-act=noteVocab]'); await page.waitForSelector('#cf');
     const v = n => page.inputValue(`#cf [name=${n}]`);
     check('form thẻ mở sẵn: chữ, câu ví dụ, bản dịch câu, nguồn', (await v('character')) === '友達' && (await v('example_jp')) === '今日は友達と映画を見に行きました。' && (await v('example_vi')) === 'Hôm nay tôi đi xem phim với bạn.' && (await v('source')) === '日記');

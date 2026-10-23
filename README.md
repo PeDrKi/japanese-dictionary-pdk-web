@@ -230,3 +230,21 @@ npm run test:all    # cả hai
 - **Thống kê** và **Chia động từ** chuyển vào mục **Khác** (cả máy tính lẫn điện thoại). Thanh bên máy tính còn 8 mục: Hôm nay, Thư viện, Ôn tập, Bộ thẻ, Ngữ pháp, Bộ thủ, Bản dịch, Khác.
 - Phím tắt giữ nguyên: **8** = Thống kê, **9** hoặc **v** = Chia động từ (tự mở qua Khác). Bấm ← để quay lại Khác.
 - Không cần chạy lại schema.sql.
+
+## v3.33 — Bản dịch chia hai bên (kiểu bài đọc có cột từ vựng)
+- Trang đọc mặc định **Hai bên**: bên trái là bài tiếng Nhật, bên phải là bảng cố định có 2 tab **Từ vựng** và **Bản dịch**. Điện thoại thì xếp dọc.
+- **Cột từ vựng:** mỗi dòng dạng `từ = nghĩa`. Các từ trong bài được **gạch chân đỏ**; bấm một dòng để sửa / xóa / **Lưu thành thẻ từ vựng**; nút **+ Thêm từ** để thêm.
+- Bôi đen trong bài → nút mới **＋ Ghi vào từ vựng** (cạnh Thẻ từ vựng và Ví dụ ngữ pháp).
+- Form bài có thêm ô **Từ vựng** (mỗi dòng một từ). Các chế độ cũ (Đối chiếu, Che bản dịch, Chỉ tiếng Nhật) vẫn còn.
+- **Cần chạy lại toàn bộ `schema.sql`** (thêm cột `translations.glossary`, bản 12). Chưa chạy thì phần từ vựng báo lỗi rõ ràng, các phần khác vẫn dùng bình thường.
+
+## v3.34 — Chọn cả câu / cả đoạn làm ví dụ ngữ pháp; thêm từ hàng loạt vào bộ thẻ
+- **＋ Ví dụ ngữ pháp:** hộp chọn có thêm 3 lựa chọn **Phần đã chọn / Cả câu / Cả đoạn** (hiện ví dụ ngay khi đổi). Chỉ cần bôi đen một chữ bất kỳ rồi chọn "Cả câu" hoặc "Cả đoạn" — không cần kéo chọn dài trên điện thoại. Chọn cả đoạn thì kèm bản dịch của đoạn (khi bài ghép cặp).
+- **＋ Thêm vào bộ thẻ…** (tab Từ vựng bên phải): liệt kê các từ trong cột từ vựng, tick những từ muốn thêm, chọn một hoặc nhiều bộ thẻ (mặc định bộ dùng gần nhất) rồi bấm **Thêm n thẻ**. Mỗi thẻ có sẵn nghĩa, câu ví dụ lấy từ bài, nguồn = tên bài. Từ đã có thẻ hoặc chưa có nghĩa thì bị khóa.
+- Không cần chạy lại schema.sql (đã chạy bản 12 là đủ).
+
+## v3.35 — Sắp xếp lại trang Khác
+- Chia thành 4 nhóm có tiêu đề: **Học và tra cứu** (Thống kê, Chia động từ; điện thoại thêm Ngữ pháp, Bản dịch, Bộ thủ), **Thêm thẻ** (Nhập nhanh, Bộ thẻ mẫu, Nhập / xuất CSV, Nhập từ desktop), **Dữ liệu** (Sao lưu, Thùng rác, Tải lại, Quản trị), **Cài đặt** (Giao diện, Gõ tiếng Nhật, Phím tắt, Đổi mật khẩu, Máy chủ).
+- Máy tính: 2 cột. Điện thoại: 1 cột. Dòng cài đặt gọn, hiện giá trị hiện tại bên phải (vd Giao diện: Theo hệ thống).
+- Tài khoản và trạng thái đồng bộ lên đầu trang; Đăng xuất ở cuối.
+- Không cần chạy lại schema.sql.

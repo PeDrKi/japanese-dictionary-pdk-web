@@ -781,5 +781,13 @@ grant execute on function public.jp_sync_sig() to authenticated;
 create or replace function public.jp_schema_version() returns integer
 language sql stable as $$ select 11 $$;
 
+-- ══ PHIÊN BẢN 12: CỘT TỪ VỰNG BÊN PHẢI CỦA BẢN DỊCH ═══════════════════════════════════════════════════
+-- glossary: mỗi dòng "từ = nghĩa" (như cột từ vựng bên cạnh bài đọc)
+alter table public.translations add column if not exists glossary text;
+alter table public.translations drop constraint if exists translations_glossary_chk;
+alter table public.translations add constraint translations_glossary_chk check (glossary is null or length(glossary) <= 20000) not valid;
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 12 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';

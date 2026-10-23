@@ -376,3 +376,18 @@ function conjugate(masu, grp, kind) {
   }
   return '';
 }
+
+// ═══ TỪ VỰNG CỦA BẢN DỊCH: mỗi dòng "từ = nghĩa" ═══════════════════════════════════════════
+function parseGlossary(text) {
+  return String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/^(.+?)\s*[=＝]\s*(.*)$/); return m ? { term: m[1].trim(), meaning: m[2].trim() } : { term: l, meaning: '' };
+  }).filter(g => g.term);
+}
+const fmtGlossary = list => list.map(g => g.meaning ? `${g.term} = ${g.meaning}` : g.term).join('\n');
+// Đoạn văn → HTML, gạch chân (mark.gl) các từ có trong từ vựng; từ dài ưu tiên trước
+function hiPassage(text, terms) {
+  const ts = [...new Set((terms || []).filter(Boolean))].sort((a, b) => b.length - a.length);
+  if (!ts.length) return esc(text);
+  const re = new RegExp('(' + ts.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'g');
+  return String(text).split(re).map((seg, i) => i % 2 ? `<mark class="gl">${esc(seg)}</mark>` : esc(seg)).join('');
+}

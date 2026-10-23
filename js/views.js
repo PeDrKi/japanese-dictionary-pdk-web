@@ -468,36 +468,45 @@ ACT.catEdit = el => {
 ACT.catDel = async el => { if (!await confirmBox('Xóa danh mục? Các bộ thẻ bên trong chuyển về "Chưa phân loại".', 'Xóa', true)) return; await guard(() => deleteCategory(el.dataset.id)); catRedraw(); };
 
 // ═══ KHÁC ══════════════════════════════════════════════════════════════════
+const THEME_LABEL = { auto: 'Theo hệ thống', dark: 'Tối', light: 'Sáng' };
+const themeLabel = () => THEME_LABEL[LS.get('jp_theme', 'auto')] || THEME_LABEL.auto;
 function viewMore() {
-  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'trans'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
-  const act = (g, t, s, a) => `<button class="item" data-act="${a}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span><span class="mute">›</span></button>`;
+  const arrow = '<span class="mute">›</span>';
+  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'trans'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span>${arrow}</button>`;
+  const act = (g, t, s, a) => `<button class="item" data-act="${a}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span>${arrow}</button>`;
+  // Dòng cài đặt gọn: nhãn bên trái, giá trị hiện tại bên phải
+  const set = (t, val, a, extra = '') => `<button class="item mini ${extra}" data-act="${a}"><span class="grow t">${t}</span><span class="val">${val}</span>${arrow}</button>`;
+  const sec = (title, body, cls = 'g2') => `<section class="msec"><h3>${title}</h3><div class="list ${cls}">${body}</div></section>`;
+  const trash = S.cards.filter(c => !alive(c)).length;
   return `<div class="page">${pageTop('Khác')}
-  <div class="list">
-    ${link('計', 'Thống kê', 'Tiến độ, độ chính xác, 30 ngày gần đây', 'stats')}
-    ${link('文', 'Ngữ pháp', `Mẫu câu, cấu tạo, ví dụ · ${S.grammar_points.length} mẫu`, 'grammar')}
-    ${link('活', 'Chia động từ', `Bảng chia các thể · ${S.conj_verbs.length} động từ`, 'conj')}
-    ${link('訳', 'Bản dịch', `Dán đoạn văn tiếng Nhật, ghi nghĩa tiếng Việt · ${S.translations.length} bài`, 'trans')}
-    ${link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ, tra nhanh', 'radicals')}
-    ${act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa" để tạo hàng loạt', 'quickAdd')}
-    ${act('備', 'Sao lưu & khôi phục', esc(backupLabel()) + ' · tải toàn bộ dữ liệu về 1 file', 'backupTools')}
-    ${act('入', 'Nhập / xuất CSV', 'Trao đổi dữ liệu với Excel, Anki, …', 'csvTools')}
-    ${act('移', 'Nhập từ bản desktop', 'Chuyển toàn bộ japanese.db lên web', 'importDb')}
-    ${link('組', 'Bộ thẻ mẫu', 'Thêm bộ từ vựng, kanji có sẵn vào thẻ của bạn', 'starters')}
-    ${isAdmin() ? link('管', 'Quản trị', 'Tài khoản người dùng, bộ thẻ mẫu, số liệu', 'admin') : ''}
-    ${link('廃', 'Thùng rác', `${S.cards.filter(c => !alive(c)).length} thẻ đã xóa`, 'trash')}
-    ${act('鍵', 'Đổi mật khẩu', 'Đặt mật khẩu mới cho tài khoản', 'changePassword')}
-    ${act('打', 'Gõ tiếng Nhật (Ctrl+`)', 'Gõ romaji ra kana trong ô nhập · hiện: <span id="imestate">' + IME.describe() + '</span>', 'imeCycle')}
-    ${act('鍵', 'Phím tắt (?)', 'Bàn phím trên máy tính: chuyển tab, thêm thẻ, tìm, ôn tập…', 'shortcuts').replace('class="item"', 'class="item kbdhint"')}
-    ${act('色', 'Giao diện', 'Tự động / tối / sáng', 'theme')}
-    ${BAKED_CONFIG ? '' : act('鯖', 'Máy chủ', esc((getConfig().url || '').replace(/^https?:\/\//, '')), 'cfgEdit')}
-    ${act('再', 'Tải lại dữ liệu', 'Lấy bản mới nhất từ máy chủ', 'reload')}
-  </div>
-  <div class="sp"></div><div class="card small"><div class="row" style="justify-content:space-between"><span class="mute">Tài khoản</span><b>${esc(S.user?.email || '')}${isAdmin() ? ' · Admin' : ''}</b></div>
-  <div class="row" style="justify-content:space-between;margin-top:6px"><span class="mute">Đồng bộ</span><span id="syncbadge" class="sync"></span></div>
+  <div class="card small macct"><div class="row" style="justify-content:space-between;gap:10px"><span class="mute">Tài khoản</span><b style="overflow:hidden;text-overflow:ellipsis">${esc(S.user?.email || '')}${isAdmin() ? ' · Admin' : ''}</b></div>
+  <div class="row" style="justify-content:space-between;margin-top:6px"><span class="mute">Đồng bộ</span><span id="syncbadge" class="sync"></span></div></div>
+  ${sec('Học và tra cứu',
+    link('計', 'Thống kê', 'Tiến độ, độ chính xác', 'stats')
+    + link('活', 'Chia động từ', `${S.conj_verbs.length} động từ`, 'conj')
+    + link('文', 'Ngữ pháp', `${S.grammar_points.length} mẫu`, 'grammar')
+    + link('訳', 'Bản dịch', `${S.translations.length} bài`, 'trans')
+    + link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ', 'radicals'))}
+  ${sec('Thêm thẻ',
+    act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa"', 'quickAdd')
+    + link('組', 'Bộ thẻ mẫu', 'Từ vựng, kanji có sẵn', 'starters')
+    + act('入', 'Nhập / xuất CSV', 'Excel, Anki, …', 'csvTools')
+    + act('移', 'Nhập từ bản desktop', 'Chuyển japanese.db lên web', 'importDb'))}
+  ${sec('Dữ liệu',
+    act('備', 'Sao lưu & khôi phục', esc(backupLabel()), 'backupTools')
+    + link('廃', 'Thùng rác', `${trash} thẻ đã xóa`, 'trash')
+    + act('再', 'Tải lại dữ liệu', 'Lấy bản mới từ máy chủ', 'reload')
+    + (isAdmin() ? link('管', 'Quản trị', 'Người dùng, bộ thẻ mẫu, số liệu', 'admin') : ''))}
+  ${sec('Cài đặt',
+    set('Giao diện', `<span id="themestate">${themeLabel()}</span>`, 'theme')
+    + set('Gõ tiếng Nhật <span class="mute small">Ctrl+\`</span>', `<span id="imestate">${IME.describe()}</span>`, 'imeCycle')
+    + set('Phím tắt <span class="mute small">?</span>', '', 'shortcuts', 'kbdhint')
+    + set('Đổi mật khẩu', '', 'changePassword')
+    + (BAKED_CONFIG ? '' : set('Máy chủ', esc((getConfig().url || '').replace(/^https?:\/\//, '')), 'cfgEdit')), 'g2 sett')}
   <div class="sp"></div><div class="row"><button class="btn danger grow" data-act="logout">Đăng xuất</button></div>
-  <p class="small" style="text-align:center;margin:12px 0 0"><button class="linkbtn mute" data-act="deleteMyAccount">Xóa tài khoản của tôi</button></p></div></div>`;
+  <p class="small" style="text-align:center;margin:12px 0 0"><button class="linkbtn mute" data-act="deleteMyAccount">Xóa tài khoản của tôi</button></p></div>`;
 }
-ACT.theme = themeCycle;
+ACT.theme = () => { themeCycle(); const e = $('#themestate'); if (e) e.textContent = themeLabel(); };
 ACT.imeCycle = () => IME.cycle();
 ACT.reload = async () => { await guard(async () => { await flushQueue(); await loadAll(); }, 'Đã tải lại'); render(); };
 

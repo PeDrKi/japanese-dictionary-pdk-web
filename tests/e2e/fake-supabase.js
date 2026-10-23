@@ -44,6 +44,7 @@
         for (const raw of this.rows) {
           const row = { deleted_at: null, version: 1, created_at: nowIso(), updated_at: nowIso(), user_id: USER.id, ...raw };
           if (this.t === 'cards') Object.assign(row, { srs_interval: 1, srs_ease: 2.5, srs_due_date: null, status: 'new', is_favorite: false, ...raw });
+          if (this.t === 'translations') row.glossary = row.glossary ?? null;   // cột có từ schema v12
           if (this.t === 'cards' && !row.id) row.id = crypto.randomUUID();
           const k = keyOf(this.t, row), i = tab.findIndex(r => keyOf(this.t, r) === k);
           if (i >= 0) {
@@ -88,7 +89,7 @@
   }
   const session = () => ({ access_token: 'fake', refresh_token: 'fake', expires_at: Math.floor(Date.now() / 1000) + 3600, user: USER });
   const RPC = {
-    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 11, error: null }),
+    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 12, error: null }),
     jp_sync_sig: () => ({ data: 'sig-' + DB.n, error: null }),
     jp_me: () => ({ data: [DB.me], error: null }),
     log_study: logStudy,

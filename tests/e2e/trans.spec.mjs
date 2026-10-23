@@ -20,7 +20,9 @@ export default async ({ session }) => {
     check('lưu bài dài ~2.700 chữ nguyên vẹn (không cắt)', saved && saved.jp === longJp && saved.jp.length > 2500 && saved.vi === longVi && saved.jlpt_level === 'N4', String(saved && saved.jp.length));
     check('danh sách: 2 bài, bài dài hiện số chữ + N4', (await page.locator('#translist .item').count()) === 2 && (await page.locator('#translist').innerText()).includes('N4'));
     // đọc
-    await page.click('#translist .item >> text=Bài đọc dài'); await page.waitForSelector('.tpair');
+    await page.click('#translist .item >> text=Bài đọc dài'); await page.waitForSelector('.t2');
+    check('trang đọc mặc định: hai bên (bài đọc | từ vựng + bản dịch)', (await page.locator('.t2 .tpassage .tjp').count()) === 6 && (await page.locator('.t2 .tside').count()) === 1);
+    await page.click('[data-act=transMode][data-v=pair]'); await page.waitForSelector('.tpair');
     check('trang đọc: ghép cặp 6 đoạn Nhật – Việt', (await page.locator('.tpair').count()) === 6 && (await page.locator('.tpair .tvi').count()) === 6 && (await page.locator('.tpair .tjp').first().innerText()).includes('1番目'));
     await page.click('[data-act=transMode][data-v=jp]');
     check('chế độ "Chỉ tiếng Nhật": ẩn bản dịch', (await page.locator('.tvi').count()) === 0);

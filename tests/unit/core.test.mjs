@@ -175,3 +175,19 @@ test('dictToMasu: ngược lại với masuToDict', () => {
   }
   assert.equal(d2m('りんご', 1), null); assert.equal(d2m('食べる', 3), null);
 });
+
+// ── Từ vựng của bản dịch ──
+test('parseGlossary / fmtGlossary: "từ = nghĩa" mỗi dòng', () => {
+  const parse = g('parseGlossary'), fmt = g('fmtGlossary');
+  const l = Array.from(parse('友達 = bạn bè\n映画＝phim\n\n  行く  \nA = b = c'), x => ({ ...x }));
+  assert.deepEqual(l, [{ term: '友達', meaning: 'bạn bè' }, { term: '映画', meaning: 'phim' }, { term: '行く', meaning: '' }, { term: 'A', meaning: 'b = c' }]);
+  assert.equal(fmt(l), '友達 = bạn bè\n映画 = phim\n行く\nA = b = c');
+  assert.equal(parse('').length, 0); assert.equal(parse(null).length, 0);
+});
+test('hiPassage: gạch chân từ có trong từ vựng, ưu tiên từ dài, thoát HTML', () => {
+  const hi = g('hiPassage');
+  assert.equal(hi('友達と映画を見る', ['映画', '友達']), '<mark class="gl">友達</mark>と<mark class="gl">映画</mark>を見る');
+  assert.equal(hi('学校へ行く', ['学', '学校']), '<mark class="gl">学校</mark>へ行く');
+  assert.equal(hi('a<b>と(c)', ['(c)']), 'a&lt;b&gt;と<mark class="gl">(c)</mark>');
+  assert.equal(hi('abc', []), 'abc');
+});
