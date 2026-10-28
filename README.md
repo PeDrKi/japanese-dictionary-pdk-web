@@ -248,3 +248,8 @@ npm run test:all    # cả hai
 - Máy tính: 2 cột. Điện thoại: 1 cột. Dòng cài đặt gọn, hiện giá trị hiện tại bên phải (vd Giao diện: Theo hệ thống).
 - Tài khoản và trạng thái đồng bộ lên đầu trang; Đăng xuất ở cuối.
 - Không cần chạy lại schema.sql.
+
+## v3.36 — Đưa động từ từ tab Thẻ sang Chia động từ
+- Tab Thẻ → **☑ Chọn** → tick các thẻ → nút **Chia ĐT**. Hiện danh sách các động từ tìm thấy kèm nhóm (1/2/3); đổi nhóm nếu app đoán sai (thể ます đổi theo), bỏ tick từ không muốn thêm, rồi bấm **Thêm vào bảng**. Các ô được tự điền theo cột đang có.
+- Thẻ đã đặt "từ loại" Động từ nhóm 1/2/3 thì dùng đúng nhóm đó; thẻ chưa đặt thì app đoán từ cách đọc (có danh sách ngoại lệ như 帰る, 切る, 入る…). Thẻ không giống động từ bị bỏ qua; động từ đã có trong bảng hiện "đã có trong bảng".
+- Không cần chạy lại schema.sql.

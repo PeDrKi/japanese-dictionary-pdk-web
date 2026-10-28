@@ -345,6 +345,28 @@ function dictToMasu(dict, grp) {
   if (grp === 3) return dict.endsWith('する') ? initCh(h) + 'します' : dict.endsWith('くる') ? initCh(initCh(h)) + 'きます' : l === 'る' && lastCh(h) === '来' ? h + 'ます' : null;
   return null;
 }
+// Đoán nhóm động từ (1/2/3) từ thể từ điển + cách đọc; 0 nếu không giống động từ. Chỉ là gợi ý — người dùng đổi được.
+const CONJ_E_ROW = 'いきぎしじちぢにひびぴみりえけげせぜてでねへべぺめれ';
+const CONJ_GRP1_RU = new Set(['かえる', 'きる', 'はいる', 'はしる', 'しる', 'いる', 'へる', 'すべる', 'かぎる', 'ける', 'にぎる', 'まいる', 'ちる', 'しゃべる', 'ねる', 'いじる', 'あせる', 'なじる', 'のぞく']);
+function guessVerbGroup(dict, reading) {
+  dict = (dict || '').trim(); const kana = (reading || '').trim();
+  if (dict.length < 1) return 0;
+  if (/(する|くる|来る)$/.test(dict) || dict === 'する') return 3;
+  const l = lastCh(dict);
+  if (l !== 'る') return 'うくぐすつぬぶむ'.includes(l) ? 1 : 0;
+  const rd = /^[\u3040-\u309f]+$/.test(dict) ? dict : kana;
+  if (!rd || !rd.endsWith('る') || rd.length < 2) return rd ? 1 : 0;
+  if (CONJ_GRP1_RU.has(rd) || [...CONJ_GRP1_RU].some(x => x.length > 2 && rd.endsWith(x))) return 1;
+  return CONJ_E_ROW.includes(rd.slice(-2, -1)) ? 2 : 1;
+}
+// Thẻ → { masu, grp, guessed }; null nếu không phải động từ / không suy ra được thể ます. Ưu tiên "từ loại" đã đặt trên thẻ.
+function verbFromCard(c, forceGrp) {
+  let grp = forceGrp || { verb1: 1, verb2: 2, verb3: 3 }[c.pos] || 0, guessed = false;
+  if (!grp) { grp = guessVerbGroup(c.character, c.reading_kana); guessed = true; }
+  if (!grp) return null;
+  const masu = dictToMasu(c.character, grp) || dictToMasu(c.reading_kana, grp);
+  return masu ? { masu, grp, guessed: guessed && !forceGrp } : null;
+}
 // Chia từ thể ます + nhóm sang thể `kind`; trả '' nếu không chia được (cột tự đặt, thiếu nhóm, dạng lạ)
 function conjugate(masu, grp, kind) {
   masu = (masu || '').trim(); grp = Number(grp);

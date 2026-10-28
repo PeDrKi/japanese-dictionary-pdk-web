@@ -72,6 +72,30 @@ export default async ({ session }) => {
     check('không lỗi JS', errors.length === 0, errors.join('|'));
   }, { name: 'chia động từ' });
 
+  // từ tab Thẻ → Chia động từ (chọn nhiều thẻ)
+  const mk = (n, o) => ({ ...SEED.cards[0], id: `c0000000-0000-4000-8000-${String(n).padStart(12, '0')}`, pos: null, is_favorite: false, status: 'new', study_count: 0, srs_due_date: null, type: 'vocab', romaji: '', jlpt_level: null, ...o });
+  const S2 = { ...SEED, cards: [...SEED.cards, mk(21, { character: '飲む', reading_kana: 'のむ', meaning_vi: 'uống' }), mk(22, { character: '帰る', reading_kana: 'かえる', meaning_vi: 'về' }), mk(23, { character: '勉強する', reading_kana: 'べんきょうする', meaning_vi: 'học' })] };
+  await session(S2, async ({ page, check, db, errors }) => {
+    await page.waitForSelector('#view');
+    await page.click('#tabs [data-tab=more]'); await page.click('.item[data-name=conj]'); await page.waitForSelector('#conjbody'); await page.click('[data-act=conjDefaults]'); await page.waitForSelector('table.conj');
+    await page.click('#tabs [data-tab=cards]'); await page.waitForSelector('[data-act=toggleSelect]'); await page.click('[data-act=toggleSelect]');
+    for (const ch of ['飲む', '帰る', '勉強する', '水']) await page.locator(`[data-act=openCard]:has-text("${ch}")`).first().click();
+    await page.click('[data-act=bulkConj]'); await page.waitForSelector('#bcj');
+    const txt = await page.locator('#bcj').innerText();
+    check('liệt kê 飲みます / 帰ります / 勉強します, 水 bị bỏ qua', txt.includes('飲みます') && txt.includes('帰ります') && txt.includes('勉強します') && txt.includes('Không giống động từ'), txt);
+    check('帰る được đoán là nhóm 1, 勉強する nhóm 3', (await page.locator('#bcj .item[data-i] select').evaluateAll(a => a.map(x => x.value))).join() === '1,1,3');
+    await page.locator('#bcj .item', { hasText: '帰ります' }).locator('select').selectOption('2');
+    check('đổi nhóm → thể ます đổi theo', (await page.locator('#bcj').innerText()).includes('帰ます'));
+    await page.locator('#bcj .item', { hasText: '帰ます' }).locator('select').selectOption('1');
+    await page.click('#bcj-ok'); await page.waitForFunction(() => { const D = window.__DB; return D.conj_verbs.length === 3 && D.conj_cells.length >= 33; }, null, { timeout: 8000 });
+    const d = await db();
+    check('thêm 3 động từ đúng nhóm + nghĩa, tự điền ô', row(d, '飲みます')?.grp === 1 && row(d, '帰ります')?.grp === 1 && row(d, '勉強します')?.grp === 3 && row(d, '飲みます').meaning_vi === 'uống' && cellOf(d, '勉強します', 'te') === '勉強して' && cellOf(d, '帰ります', 'nai') === '帰らない');
+    check('thoát chế độ chọn', (await page.locator('[data-act=bulkConj]').count()) === 0);
+    await page.click('[data-act=toggleSelect]'); await page.locator('[data-act=openCard]:has-text("飲む")').first().click(); await page.click('[data-act=bulkConj]'); await page.waitForSelector('#bcj');
+    check('thêm lần nữa → báo đã có, nút Thêm bị khóa', (await page.locator('#bcj').innerText()).includes('đã có trong bảng') && await page.locator('#bcj-ok').isDisabled());
+    check('không lỗi JS', errors.length === 0, errors.join('|'));
+  }, { name: 'thẻ → chia động từ' });
+
   await session({ ...SEED, oldSchema: true }, async ({ page, check, errors }) => {
     await page.waitForSelector('#view'); await page.click('#tabs [data-tab=more]'); await page.click('.item[data-name=conj]'); await page.waitForSelector('#conjbody');
     check('chưa chạy schema mới → báo rõ, không lỗi', (await page.locator('#conjbody').innerText()).includes('schema.sql') && errors.length === 0, errors.join('|'));

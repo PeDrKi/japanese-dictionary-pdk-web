@@ -164,3 +164,33 @@ ACT.conjImport = () => {
     if (ok !== undefined) { toast(`Đã thêm ${pick.length} động từ`); s.close(); render(); }
   };
 };
+
+// ── Từ tab Thẻ: chọn nhiều thẻ → thêm các động từ vào bảng Chia động từ ──
+ACT.bulkConj = () => {
+  const have = new Set(S.conj_verbs.map(v => v.masu)), byId = new Map(liveCards().map(c => [c.id, c]));
+  const items = [...FILT.sel].map(id => byId.get(id)).filter(Boolean).map(card => ({ card, v: verbFromCard(card) }));
+  if (!items.length) return;
+  const rowHtml = (it, i) => {
+    if (!it.v) return `<div class="item" style="opacity:.55"><span class="grow"><span class="t jp">${esc(it.card.character)}</span><br><span class="s">Không giống động từ — bỏ qua</span></span></div>`;
+    const dup = have.has(it.v.masu);
+    return `<div class="item" data-i="${i}"><input type="checkbox" ${dup ? 'disabled' : 'checked'} style="width:20px;height:20px"><span class="grow"><span class="t jp" data-masu>${esc(it.v.masu)}</span> ${dup ? '<span class="s">đã có trong bảng</span>' : `<span class="s">${esc(it.card.meaning_vi || '')}</span>`}</span>
+      <select class="input" data-grp aria-label="Nhóm" style="width:auto" ${dup ? 'disabled' : ''}>${[1, 2, 3].map(g => `<option value="${g}" ${g === it.v.grp ? 'selected' : ''}>Nhóm ${g}</option>`).join('')}</select></div>`;
+  };
+  const n = items.filter(x => x.v && !have.has(x.v.masu)).length;
+  const s = openSheet(`<h2>Thêm vào Chia động từ</h2><p class="small mute" style="margin:-4px 0 10px">${n ? 'Kiểm tra nhóm của từng động từ (đổi nếu app đoán sai), rồi bấm Thêm.' : 'Không có động từ mới trong các thẻ đã chọn.'}</p>
+    <div class="list" id="bcj" style="max-height:50vh;overflow:auto">${items.map(rowHtml).join('')}</div>
+    <div class="sp"></div><div class="row"><button class="btn grow" data-close>Hủy</button><button class="btn primary grow" id="bcj-ok" ${n ? '' : 'disabled'}>Thêm vào bảng</button></div>`);
+  s.el.querySelectorAll('#bcj [data-grp]').forEach(sel => sel.onchange = () => {
+    const row = sel.closest('.item'), it = items[+row.dataset.i], v = verbFromCard(it.card, +sel.value);
+    row.querySelector('[data-masu]').textContent = v ? v.masu : '—'; row.querySelector('input').disabled = !v; if (!v) row.querySelector('input').checked = false;
+    it.v = v || it.v;
+  });
+  s.$('#bcj-ok').onclick = async () => {
+    const pick = [...s.el.querySelectorAll('#bcj .item[data-i]')].filter(r => r.querySelector('input').checked && !r.querySelector('input').disabled).map(r => items[+r.dataset.i].v);
+    const seen = new Set(), list = pick.filter(v => v && !seen.has(v.masu) && seen.add(v.masu));
+    if (!list.length) return;
+    const cards = list.map(v => items.find(x => x.v === v).card);
+    const ok = await guard(async () => { const vs = await addConjVerbs(list.map((v, i) => ({ masu: v.masu, meaning_vi: cards[i].meaning_vi, grp: v.grp }))); if (S.conj_forms.some(f => f.kind)) await fillConj({ verbIds: vs.map(x => x.id) }); return vs.length; });
+    if (ok !== undefined) { toast(`Đã thêm ${list.length} động từ vào Chia động từ`); s.close(); FILT.sel.clear(); FILT.select = false; render(); }
+  };
+};

@@ -176,6 +176,16 @@ test('dictToMasu: ngược lại với masuToDict', () => {
   assert.equal(d2m('りんご', 1), null); assert.equal(d2m('食べる', 3), null);
 });
 
+test('guessVerbGroup / verbFromCard: đoán nhóm, ưu tiên từ loại đã đặt', () => {
+  const gg = g('guessVerbGroup'), vf = g('verbFromCard');
+  for (const [d, r, grp] of [['食べる', 'たべる', 2], ['見る', 'みる', 2], ['飲む', 'のむ', 1], ['買う', 'かう', 1], ['帰る', 'かえる', 1], ['切る', 'きる', 1], ['入る', 'はいる', 1], ['知る', 'しる', 1], ['勉強する', 'べんきょうする', 3], ['来る', 'くる', 3], ['する', 'する', 3], ['行く', 'いく', 1], ['りんご', 'りんご', 0], ['', '', 0]]) assert.equal(gg(d, r), grp, d);
+  assert.equal(gg('走る', 'はしる'), 1);
+  const a = vf({ character: '食べる', reading_kana: 'たべる' }); assert.deepEqual([a.masu, a.grp, a.guessed], ['食べます', 2, true]);
+  const b = vf({ character: '帰る', reading_kana: 'かえる', pos: 'verb1' }); assert.deepEqual([b.masu, b.grp, b.guessed], ['帰ります', 1, false]);
+  const c = vf({ character: '帰る', reading_kana: 'かえる' }, 2); assert.equal(c.masu, '帰ます');
+  assert.equal(vf({ character: 'りんご', reading_kana: 'りんご' }), null);
+});
+
 // ── Từ vựng của bản dịch ──
 test('parseGlossary / fmtGlossary: "từ = nghĩa" mỗi dòng', () => {
   const parse = g('parseGlossary'), fmt = g('fmtGlossary');

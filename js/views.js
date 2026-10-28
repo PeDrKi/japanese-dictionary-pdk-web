@@ -88,7 +88,7 @@ function selectBar() {
   const n = FILT.sel.size;
   return `<div class="selbar"><button class="btn ghost" data-act="selAll">${n ? `Đã chọn ${n}` : 'Chọn tất cả'}</button>
     <button class="btn" data-act="bulkFav" ${n ? '' : 'disabled'}>★</button>
-    <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
+    <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn" data-act="bulkConj" ${n ? '' : 'disabled'}>Chia ĐT</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
 }
 function cardsBody() {
   const list = currentList(), pages = pageMode() === 'pages';

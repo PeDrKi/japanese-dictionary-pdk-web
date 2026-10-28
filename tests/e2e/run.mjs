@@ -40,7 +40,7 @@ async function session(seed, fn, opts = {}) {
   await context.close();
 }
 
-const files = fs.readdirSync(here).filter(f => f.endsWith('.spec.mjs')).sort();
+const files = fs.readdirSync(here).filter(f => f.endsWith('.spec.mjs')).filter(f => !process.argv[2] || f.includes(process.argv[2])).sort();
 for (const f of files) { console.log('\n# ' + f); const mod = await import(pathToFileURL(path.join(here, f)).href); await mod.default({ session }); }
 await browser.close(); server.close();
 console.log(`\n${results.length - failed} pass, ${failed} fail`);
