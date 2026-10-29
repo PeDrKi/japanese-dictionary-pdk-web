@@ -23,7 +23,7 @@ const results = []; let failed = 0;
 
 // Mỗi bài test nhận helper { page, check, open } — open(seed) mở app với dữ liệu giả ban đầu.
 async function session(seed, fn, opts = {}) {
-  const context = await browser.newContext({ serviceWorkers: 'block', viewport: opts.viewport || { width: 1280, height: 800 } });
+  const context = await browser.newContext({ serviceWorkers: 'block', viewport: opts.viewport || { width: 1280, height: 800 }, reducedMotion: (opts.motion || process.env.MOTION) ? 'no-preference' : 'reduce' });   // mặc định tắt hiệu ứng cho test ổn định; opts.motion bật lại để thử hiệu ứng
   await context.route('**/vendor/supabase.js', r => r.fulfill({ contentType: 'text/javascript', body: `window.__SEED = ${JSON.stringify(seed || {})};\n` + FAKE }));
   await context.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());                       // test không cần mạng
   // test không phụ thuộc cấu hình thật trong js/config.js: mặc định phục vụ bản trống (opts.baked để thử chế độ đã nhúng sẵn)
@@ -40,7 +40,7 @@ async function session(seed, fn, opts = {}) {
   await context.close();
 }
 
-const files = fs.readdirSync(here).filter(f => f.endsWith('.spec.mjs')).filter(f => !process.argv[2] || f.includes(process.argv[2])).sort();
+const files = fs.readdirSync(here).filter(f => f.endsWith('.spec.mjs')).filter(f => !process.argv[2] || process.argv[2].split(',').some(k => f.includes(k))).sort();
 for (const f of files) { console.log('\n# ' + f); const mod = await import(pathToFileURL(path.join(here, f)).href); await mod.default({ session }); }
 await browser.close(); server.close();
 console.log(`\n${results.length - failed} pass, ${failed} fail`);

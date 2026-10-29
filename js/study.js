@@ -108,14 +108,14 @@ function runSession(cfg) {
     win.set(`<div class="result page"><div class="jp" style="font-size:40px">${acc >= 80 ? '素晴らしい' : acc >= 50 ? 'よくできました' : 'がんばって'}</div><div class="score" style="margin:18px 0">${acc}%</div>
       <p class="mute">Đúng ${st.ok} · Sai ${st.bad} · ${total} thẻ</p><div class="sp"></div>
       <div class="row"><button class="btn grow" data-close>Đóng</button><button class="btn primary grow" id="again">Ôn lại</button></div></div>`);
-    win.$('#again').onclick = () => { win.close(); setTimeout(() => runSession(cfg), 120); };
+    win.$('#again').onclick = () => { win.close(); setTimeout(() => runSession(cfg), 120); }; FX.result(win.el);
   };
   const next = () => {
     clearTimeout(st.timer);
     if (!st.queue.length) { st.cur = null; return finish(); }
-    st.cur = st.queue.shift(); st.answered = false; st.revealed = false; paint();
+    st.cur = st.queue.shift(); st.answered = false; st.revealed = false; paint(); FX.cardIn(win.$('#paper'), st.lastOk); st.lastOk = undefined;
   };
-  const answer = (correct) => { correct ? st.ok++ : (st.bad++, requeue()); logStudy(st.cur.id, correct ? 'correct' : 'incorrect'); };
+  const answer = (correct) => { st.lastOk = correct; FX.verdict(win.el, correct); correct ? st.ok++ : (st.bad++, requeue()); logStudy(st.cur.id, correct ? 'correct' : 'incorrect'); };
 
   // ── Flashcard ──
   const paintFlash = () => {
@@ -124,7 +124,7 @@ function runSession(cfg) {
       <div class="back" id="back">${st.revealed ? `<div class="rd">${esc(rd)}</div><div class="mn">${esc(c.meaning_vi)}</div>${c.meaning_en ? `<div class="mute small">${esc(c.meaning_en)}</div>` : ''}${c.example_jp ? `<div class="ex">${esc(c.example_jp)}${c.example_vi ? `<br><span class="small">${esc(c.example_vi)}</span>` : ''}</div>` : ''}`
         : '<div class="mute small" style="padding-top:26px">Chạm vào thẻ để lật · Space</div>'}</div>
       ${st.revealed ? '<div class="row"><button class="btn bad grow" id="no" style="min-height:56px">✗ Không nhớ</button><button class="btn ok grow" id="yes" style="min-height:56px">✓ Đã nhớ</button></div>' : ''}</div>`);
-    win.$('#paper').onclick = () => { if (!st.revealed) { st.revealed = true; paint(); win.$('#paper')?.classList.add('flip'); } };
+    win.$('#paper').onclick = () => { if (!st.revealed) { st.revealed = true; paint(); FX.flip(win.$('#paper')) || win.$('#paper')?.classList.add('flip'); } };
     if (st.revealed) { win.$('#no').onclick = () => { answer(false); next(); }; win.$('#yes').onclick = () => { answer(true); next(); }; }
   };
 

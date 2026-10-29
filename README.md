@@ -267,3 +267,22 @@ npm run test:all    # cả hai
 - Nút chính có vệt sáng khi rê chuột và hút nhẹ theo con trỏ; ô nhập sáng viền vàng khi chọn.
 - Máy bật "Giảm chuyển động" (hoặc không tải được GSAP) → trang tĩnh, vẫn dùng bình thường.
 - GSAP 3.12.5 đặt tại `vendor/gsap.min.js` (giấy phép chuẩn của GreenSock, dùng miễn phí). Mã hiệu ứng: `js/auth-fx.js`; kiểu dáng: cuối `styles.css`. Không cần chạy lại schema.sql.
+
+## v3.39 — Đổi chỗ hai nửa giữa Đăng nhập và Đăng ký
+- Trang **Đăng nhập**: thẻ ở bên trái, sân khấu 日本語 ở bên phải. Trang **Đăng ký**: sân khấu bên trái, thẻ bên phải.
+- Khi chuyển trang, hai nửa trượt qua nhau để đổi chỗ (thẻ vẫn lật nhẹ). Quên mật khẩu giữ bố cục của trang đăng nhập; trang "Kiểm tra email" giữ bố cục của trang đăng ký. Điện thoại xếp dọc nên không đổi chỗ.
+- Không cần chạy lại schema.sql.
+
+## v3.40 — Hiệu ứng GSAP trong toàn app
+Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng transform/opacity, không chặn thao tác; chỉ chạy khi **đổi màn hình** chứ không chạy lại mỗi lần dữ liệu vẽ lại.
+- **Chuyển tab / vào màn phụ**: các khối nội dung hiện lần lượt (vào màn phụ trượt từ phải, quay lại trượt từ trái); biểu tượng tab nảy nhẹ.
+- **Hôm nay**: con dấu "cần ôn" đóng xuống, số thẻ đếm lên. **Thống kê**: 4 số đếm lên, biểu đồ cột mọc từ đáy, các thanh dài ra.
+- **Hộp thoại**: nền mờ dần, hộp trượt lên (điện thoại) hoặc phóng nhẹ ra (máy tính); lúc đóng mờ đi êm. **Toast** nảy lên rồi mờ đi. **Thanh chọn nhiều thẻ** trượt lên; **huy hiệu số thẻ đến hạn** nảy khi đổi số; nút ＋ bật ra.
+- **Ôn tập**: thẻ lật 3D khi bấm; thẻ kế tiếp bay vào từ phải (nhớ) hoặc từ trái (không nhớ); Quiz/Gõ: đúng thì thẻ nhấp nhẹ, sai thì thẻ rung; màn kết quả: điểm đếm lên.
+- Bật "Giảm chuyển động" của hệ điều hành (hoặc không có GSAP) → tắt toàn bộ, app chạy như trước. Test giao diện mặc định chạy ở chế độ giảm chuyển động cho ổn định; `tests/e2e/fx.spec.mjs` bật hiệu ứng để kiểm tra không để lại style thừa, không trùng id, không lỗi JS.
+- Không cần chạy lại schema.sql.
+
+## v3.41 — Công tắc bật/tắt hiệu ứng chuyển động
+- **Khác → Cài đặt → Hiệu ứng chuyển động**: bấm để đổi vòng **Theo hệ thống → Tắt (tĩnh) → Bật**. "Tắt" làm toàn bộ app đứng yên (không còn hiệu ứng GSAP lẫn hoạt ảnh CSS), "Bật" luôn chạy hiệu ứng dù hệ điều hành đang xin giảm chuyển động, "Theo hệ thống" nghe theo cài đặt của máy (mặc định).
+- Trang **Đăng nhập / Đăng ký** có liên kết nhỏ "Tắt hiệu ứng chuyển động" ngay dưới thẻ, để tắt được từ trước khi vào app (trang dựng lại tĩnh, giữ nguyên email đã gõ).
+- Lựa chọn lưu trên từng thiết bị. Không cần chạy lại schema.sql.

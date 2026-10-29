@@ -1,7 +1,6 @@
 // Hiệu ứng cho trang Đăng nhập / Đăng ký (GSAP). Thiếu GSAP hoặc máy bật "giảm chuyển động" → giao diện tĩnh, vẫn dùng bình thường.
 const AuthFX = (() => {
-  const reduce = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const live = () => !!window.gsap && !reduce();
+  const live = () => FX.live();   // cùng một công tắc với phần còn lại của app (Khác → Hiệu ứng chuyển động)
   const KANA = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんアイウエオカキクケコサシスセソタチツテトナニヌネノ日月火水木金土人本語学';
   const QUOTES = [['継続は力なり', 'Kiên trì là sức mạnh'], ['七転び八起き', 'Ngã bảy lần, đứng dậy tám lần'], ['千里の道も一歩から', 'Đường nghìn dặm bắt đầu từ một bước chân']];
   const LAYERS = [{ n: 13, size: [22, 34], op: .08, depth: 10, dur: [11, 18], blur: 1.5 }, { n: 9, size: [38, 56], op: .12, depth: 22, dur: [9, 14], blur: 0 }, { n: 5, size: [70, 104], op: .16, depth: 40, dur: [8, 12], blur: 0 }];
@@ -9,8 +8,8 @@ const AuthFX = (() => {
   const rnd = (a, b) => a + Math.random() * (b - a);
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  function shell(cardHtml) {
-    return `<div class="authx"><svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="ax-rough"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.2"/></filter></svg>
+  function shell(cardHtml, page = 'login') {
+    return `<div class="authx" data-page="${page}"><svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="ax-rough"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.2"/></filter></svg>
     <section class="ax-stage"><div class="ax-kana" aria-hidden="true"></div>
       <div class="ax-hero"><div class="ax-titlewrap"><div class="ax-title" aria-hidden="true"><span class="ch">日</span><span class="ch">本</span><span class="ch">語</span></div>
         <svg class="ax-brush" viewBox="0 0 400 24" preserveAspectRatio="none" aria-hidden="true"><path d="M4 14 C 60 4, 120 22, 190 12 S 330 6, 396 13"/></svg>
@@ -84,11 +83,21 @@ const AuthFX = (() => {
   }
 
   // Đổi trang (đăng nhập ⇄ đăng ký): thẻ lật như mặt sau của flashcard, dấu ấn bên trái nhấn lại
-  function swap(cardHtml, dir) {
-    const x = $('.authx'), card = $('.ax-card', x); card.innerHTML = cardHtml; card.classList.remove('ax-err');
+  function swap(cardHtml, dir, page) {
+    const x = $('.authx'), card = $('.ax-card', x), stage = $('.ax-stage', x), side = $('.ax-side', x);
+    card.innerHTML = cardHtml; card.classList.remove('ax-err');
+    const was = x.dataset.page, a = [stage.getBoundingClientRect().left, side.getBoundingClientRect().left];
+    if (page) x.dataset.page = page;
     if (!live() || !ctx) return;
     ctx.add(() => {
-      gsap.fromTo(card, { opacity: 0, rotationY: (dir || 1) * 80, transformPerspective: 1100 }, { opacity: 1, rotationY: 0, duration: .75, ease: 'back.out(1.25)', clearProps: 'transform,opacity' });
+      if (page && page !== was) {          // hai nửa trượt qua nhau để đổi chỗ (FLIP); điện thoại xếp dọc nên dx = 0 → bỏ qua
+        const b = [stage.getBoundingClientRect().left, side.getBoundingClientRect().left];
+        if (Math.abs(a[0] - b[0]) > 1) {
+          gsap.fromTo(stage, { x: a[0] - b[0] }, { x: 0, duration: .9, ease: 'power3.inOut', clearProps: 'transform' });
+          gsap.fromTo(side, { x: a[1] - b[1] }, { x: 0, duration: .9, ease: 'power3.inOut', clearProps: 'transform' });
+        }
+      }
+      gsap.fromTo(card, { opacity: 0, rotationY: (dir || 1) * 60, transformPerspective: 1100 }, { opacity: 1, rotationY: 0, duration: .8, ease: 'back.out(1.2)', clearProps: 'transform,opacity' });
       gsap.fromTo($('.ax-stamp', x), { scale: 1.22 }, { scale: 1, rotation: dir > 0 ? 5 : -7, duration: .6, ease: 'elastic.out(1,.45)' });
       reveal(card, false);
     });

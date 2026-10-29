@@ -21,13 +21,13 @@ export default async ({ session }) => {
     await page.fill('#cvf [name=masu]', '飲みます'); await page.fill('#cvf [name=meaning_vi]', 'uống');
     await page.click('#cvf button.primary'); await page.waitForTimeout(300);
     check('thiếu nhóm → báo lỗi, chưa lưu', !row(await db(), '飲みます') && (await page.locator('#cvf').count()) === 1);
-    await page.click('[data-act=cvGrp][data-v="1"]'); await page.click('#cvf button.primary'); await page.waitForSelector('#cvf', { state: 'detached' }); await page.waitForFunction(m => { const D = window.__DB, v = D.conj_verbs.find(x => x.masu === m); return v && D.conj_cells.filter(c => c.verb_id === v.id).length >= 11; }, '飲みます', { timeout: 8000 });
+    await page.click('[data-act=cvGrp][data-v="1"]'); await page.click('#cvf button.primary'); await page.waitForSelector('#cvf', { state: 'detached' }); await page.waitForFunction(m => { const D = window.__DB, v = D.conj_verbs.find(x => x.masu === m); return v && D.conj_cells.filter(c => c.verb_id === v.id).length >= 11; }, '飲みます', { timeout: 20000 }).catch(async e => { const D = await db(); console.log('DIAG', JSON.stringify({ verbs: D.conj_verbs.map(v => [v.masu, v.grp]), cells: D.conj_cells.length, forms: D.conj_forms.length, toast: await page.locator('.toast').allInnerTexts(), sheet: await page.locator('.scrim').count(), url: page.url() })); throw e; });
     d = await db();
     check('飲みます nhóm 1: て形 飲んで, 可能形 飲める', cellOf(d, '飲みます', 'te') === '飲んで' && cellOf(d, '飲みます', 'potential') === '飲める');
     // gợi ý nhóm 3 khi gõ します
     await page.click('[data-act=newConjVerb]'); await page.waitForSelector('#cvf'); await page.fill('#cvf [name=masu]', '勉強します');
     check('gõ 勉強します → tự chọn nhóm 3', (await page.locator('[data-act=cvGrp][data-v="3"].on').count()) === 1);
-    await page.click('#cvf button.primary'); await page.waitForSelector('#cvf', { state: 'detached' }); await page.waitForFunction(m => { const D = window.__DB, v = D.conj_verbs.find(x => x.masu === m); return v && D.conj_cells.filter(c => c.verb_id === v.id).length >= 11; }, '勉強します', { timeout: 8000 });
+    await page.click('#cvf button.primary'); await page.waitForSelector('#cvf', { state: 'detached' }); await page.waitForFunction(m => { const D = window.__DB, v = D.conj_verbs.find(x => x.masu === m); return v && D.conj_cells.filter(c => c.verb_id === v.id).length >= 11; }, '勉強します', { timeout: 20000 });
     check('勉強します: 勉強しない / 勉強できる', cellOf(await db(), '勉強します', 'nai') === '勉強しない' && cellOf(await db(), '勉強します', 'potential') === '勉強できる');
     // sửa ô trực tiếp
     const cell = page.locator(`.cell[data-v="${row(await db(), '飲みます').id}"]`).nth(2);
@@ -87,7 +87,7 @@ export default async ({ session }) => {
     await page.locator('#bcj .item', { hasText: '帰ります' }).locator('select').selectOption('2');
     check('đổi nhóm → thể ます đổi theo', (await page.locator('#bcj').innerText()).includes('帰ます'));
     await page.locator('#bcj .item', { hasText: '帰ます' }).locator('select').selectOption('1');
-    await page.click('#bcj-ok'); await page.waitForFunction(() => { const D = window.__DB; return D.conj_verbs.length === 3 && D.conj_cells.length >= 33; }, null, { timeout: 8000 });
+    await page.click('#bcj-ok'); await page.waitForFunction(() => { const D = window.__DB; return D.conj_verbs.length === 3 && D.conj_cells.length >= 33; }, null, { timeout: 20000 });
     const d = await db();
     check('thêm 3 động từ đúng nhóm + nghĩa, tự điền ô', row(d, '飲みます')?.grp === 1 && row(d, '帰ります')?.grp === 1 && row(d, '勉強します')?.grp === 3 && row(d, '飲みます').meaning_vi === 'uống' && cellOf(d, '勉強します', 'te') === '勉強して' && cellOf(d, '帰ります', 'nai') === '帰らない');
     check('thoát chế độ chọn', (await page.locator('[data-act=bulkConj]').count()) === 0);

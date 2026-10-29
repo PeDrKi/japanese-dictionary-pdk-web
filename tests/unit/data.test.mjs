@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadApp } from '../helpers/load.mjs';
 
-const app = loadApp(['core', 'data', 'conflict', 'ui', 'tools']);
+const app = loadApp(['core', 'data', 'conflict', 'fx', 'ui', 'tools']);
 const S = app.get('S');
 const today = app.run('localDate()');
 const past = app.run('addDays(-2)'), future = app.run('addDays(5)');

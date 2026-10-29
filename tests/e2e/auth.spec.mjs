@@ -36,12 +36,16 @@ export default async ({ session }) => {
     check('trang đăng nhập không còn nút tạo tài khoản trong form', (await page.locator('#authf #signup').count()) === 0 && (await page.locator('#authf [name=password2]').count()) === 0);
     await page.fill('#authf [name=email]', 'moi@x.co'); await page.click('#tosignup'); await page.waitForSelector('#signf');
     check('bấm Đăng ký → sang trang riêng (#/dang-ky), giữ email đã gõ', (await page.evaluate(() => location.hash)) === '#/dang-ky' && (await page.inputValue('#signf [name=email]')) === 'moi@x.co' && (await page.locator('h1.auth-h').innerText()) === 'Tạo tài khoản');
+    await page.waitForTimeout(1100);
+    const pos = async () => page.evaluate(() => [document.querySelector('.ax-stage').getBoundingClientRect().left, document.querySelector('.ax-side').getBoundingClientRect().left]);
+    const [sg, sd] = await pos(); check('trang đăng ký: sân khấu bên trái, thẻ bên phải', sg < sd, `${sg} ${sd}`);
     await page.fill('#signf [name=password]', 'matkhau-12345'); await page.fill('#signf [name=password2]', 'khac-12345678'); await page.click('#signf button.primary');
     check('hai mật khẩu khác nhau → báo lỗi, chưa gửi', (await page.locator('#signmsg').innerText()).includes('chưa giống') && (await page.locator('#signf').count()) === 1);
     await page.fill('#signf [name=password]', 'ngan'); await page.fill('#signf [name=password2]', 'ngan');
     await page.evaluate(() => { document.querySelector('#signf').noValidate = true; }); await page.click('#signf button.primary');
     check('mật khẩu dưới 8 ký tự → báo lỗi', (await page.locator('#signmsg').innerText()).includes('8 ký tự'));
     await page.goBack(); await page.waitForSelector('#authf');
+    await page.waitForTimeout(1100); { const [sg2, sd2] = await page.evaluate(() => [document.querySelector('.ax-stage').getBoundingClientRect().left, document.querySelector('.ax-side').getBoundingClientRect().left]); check('trang đăng nhập: thẻ bên trái, sân khấu bên phải', sd2 < sg2, `${sg2} ${sd2}`); }
     check('nút Quay lại của trình duyệt → về trang đăng nhập', (await page.locator('h1.auth-h').innerText()) === 'Đăng nhập');
     await page.goForward(); await page.waitForSelector('#signf'); await page.fill('#signf [name=email]', 'moi@x.co');
     await page.fill('#signf [name=password]', 'matkhau-12345'); await page.fill('#signf [name=password2]', 'matkhau-12345'); await page.click('#signf button.primary');
@@ -53,5 +57,5 @@ export default async ({ session }) => {
     check('tải lại trang #/dang-ky → vẫn ở trang đăng ký', (await page.locator('h1.auth-h').innerText()) === 'Tạo tài khoản');
     await page.click('#tologin'); await page.waitForSelector('#authf');
     check('không có lỗi JS', errors.length === 0, errors.join('|'));
-  }, { name: 'đăng nhập / đăng ký tách trang' });
+  }, { name: 'đăng nhập / đăng ký tách trang', motion: true });
 };

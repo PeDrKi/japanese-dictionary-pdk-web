@@ -13,7 +13,7 @@ let toastTimer;
 function toast(msg, err = false) {
   $('.toast')?.remove();
   const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg; t.setAttribute('role', 'status');
-  document.body.appendChild(t); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), err ? 4200 : 2200);
+  document.body.appendChild(t); FX.toastIn(t); clearTimeout(toastTimer); toastTimer = setTimeout(() => FX.toastOut(() => t.remove()), err ? 4200 : 2200);
 }
 async function guard(fn, okMsg) {
   try { const r = await fn(); if (okMsg) toast(okMsg); return r ?? true; }
@@ -49,7 +49,7 @@ function pushLayer(el, onClose) {
   layer.close = () => {
     if (layer.closed) return; layer.closed = true;
     const i = layers.indexOf(layer); if (i >= 0) layers.splice(i, 1);
-    el.remove(); onClose?.();
+    FX.layerOut(el); el.remove(); onClose?.();
     if (opener && opener.isConnected && typeof opener.focus === 'function') { try { opener.focus({ preventScroll: true }); } catch {} }
     // Chỉ lùi lịch sử khi đang đứng trên một mục do app đẩy vào — không bao giờ lùi ra khỏi trang
     if (!layer.byPop && history.state && history.state.layer) { ignorePops++; history.back(); }
@@ -67,7 +67,7 @@ function openSheet(html, opts = {}) {
   const scrim = document.createElement('div'); scrim.className = 'scrim';
   scrim.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div>`;
   document.body.appendChild(scrim);
-  const layer = pushLayer(scrim, opts.onClose);
+  const layer = pushLayer(scrim, opts.onClose); FX.layerIn(scrim);
   if (!opts.sticky) scrim.addEventListener('mousedown', e => { if (e.target === scrim) layer.close(); });   // form dài: chạm ra ngoài không làm mất nội dung đang nhập
   scrim.addEventListener('click', e => { if (e.target.closest('[data-close]')) layer.close(); });
   const first = $('[autofocus]', scrim); if (first) setTimeout(() => first.focus(), 60);
@@ -76,7 +76,7 @@ function openSheet(html, opts = {}) {
 }
 function openFull(html, opts = {}) {
   const el = document.createElement('div'); el.className = 'full'; el.innerHTML = html; document.body.appendChild(el);
-  const layer = pushLayer(el, opts.onClose);
+  const layer = pushLayer(el, opts.onClose); FX.layerIn(el);
   el.addEventListener('click', e => { if (e.target.closest('[data-close]')) layer.close(); });
   return { el, close: layer.close, $: s => $(s, el), set(h) { el.innerHTML = h; } };
 }

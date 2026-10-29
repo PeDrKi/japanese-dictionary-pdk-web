@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadApp } from '../helpers/load.mjs';
-const app = loadApp(['core', 'data', 'conflict', 'ui', 'tools', 'backup']);
+const app = loadApp(['core', 'data', 'conflict', 'fx', 'ui', 'tools', 'backup']);
 const build = app.run('buildBackup'), validate = app.run('validateBackup'), plan = app.run('planRestore');
 const J = x => JSON.parse(JSON.stringify(x));
 const data = { cards: [{ id: 'c1', character: '水', user_id: 'u', version: 3, updated_at: 'x' }, { id: 'c2', character: '火' }],

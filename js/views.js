@@ -14,6 +14,7 @@ function render() {
   $$('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === NAV.tab ? 'page' : 'false'));
   const d = dueCount(), bd = $('#duebadge'); if (bd) { bd.textContent = d > 99 ? '99+' : d; bd.classList.toggle('hidden', !d); }
   updateSyncBadge();
+  FX.view(v, NAV.sub ? 's:' + NAV.sub.name + ':' + (NAV.sub.id || '') : 't:' + NAV.tab, NAV.depth); FX.after(v);
 }
 // Vẽ lại sau khi dữ liệu tự làm mới — chỉ khi không làm gián đoạn người dùng (đang nhập, đang mở form/ôn tập)
 function softRender() {
@@ -21,7 +22,7 @@ function softRender() {
   const a = document.activeElement; if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;
   const v = $('#view'); const top = v ? v.scrollTop : 0; render(); if (v) v.scrollTop = top; return true;
 }
-ACT.tab = el => { dropSubHistory(); NAV.tab = el.dataset.tab; NAV.sub = null; NAV.stack = []; FILT.select = false; FILT.sel.clear(); render(); $('#view').scrollTop = 0; };
+ACT.tab = el => { dropSubHistory(); NAV.tab = el.dataset.tab; NAV.sub = null; NAV.stack = []; FILT.select = false; FILT.sel.clear(); render(); $('#view').scrollTop = 0; FX.tabPop(); };
 ACT.sub = el => { NAV.stack.push(NAV.sub); NAV.sub = { name: el.dataset.name, id: el.dataset.id }; history.pushState({ sub: 1 }, ''); NAV.depth++; render(); $('#view').scrollTop = 0; };
 
 // ═══ HÔM NAY ═══════════════════════════════════════════════════════════════
@@ -43,7 +44,7 @@ function viewToday() {
   const streak = streakDays();
   return `<div class="page">
   <div class="hero">
-    <div class="due"><div class="stamp ${due ? '' : 'zero'}" aria-hidden="true"><b class="jp">${due ? due : '済'}</b></div>
+    <div class="due"><div class="stamp ${due ? '' : 'zero'}" aria-hidden="true"><b class="jp${due ? ' count' : ''}">${due ? due : '済'}</b></div>
     <div><h2>${due ? `${due} thẻ cần ôn hôm nay` : 'Hôm nay đã ôn xong'}</h2>
     <div class="mute small">${live.length ? `Trong tổng ${live.length} thẻ` : 'Chưa có thẻ nào — hãy thêm thẻ đầu tiên'}</div></div></div>
   </div>
@@ -499,6 +500,7 @@ function viewMore() {
     + (isAdmin() ? link('管', 'Quản trị', 'Người dùng, bộ thẻ mẫu, số liệu', 'admin') : ''))}
   ${sec('Cài đặt',
     set('Giao diện', `<span id="themestate">${themeLabel()}</span>`, 'theme')
+    + set('Hiệu ứng chuyển động', `<span id="motionstate">${FX.label()}</span>`, 'motion')
     + set('Gõ tiếng Nhật <span class="mute small">Ctrl+\`</span>', `<span id="imestate">${IME.describe()}</span>`, 'imeCycle')
     + set('Phím tắt <span class="mute small">?</span>', '', 'shortcuts', 'kbdhint')
     + set('Đổi mật khẩu', '', 'changePassword')
@@ -507,6 +509,7 @@ function viewMore() {
   <p class="small" style="text-align:center;margin:12px 0 0"><button class="linkbtn mute" data-act="deleteMyAccount">Xóa tài khoản của tôi</button></p></div>`;
 }
 ACT.theme = () => { themeCycle(); const e = $('#themestate'); if (e) e.textContent = themeLabel(); };
+ACT.motion = () => { const p = FX.cycle(); const e = $('#motionstate'); if (e) e.textContent = FX.label(); toast({ auto: 'Hiệu ứng: theo cài đặt của hệ thống', off: 'Đã tắt hiệu ứng — giao diện tĩnh', on: 'Đã bật hiệu ứng' }[p]); };
 ACT.imeCycle = () => IME.cycle();
 ACT.reload = async () => { await guard(async () => { await flushQueue(); await loadAll(); }, 'Đã tải lại'); render(); };
 
@@ -522,10 +525,10 @@ function viewStats() {
   const acc = S.sessTotal ? Math.round(S.sessCorrect / S.sessTotal * 100) : 0;
   const fields = [['Nghĩa Anh', 'meaning_en'], ['Ví dụ', 'example_jp'], ['Romaji', 'romaji'], ['JLPT', 'jlpt_level'], ['Nguồn', 'source']];
   return `<div class="page">${pageTop('Thống kê', !isTopTab())}
-  <div class="grid2"><div class="card"><div class="mute small">Tổng số thẻ</div><b class="jp" style="font-size:30px">${n}</b></div>
-    <div class="card"><div class="mute small">Yêu thích</div><b class="jp" style="font-size:30px">${live.filter(c => c.is_favorite).length}</b></div>
-    <div class="card"><div class="mute small">Lượt ôn tập</div><b class="jp" style="font-size:30px">${S.sessTotal}</b></div>
-    <div class="card"><div class="mute small">Độ chính xác</div><b class="jp" style="font-size:30px">${acc}%</b></div></div>
+  <div class="grid2"><div class="card"><div class="mute small">Tổng số thẻ</div><b class="jp count" style="font-size:30px">${n}</b></div>
+    <div class="card"><div class="mute small">Yêu thích</div><b class="jp count" style="font-size:30px">${live.filter(c => c.is_favorite).length}</b></div>
+    <div class="card"><div class="mute small">Lượt ôn tập</div><b class="jp count" style="font-size:30px">${S.sessTotal}</b></div>
+    <div class="card"><div class="mute small">Độ chính xác</div><b class="jp count" style="font-size:30px">${acc}%</b></div></div>
   <div class="sp"></div><div class="card"><b>Lượt ôn 30 ngày</b><div class="sp"></div><div class="bars" role="img" aria-label="Lượt ôn mỗi ngày trong 30 ngày">${days.map(([d, c]) => `<i class="${c ? '' : 'z'}" title="${d}: ${c}" style="height:${c ? Math.max(6, c / mx * 100) : 3}%"></i>`).join('')}</div></div>
   <div class="sp"></div><div class="card"><b>Trạng thái</b>${STATUSES.map(s => bar(STATUS_LABEL[s], stat[s], n, { new: '#6b8cff', learning: '#f0b429', known: '#4ecb85' }[s])).join('')}</div>
   <div class="sp"></div><div class="card"><b>Loại thẻ</b>${TYPES.map(t => bar(TYPE_LABEL[t], types[t], n, 'var(--info)')).join('')}</div>

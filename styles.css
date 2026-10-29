@@ -178,7 +178,8 @@ nav#tabs button[aria-current="page"]::before { content: ''; position: absolute; 
 .empty { text-align: center; color: var(--mute); padding: 40px 12px; }
 .empty .g { font: 500 54px/1 var(--serif); opacity: .5; }
 .sync { font-size: 12px; color: var(--mute); }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { :root:not([data-motion="on"]) * { animation: none !important; transition: none !important; } }
+:root[data-motion="off"] * { animation: none !important; transition: none !important; }
 
 /* iOS Safari phóng to trang khi ô nhập < 16px */
 .field input, .field select, .field textarea, .input { font-size: 16px; }
@@ -377,7 +378,11 @@ mark.gl { background: none; color: inherit; text-decoration: underline; text-dec
 @media (min-width: 700px) { .list.g2 { display: grid; grid-template-columns: 1fr 1fr; } }
 
 /* ── Trang Đăng nhập / Đăng ký (hiệu ứng ở js/auth-fx.js) ─────────────────────────────────────────── */
-.authx { --seal: #d23a2e; position: relative; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(360px, 1fr); overflow: hidden; background: var(--bg); }
+.authx { --seal: #d23a2e; position: relative; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); overflow: hidden; background: var(--bg); }
+.authx .ax-stage, .authx .ax-side { min-width: 0; }
+/* Đăng nhập: thẻ bên trái, sân khấu bên phải · Đăng ký: ngược lại */
+.authx[data-page="login"] .ax-side { order: 1; } .authx[data-page="login"] .ax-stage { order: 2; border-right: 0; border-left: 1px solid var(--line); }
+.authx[data-page="signup"] .ax-stage { order: 1; } .authx[data-page="signup"] .ax-side { order: 2; }
 .ax-stage { position: relative; display: flex; align-items: center; justify-content: center; padding: 48px 40px; overflow: hidden; border-right: 1px solid var(--line);
   background: radial-gradient(120% 90% at 18% 12%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 56%), radial-gradient(90% 90% at 92% 100%, color-mix(in srgb, var(--info) 20%, transparent), transparent 62%), var(--surface); }
 .ax-kana { position: absolute; inset: 0; pointer-events: none; }
@@ -412,10 +417,13 @@ mark.gl { background: none; color: inherit; text-decoration: underline; text-dec
 .ax-act::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .38) 50%, transparent 70%); transform: translateX(-130%); transition: transform .8s; pointer-events: none; }
 .ax-act:hover::after { transform: translateX(130%); }
 .ax-alt { text-align: center; margin: 18px 0 0; }
+.ax-motion { margin: 6px 0 0; text-align: center; } .ax-motion .linkbtn { text-decoration: none; font-weight: 500; font-size: 12px; min-height: 32px; }
 .ax-check { display: block; width: 72px; height: 72px; margin: 0 0 14px; }
 .ax-check circle, .ax-check path { fill: none; stroke: var(--ok); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 859px) {
   .authx { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .authx[data-page] .ax-stage { order: 1; border-left: 0; }
+  .authx[data-page] .ax-side { order: 2; }
   .ax-stage { justify-content: flex-start; padding: calc(30px + env(safe-area-inset-top)) 22px 58px; border-right: 0; border-bottom: 1px solid var(--line); }
   .ax-title { font-size: clamp(64px, 23vw, 108px); }
   .ax-stamp { right: 1%; bottom: -30%; }
