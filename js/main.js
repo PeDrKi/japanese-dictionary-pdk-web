@@ -41,6 +41,7 @@ function wireCfgForm(form, btn, done) {
   };
 }
 function screenConfig() {
+  AuthFX.destroy();
   const c = getConfig();
   root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Kết nối máy chủ</h1><p class="mute" style="margin-top:0">Nhập thông tin dự án Supabase của bạn. Chỉ cần làm một lần trên mỗi thiết bị — sau này đổi được ở mục Khác → Máy chủ.</p>
   <form id="cfgf">${cfgFormHtml(c)}<button class="btn primary block" style="min-height:48px">Kết nối</button></form>
@@ -73,18 +74,19 @@ async function takeAuthHash() {
   return { type: q.get('type') || '' };
 }
 function screenForgot(prefill = '') {
-  root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Quên mật khẩu</h1><p class="mute" style="margin-top:0">Nhập email đã đăng ký, chúng tôi gửi liên kết để bạn đặt mật khẩu mới.</p>
+  GUEST = true;
+  authPage(`<h1 class="auth-h">Quên mật khẩu</h1><p class="ax-sub">Nhập email đã đăng ký, chúng tôi gửi liên kết để bạn đặt mật khẩu mới.</p>
   <form id="fgf"><label class="field"><span>Email</span><input name="email" type="email" required autocomplete="email" autocapitalize="none" value="${esc(prefill)}" autofocus></label>
-  <div id="fgmsg" class="small" style="min-height:22px;color:var(--bad)"></div>
-  <button class="btn primary block" style="min-height:48px">Gửi liên kết đặt lại mật khẩu</button></form>
-  <p class="small" style="text-align:center;margin-top:14px"><button type="button" class="linkbtn" id="fgback">← Quay lại đăng nhập</button></p></div>`;
-  $('#fgback').onclick = () => screenAuth('', prefill);
+  <div id="fgmsg" class="small" style="min-height:22px;color:var(--bad)" role="alert"></div>
+  <button class="btn primary block ax-act" style="min-height:50px">Gửi liên kết đặt lại mật khẩu</button></form>
+  <p class="small ax-alt"><button type="button" class="linkbtn" id="fgback">← Quay lại đăng nhập</button></p>`);
+  $('#fgback').onclick = () => { FLIP = -1; screenAuth('', prefill); };
   $('#fgf').onsubmit = async e => {
     e.preventDefault(); const em = new FormData(e.target).get('email').trim(); const m = $('#fgmsg'), b = $('#fgf button.primary');
     m.style.color = 'var(--mute)'; m.textContent = 'Đang gửi…'; b.disabled = true;
     const { error } = await sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + location.pathname });
     b.disabled = false;
-    if (error) { m.style.color = 'var(--bad)'; m.textContent = authMsg(error); return; }
+    if (error) { m.style.color = 'var(--bad)'; m.textContent = authMsg(error); AuthFX.shake(); return; }
     m.style.color = 'var(--ok)'; m.textContent = 'Nếu email này đã đăng ký, bạn sẽ nhận được liên kết trong vài phút. Hãy kiểm tra cả thư rác.';
   };
 }
@@ -109,6 +111,7 @@ function wireNewPassword(form, done) {
   };
 }
 function screenNewPassword() {
+  AuthFX.destroy();
   root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Đặt mật khẩu mới</h1><p class="mute" style="margin-top:0">Chọn mật khẩu mới cho tài khoản của bạn.</p>
   ${newPasswordForm().replace('</form>', '')}<button class="btn primary block" style="min-height:48px">Lưu mật khẩu mới</button></form></div>`;
   wireNewPassword($('#npf'), () => { toast('Đã đổi mật khẩu'); boot(); });
@@ -119,13 +122,20 @@ ACT.changePassword = () => {
 };
 // ── Hai trang riêng: Đăng nhập (#/) và Đăng ký (#/dang-ky) — có địa chỉ riêng nên nút Quay lại của trình duyệt dùng được ──
 const BASE_TITLE = document.title;
-let GUEST = false;
+let GUEST = false, FLIP = 0;
+// Hiện nội dung thẻ trong khung có hiệu ứng: lần đầu dựng cả sân khấu (AuthFX.intro), các lần sau chỉ lật thẻ (dir: 1 = sang phải, -1 = quay lại)
+function authPage(html, dir = 0) {
+  const r = root(), has = r.querySelector('.ax-card');
+  if (has && has.isConnected) AuthFX.swap(html, dir || FLIP || 1); else { r.innerHTML = AuthFX.shell(html); AuthFX.intro(); }
+  FLIP = 0;
+}
 const SIGNUP_HASH = '#/dang-ky';
 function goGuest(page, prefill = '') {
   history.pushState(null, '', location.pathname + location.search + (page === 'signup' ? SIGNUP_HASH : ''));
+  FLIP = page === 'signup' ? 1 : -1;
   page === 'signup' ? screenSignup(prefill) : screenAuth('', prefill);
 }
-window.addEventListener('popstate', () => { if (GUEST) location.hash === SIGNUP_HASH ? screenSignup() : screenAuth(); });
+window.addEventListener('popstate', () => { if (!GUEST) return; FLIP = location.hash === SIGNUP_HASH ? 1 : -1; location.hash === SIGNUP_HASH ? screenSignup() : screenAuth(); });
 const serverLink = () => BAKED_CONFIG ? '' : '<p class="small" style="margin-top:20px"><a href="#" id="chg" class="mute">Máy chủ Supabase</a></p>';
 const wireServerLink = () => { if ($('#chg')) $('#chg').onclick = e => { e.preventDefault(); screenConfig(); }; };
 function wirePwToggle(inputId, btnId) {
@@ -133,38 +143,38 @@ function wirePwToggle(inputId, btnId) {
 }
 function screenAuth(msg = '', prefill = '') {
   GUEST = true; document.title = 'Đăng nhập — 日本語';
-  root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Đăng nhập</h1><p class="mute" style="margin-top:0">Học tiếng Nhật mọi lúc, đồng bộ giữa máy tính và điện thoại.</p>
+  authPage(`<h1 class="auth-h">Đăng nhập</h1><p class="ax-sub">Học tiếng Nhật mọi lúc, đồng bộ giữa máy tính và điện thoại.</p>
   <form id="authf"><label class="field"><span>Email</span><input name="email" type="email" required autocomplete="email" autocapitalize="none" value="${esc(prefill)}"></label>
   <label class="field"><span>Mật khẩu</span><span class="pw"><input name="password" id="pw" type="password" required minlength="6" autocomplete="current-password"><button type="button" class="pwtog" id="pwtog" aria-label="Hiện mật khẩu">Hiện</button></span></label>
   <p class="small" style="margin:-4px 0 6px;text-align:right"><button type="button" class="linkbtn" id="forgot" style="min-height:32px">Quên mật khẩu?</button></p>
   <div id="authmsg" class="small" style="min-height:22px;color:var(--bad)" role="alert">${esc(msg)}</div>
-  <button class="btn primary block" data-mode="in" style="min-height:48px">Đăng nhập</button></form>
-  <p class="small mute" style="text-align:center;margin:18px 0 0">Chưa có tài khoản? <a href="${SIGNUP_HASH}" class="linkbtn" id="tosignup">Đăng ký</a></p>
-  ${serverLink()}</div>`;
-  const say = (t, ok) => { const m = $('#authmsg'); m.textContent = t; m.style.color = ok ? 'var(--ok)' : 'var(--bad)'; };
+  <button class="btn primary block ax-act" data-mode="in" style="min-height:50px">Đăng nhập</button></form>
+  <p class="small mute ax-alt">Chưa có tài khoản? <a href="${SIGNUP_HASH}" class="linkbtn" id="tosignup">Đăng ký</a></p>
+  ${serverLink()}`);
+  const say = (t, ok) => { const m = $('#authmsg'); m.textContent = t; m.style.color = ok ? 'var(--ok)' : 'var(--bad)'; if (t && !ok) AuthFX.shake(); };
   const email = () => new FormData($('#authf')).get('email') || '';
   $('#authf').onsubmit = async e => {
     e.preventDefault(); say('Đang đăng nhập…', true);
     const { error } = await sb.auth.signInWithPassword(Object.fromEntries(new FormData($('#authf'))));
     if (error) return say(authMsg(error));
-    GUEST = false; boot();
+    GUEST = false; await AuthFX.leave(); boot();
   };
   wirePwToggle('pw', 'pwtog');
   $('#tosignup').onclick = e => { e.preventDefault(); goGuest('signup', email()); };
-  $('#forgot').onclick = () => screenForgot(email());
+  $('#forgot').onclick = () => { FLIP = 1; screenForgot(email()); };
   wireServerLink();
 }
 function screenSignup(prefill = '') {
   GUEST = true; document.title = 'Đăng ký — 日本語';
-  root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Tạo tài khoản</h1><p class="mute" style="margin-top:0">Dữ liệu học của bạn được lưu theo tài khoản và đồng bộ giữa các thiết bị.</p>
+  authPage(`<h1 class="auth-h">Tạo tài khoản</h1><p class="ax-sub">Dữ liệu học của bạn được lưu theo tài khoản và đồng bộ giữa các thiết bị.</p>
   <form id="signf"><label class="field"><span>Email</span><input name="email" type="email" required autocomplete="email" autocapitalize="none" value="${esc(prefill)}" autofocus></label>
   <label class="field"><span>Mật khẩu (từ 8 ký tự)</span><span class="pw"><input name="password" id="spw" type="password" required minlength="8" maxlength="72" autocomplete="new-password"><button type="button" class="pwtog" id="spwtog" aria-label="Hiện mật khẩu">Hiện</button></span></label>
   <label class="field"><span>Nhập lại mật khẩu</span><input name="password2" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></label>
   <div id="signmsg" class="small" style="min-height:22px;color:var(--bad)" role="alert"></div>
-  <button class="btn primary block" style="min-height:48px">Tạo tài khoản</button></form>
-  <p class="small mute" style="text-align:center;margin:18px 0 0">Đã có tài khoản? <a href="#" class="linkbtn" id="tologin">Đăng nhập</a></p>
-  ${serverLink()}</div>`;
-  const say = (t, ok) => { const m = $('#signmsg'); m.textContent = t; m.style.color = ok ? 'var(--ok)' : 'var(--bad)'; };
+  <button class="btn primary block ax-act" style="min-height:50px">Tạo tài khoản</button></form>
+  <p class="small mute ax-alt">Đã có tài khoản? <a href="#" class="linkbtn" id="tologin">Đăng nhập</a></p>
+  ${serverLink()}`);
+  const say = (t, ok) => { const m = $('#signmsg'); m.textContent = t; m.style.color = ok ? 'var(--ok)' : 'var(--bad)'; if (t && !ok) AuthFX.shake(); };
   wirePwToggle('spw', 'spwtog');
   $('#tologin').onclick = e => { e.preventDefault(); goGuest('login', new FormData($('#signf')).get('email') || ''); };
   $('#signf').onsubmit = async e => {
@@ -175,15 +185,16 @@ function screenSignup(prefill = '') {
     const { data, error } = await sb.auth.signUp({ email: em, password: f.password });
     b.disabled = false;
     if (error) return say(authMsg(error));
-    if (data.session) { GUEST = false; return boot(); }
-    screenSignupDone(em);
+    if (data.session) { GUEST = false; await AuthFX.leave(); return boot(); }
+    FLIP = 1; screenSignupDone(em);
   };
   wireServerLink();
 }
 function screenSignupDone(email) {
   GUEST = true;
-  root().innerHTML = `<div class="auth"><div class="logo jp">日本語</div><h1 class="auth-h">Kiểm tra email của bạn</h1><p class="mute" style="margin-top:0">Chúng tôi đã gửi một email xác nhận tới <b>${esc(email)}</b>. Mở email, bấm liên kết xác nhận, rồi quay lại đăng nhập. Nhớ xem cả thư rác.</p>
-  <button class="btn primary block" id="donelogin" style="min-height:48px">Đến trang đăng nhập</button></div>`;
+  authPage(`<svg class="ax-check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M14 27 l8 8 l16-17"/></svg>
+  <h1 class="auth-h">Kiểm tra email của bạn</h1><p class="ax-sub">Chúng tôi đã gửi một email xác nhận tới <b>${esc(email)}</b>. Mở email, bấm liên kết xác nhận, rồi quay lại đăng nhập. Nhớ xem cả thư rác.</p>
+  <button class="btn primary block ax-act" id="donelogin" style="min-height:50px">Đến trang đăng nhập</button>`);
   $('#donelogin').onclick = () => goGuest('login', email);
 }
 function shell() {
@@ -222,7 +233,7 @@ function touchActivity() {   // ghi nhận có dùng app (tối đa 1 lần/phú
 ['pointerdown', 'keydown', 'visibilitychange'].forEach(ev => document.addEventListener(ev, touchActivity, { passive: true }));
 
 async function boot() {
-  GUEST = false; document.title = BASE_TITLE;
+  GUEST = false; AuthFX.destroy(); document.title = BASE_TITLE;
   if (!initSupabase()) return screenConfig();
   root().innerHTML = '<div class="auth"><div class="logo jp">日本語</div><p class="mute">Đang tải…</p></div>';
   const hashRes = await takeAuthHash();

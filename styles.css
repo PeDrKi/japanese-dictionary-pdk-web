@@ -375,3 +375,53 @@ mark.gl { background: none; color: inherit; text-decoration: underline; text-dec
 .item.mini { padding: 12px; }
 .item.mini .val { color: var(--mute); font-size: 14px; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (min-width: 700px) { .list.g2 { display: grid; grid-template-columns: 1fr 1fr; } }
+
+/* ── Trang Đăng nhập / Đăng ký (hiệu ứng ở js/auth-fx.js) ─────────────────────────────────────────── */
+.authx { --seal: #d23a2e; position: relative; min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(360px, 1fr); overflow: hidden; background: var(--bg); }
+.ax-stage { position: relative; display: flex; align-items: center; justify-content: center; padding: 48px 40px; overflow: hidden; border-right: 1px solid var(--line);
+  background: radial-gradient(120% 90% at 18% 12%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 56%), radial-gradient(90% 90% at 92% 100%, color-mix(in srgb, var(--info) 20%, transparent), transparent 62%), var(--surface); }
+.ax-kana { position: absolute; inset: 0; pointer-events: none; }
+.ax-layer { position: absolute; inset: -8%; will-change: transform; }
+.ax-g { position: absolute; font-family: var(--serif); line-height: 1; color: var(--text); user-select: none; will-change: transform; }
+.ax-g.amb { color: var(--accent); }
+.ax-hero { position: relative; z-index: 1; max-width: 560px; }
+.ax-titlewrap { position: relative; display: inline-block; }
+.ax-title { display: flex; font: 700 clamp(84px, 12vw, 190px)/.95 var(--serif); letter-spacing: .02em; white-space: nowrap; }
+.ax-title .ch { display: inline-block; will-change: transform, filter; }
+.ax-brush { display: block; width: 100%; height: 20px; margin-top: 6px; overflow: visible; }
+.ax-brush path { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; }
+.ax-stamp { position: absolute; right: -9%; bottom: -26%; width: clamp(54px, 6.2vw, 86px); aspect-ratio: 1; display: grid; place-items: center; border-radius: 12px; background: var(--seal); color: #fdeee6; transform: rotate(-7deg); filter: url(#ax-rough); }
+.ax-stamp span { font: 700 clamp(34px, 3.9vw, 54px)/1 var(--serif); }
+.ax-stamp::after { content: ''; position: absolute; inset: 5px; border: 2px solid rgba(255, 240, 232, .55); border-radius: 7px; }
+.ax-ring { position: absolute; inset: 0; border: 2px solid var(--seal); border-radius: 12px; opacity: 0; pointer-events: none; }
+.ax-tag { margin: 34px 0 0; font: 600 clamp(20px, 2.2vw, 28px)/1.35 var(--sans); }
+.ax-quote { display: grid; gap: 2px; min-height: 58px; margin: 22px 0 0; color: var(--mute); }
+.ax-quote .q-jp { font: 500 20px/1.4 var(--serif); color: var(--text); }
+.ax-quote .q-vi { font-size: 13px; }
+.ax-side { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; padding: 32px 24px; }
+.ax-cardwrap { width: 100%; max-width: 400px; perspective: 1200px; }
+.ax-card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 30px 28px 26px; box-shadow: 0 28px 60px -26px rgba(0, 0, 0, .5); transition: border-color .25s; backface-visibility: hidden; will-change: transform; }
+.ax-card.ax-err { border-color: var(--bad); }
+.ax-card .auth-h { font: 700 26px/1.2 var(--serif); margin: 0 0 6px; }
+.ax-sub { margin: 0 0 20px; color: var(--mute); }
+.ax-card .field > span:first-child { transition: color .2s; }
+.ax-card .field:focus-within > span:first-child { color: var(--accent); }
+.ax-card .field input { transition: border-color .2s, box-shadow .2s; }
+.ax-card .field input:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+.ax-act { position: relative; overflow: hidden; }
+.ax-act::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .38) 50%, transparent 70%); transform: translateX(-130%); transition: transform .8s; pointer-events: none; }
+.ax-act:hover::after { transform: translateX(130%); }
+.ax-alt { text-align: center; margin: 18px 0 0; }
+.ax-check { display: block; width: 72px; height: 72px; margin: 0 0 14px; }
+.ax-check circle, .ax-check path { fill: none; stroke: var(--ok); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 859px) {
+  .authx { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .ax-stage { justify-content: flex-start; padding: calc(30px + env(safe-area-inset-top)) 22px 58px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .ax-title { font-size: clamp(64px, 23vw, 108px); }
+  .ax-stamp { right: 1%; bottom: -30%; }
+  .ax-tag { margin-top: 20px; font-size: 18px; }
+  .ax-quote { display: none; }
+  .ax-side { align-items: flex-start; margin-top: -34px; padding: 0 14px 28px; }
+  .ax-card { padding: 24px 20px 22px; }
+}
+@media (min-width: 860px) and (max-height: 640px) { .ax-quote { display: none; } }

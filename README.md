@@ -259,3 +259,11 @@ npm run test:all    # cả hai
 - **Đăng ký** là trang riêng (địa chỉ `#/dang-ky`): email, mật khẩu (từ 8 ký tự), nhập lại mật khẩu, nút Hiện/Ẩn. Hai mật khẩu phải giống nhau mới gửi đi. Nút Quay lại của trình duyệt và tải lại trang đều hoạt động đúng.
 - Đăng ký xong mà cần xác nhận email → trang "Kiểm tra email của bạn" rồi nút **Đến trang đăng nhập** (email được điền sẵn). Nếu Supabase tắt xác nhận email thì vào app luôn.
 - Email đã gõ được giữ khi chuyển qua lại giữa hai trang. Không cần chạy lại schema.sql.
+
+## v3.38 — Trang Đăng nhập / Đăng ký có hiệu ứng (GSAP)
+- Bố cục hai nửa: bên trái là "sân khấu" 日本語 — các chữ hiện dần như mực loang, nét cọ vàng được vẽ ra, rồi con dấu đỏ 学 đóng xuống kèm gợn sóng; kana trôi chậm theo 3 lớp sâu và lệch nhẹ theo con trỏ chuột; các câu tục ngữ Nhật đổi dần bên dưới. Bên phải là thẻ đăng nhập. Điện thoại: sân khấu thu gọn ở trên, thẻ nằm đè lên.
+- Chuyển giữa **Đăng nhập ⇄ Đăng ký ⇄ Quên mật khẩu**: thẻ lật như mặt sau của flashcard, con dấu nhấn lại; sân khấu giữ nguyên nên mượt. Địa chỉ vẫn riêng (`#/dang-ky`).
+- Sai mật khẩu / nhập lỗi → thẻ rung nhẹ. Đăng nhập xong → thẻ bay lên rồi vào app. Đăng ký xong → dấu tick được vẽ ra ở trang "Kiểm tra email".
+- Nút chính có vệt sáng khi rê chuột và hút nhẹ theo con trỏ; ô nhập sáng viền vàng khi chọn.
+- Máy bật "Giảm chuyển động" (hoặc không tải được GSAP) → trang tĩnh, vẫn dùng bình thường.
+- GSAP 3.12.5 đặt tại `vendor/gsap.min.js` (giấy phép chuẩn của GreenSock, dùng miễn phí). Mã hiệu ứng: `js/auth-fx.js`; kiểu dáng: cuối `styles.css`. Không cần chạy lại schema.sql.

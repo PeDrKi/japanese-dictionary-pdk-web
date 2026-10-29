@@ -46,7 +46,7 @@ export default async ({ session }) => {
     await page.goForward(); await page.waitForSelector('#signf'); await page.fill('#signf [name=email]', 'moi@x.co');
     await page.fill('#signf [name=password]', 'matkhau-12345'); await page.fill('#signf [name=password2]', 'matkhau-12345'); await page.click('#signf button.primary');
     await page.waitForSelector('#donelogin');
-    check('đăng ký xong (cần xác nhận email) → trang nhắc kiểm tra email', (await page.locator('.auth').innerText()).includes('moi@x.co'));
+    check('đăng ký xong (cần xác nhận email) → trang nhắc kiểm tra email', (await page.locator('.ax-card').innerText()).includes('moi@x.co'));
     await page.click('#donelogin'); await page.waitForSelector('#authf');
     check('về trang đăng nhập, email được điền sẵn', (await page.inputValue('#authf [name=email]')) === 'moi@x.co' && (await page.evaluate(() => location.hash)) === '');
     await page.click('#tosignup'); await page.waitForSelector('#signf'); await page.reload(); await page.waitForSelector('#signf');
