@@ -253,3 +253,9 @@ npm run test:all    # cả hai
 - Tab Thẻ → **☑ Chọn** → tick các thẻ → nút **Chia ĐT**. Hiện danh sách các động từ tìm thấy kèm nhóm (1/2/3); đổi nhóm nếu app đoán sai (thể ます đổi theo), bỏ tick từ không muốn thêm, rồi bấm **Thêm vào bảng**. Các ô được tự điền theo cột đang có.
 - Thẻ đã đặt "từ loại" Động từ nhóm 1/2/3 thì dùng đúng nhóm đó; thẻ chưa đặt thì app đoán từ cách đọc (có danh sách ngoại lệ như 帰る, 切る, 入る…). Thẻ không giống động từ bị bỏ qua; động từ đã có trong bảng hiện "đã có trong bảng".
 - Không cần chạy lại schema.sql.
+
+## v3.37 — Đăng nhập và Đăng ký thành hai trang riêng
+- **Đăng nhập** (trang chính) chỉ có email, mật khẩu, "Quên mật khẩu?" và liên kết **Đăng ký**. Không còn nút tạo tài khoản nằm chung trong form đăng nhập.
+- **Đăng ký** là trang riêng (địa chỉ `#/dang-ky`): email, mật khẩu (từ 8 ký tự), nhập lại mật khẩu, nút Hiện/Ẩn. Hai mật khẩu phải giống nhau mới gửi đi. Nút Quay lại của trình duyệt và tải lại trang đều hoạt động đúng.
+- Đăng ký xong mà cần xác nhận email → trang "Kiểm tra email của bạn" rồi nút **Đến trang đăng nhập** (email được điền sẵn). Nếu Supabase tắt xác nhận email thì vào app luôn.
+- Email đã gõ được giữ khi chuyển qua lại giữa hai trang. Không cần chạy lại schema.sql.
