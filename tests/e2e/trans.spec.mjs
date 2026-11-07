@@ -33,7 +33,7 @@ export default async ({ session }) => {
     // sửa: số đoạn khác nhau → không ghép cặp
     await page.click('[data-act=transEdit]'); await page.waitForSelector('#tf');
     await page.fill('#tf [name=vi]', 'Chỉ có một đoạn dịch.'); await page.click('#tf button[type=submit]'); await page.waitForSelector('#tf', { state: 'detached' }); await page.waitForTimeout(300);
-    check('lưu sửa; số đoạn lệch → hiện thông báo không ghép cặp', (await db()).translations.find(t => t.title === 'Bài đọc dài').vi === 'Chỉ có một đoạn dịch.' && (await page.locator('.tbody').innerText()).includes('không ghép cặp'));
+    check('lưu sửa; số đoạn lệch → hiện thông báo không ghép cặp', (await db()).translations.find(t => t.title === 'Bài đọc dài').vi === 'Chỉ có một đoạn dịch.' && (await page.locator('.tbody').innerText()).includes('chưa ghép cặp'));
     await page.click('[data-act=back]'); await page.waitForSelector('#translist');
     // tìm
     await page.fill('#tq', '毎日日本語'); await page.waitForTimeout(400);

@@ -502,3 +502,13 @@ function filterTranslations({ search = '', jlpt = '' } = {}) {
 }
 // Tách văn bản thành các đoạn (mỗi dòng / đoạn một mục) để ghép cặp Nhật – Việt
 const splitParas = t => String(t || '').split(/\r?\n+/).map(x => x.trim()).filter(Boolean);
+
+// Tách câu tiếng Nhật trong một đoạn (kết thúc bằng 。！？!? kèm dấu đóng ngoặc); đoạn không có dấu kết thúc là 1 câu
+const splitSents = p => (String(p || '').match(/[^。！？!?]*[。！？!?]+[」』）)”"]*|[^。！？!?]+$/g) || []).map(x => x.trim()).filter(Boolean);
+const SENT_TODO = '…';   // câu chưa dịch khi dịch từng câu (giữ đúng số dòng để còn ghép cặp)
+// Mức ghép cặp giữa bài tiếng Nhật và bản dịch: 'para' = mỗi dòng dịch ↔ một đoạn; 'sent' = mỗi dòng dịch ↔ một câu; 'none' = chưa ghép được
+function pairInfo(jp, vi) {
+  const P = splitParas(jp), V = splitParas(vi); if (!V.length) return { level: 'none', P, V, S: P.map(splitSents) };
+  const S = P.map(splitSents), n = S.reduce((a, x) => a + x.length, 0);
+  return { level: V.length === P.length ? 'para' : V.length === n ? 'sent' : 'none', P, V, S };
+}

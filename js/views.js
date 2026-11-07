@@ -7,12 +7,13 @@ function render() {
   const v = $('#view'); if (!v) return;
   const sub = NAV.sub;
   if (sub) {
-    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, conj: viewConj, trans: viewTrans, transitem: viewTransItem, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
+    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, conj: viewConj, trans: viewTrans, transitem: viewTransItem, transedit: viewTransEdit, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
   } else {
     v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, conj: viewConj, trans: viewTrans, more: viewMore }[NAV.tab]();
   }
   $$('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === NAV.tab ? 'page' : 'false'));
   const d = dueCount(), bd = $('#duebadge'); if (bd) { bd.textContent = d > 99 ? '99+' : d; bd.classList.toggle('hidden', !d); }
+  if (sub && sub.name === 'transedit') { const f = $('#tf'); if (f) tedInfo(f); }
   updateSyncBadge();
   FX.view(v, NAV.sub ? 's:' + NAV.sub.name + ':' + (NAV.sub.id || '') : 't:' + NAV.tab, NAV.depth); FX.after(v);
 }

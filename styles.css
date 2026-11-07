@@ -343,7 +343,15 @@ table.conj .c-add { padding: 4px 8px; background: var(--surface2); }
 .tarea { width: 100%; min-height: 160px; resize: vertical; line-height: 1.7; }
 .tpair { padding: 12px 14px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .tjp { margin: 0; font-size: 18px; line-height: 1.9; }
-.tvi { margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--line); line-height: 1.65; }
+/* Phân biệt rõ: văn bản gốc (chữ Mincho lớn, viền vàng) ↔ bản dịch (chữ thường nhỏ hơn, nền xanh nhạt, viền xanh) */
+.tpair .tjp { padding-left: 10px; border-left: 3px solid var(--accent); }
+.tvi { margin: 8px 0 0; padding: 7px 10px; border-left: 3px solid var(--info); border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--info) 11%, transparent); font-size: 15px; line-height: 1.6; color: var(--text); }
+.tvi.todo { color: var(--mute); font-style: italic; }
+.tpair.sent .srow + .srow { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.lb { display: inline-block; font: 700 11px/1 var(--sans); padding: 3px 6px; border-radius: 6px; margin-right: 6px; vertical-align: middle; letter-spacing: .02em; }
+.lb.orig { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }
+.lb.trn { background: color-mix(in srgb, var(--info) 22%, transparent); color: var(--info); }
+.colh { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--mute); }
 .tvi p { margin: 0 0 6px; }
 .tvi.cover { cursor: pointer; color: transparent; text-shadow: 0 0 9px var(--mute); user-select: none; }
 .tvi.cover.shown { color: inherit; text-shadow: none; user-select: text; }
@@ -358,15 +366,15 @@ div.tvi[data-act=transReveal].shown { color: inherit; text-shadow: none; }
 
 /* Bản dịch: hai bên (bài đọc | từ vựng + bản dịch) */
 .t2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
-.tpassage { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.tpassage { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 14px; padding: 16px 18px; }
 .tpassage p.tjp { margin: 0 0 14px; font-size: 18px; line-height: 2; }
 .tpassage p.tjp:last-child { margin-bottom: 0; }
-.tside { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.tside { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--info); border-radius: 14px; padding: 12px 14px; }
 mark.gl { background: none; color: inherit; text-decoration: underline; text-decoration-color: var(--bad); text-decoration-thickness: 2px; text-underline-offset: 5px; }
 .gl-item { display: block; width: 100%; text-align: left; padding: 8px 4px; border: 0; border-bottom: 1px dashed var(--line); background: none; line-height: 1.5; }
 .gl-item:hover { background: var(--surface2); }
 .gl-item b { font-weight: 700; }
-.tvi2 { margin: 0 0 10px; line-height: 1.7; }
+.tvi2 { margin: 0 0 8px; padding: 6px 10px; line-height: 1.65; border-left: 3px solid var(--info); border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--info) 11%, transparent); }
 @media (min-width: 900px) {
   .t2 { grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr); gap: 22px; align-items: start; }
   .tside { position: sticky; top: 64px; max-height: calc(100dvh - 96px); overflow: auto; }
@@ -441,3 +449,24 @@ mark.gl { background: none; color: inherit; text-decoration: underline; text-dec
 /* Từ loại 2 cấp: hàng con thụt vào, có vạch bên trái để thấy quan hệ cha → con */
 .pos-kids { margin: 8px 0 0 10px; padding-left: 12px; border-left: 2px solid var(--accent); }
 #posf .grid2 { gap: 8px; } #posf select[hidden] { display: block; visibility: hidden; } #posf .small[hidden] { display: none; }
+
+/* Trang thêm / sửa bản dịch: chia đôi (gốc | dịch) trên màn rộng, xếp dọc trên điện thoại */
+.trow3 { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; }
+.ted2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.tcol { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.tcol.orig { border-top: 3px solid var(--accent); } .tcol.trn { border-top: 3px solid var(--info); }
+.ted2 .tarea { min-height: 220px; }
+.tedx { margin: 12px 0; } .tedx summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+.tedbar { position: static; margin: 14px 0 0; padding: 0; border: 0; background: none; }
+.sedit { display: grid; gap: 14px; }
+.sgrp { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; }
+.srow2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 8px 0; }
+.srow2 + .srow2 { border-top: 1px dashed var(--line); }
+.sjp { padding-left: 10px; border-left: 3px solid var(--accent); font-size: 18px; line-height: 1.8; }
+.svi { display: flex; gap: 6px; align-items: flex-start; padding-left: 10px; border-left: 3px solid var(--info); border-radius: 0 8px 8px 0; background: color-mix(in srgb, var(--info) 8%, transparent); }
+.svi .lb { margin-top: 9px; } .svi textarea { flex: 1; min-height: 44px; resize: vertical; border: 0; background: transparent; color: inherit; font: inherit; line-height: 1.6; padding: 8px 6px; }
+@media (min-width: 900px) {
+  .ted2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+  .ted2 .tarea { min-height: max(220px, calc(100dvh - 430px)); }
+  .srow2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+}

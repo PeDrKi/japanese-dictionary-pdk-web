@@ -34,8 +34,8 @@ function readSelection() {
   const para = node && node.closest && node.closest('p.tjp, .tjp p');
   if (!text || [...text].length > 300 || !para || !$('.tbody')) return null;
   const sub = NAV.sub && NAV.sub.name === 'transitem' ? S.translations.find(t => t.id === NAV.sub.id) : null; if (!sub) return null;
-  const paras = [...document.querySelectorAll('.tbody p.tjp, .tbody .tjp p')], idx = paras.indexOf(para), jp = splitParas(sub.jp), vis = splitParas(sub.vi);
-  const vi = vis.length === jp.length && idx >= 0 ? vis[idx] : '';
+  const paras = [...document.querySelectorAll('.tbody p.tjp, .tbody .tjp p')], idx = paras.indexOf(para), vis = splitParas(sub.vi);
+  const vi = vis.length === paras.length && idx >= 0 ? vis[idx] : '';
   return { text, sentence: sentenceOf(para.textContent, text), paragraph: para.textContent.trim(), vi, title: sub.title || clip(sub.jp, 20), id: sub.id };
 }
 function updateSelBar() {
@@ -166,20 +166,21 @@ ACT.transEdit = el => openTransForm(el.dataset.id);
 const glossaryOk = t => !!t && 'glossary' in t;
 function viewTransItem(sub) {
   const t = S.translations.find(x => x.id === sub.id); if (!t) return viewTrans();
-  const jp = splitParas(t.jp), vi = splitParas(t.vi), paired = vi.length === jp.length && vi.length > 0, jl = safeJlpt(t.jlpt_level);
+  const pi = pairInfo(t.jp, t.vi), jp = pi.P, vi = pi.V, paired = pi.level !== 'none', jl = safeJlpt(t.jlpt_level);
   const gl = parseGlossary(t.glossary), hi = x => hiPassage(x, gl.map(g => g.term));
   const mode = (m, l) => `<button class="chip ${TMODE === m ? 'on' : ''}" data-act="transMode" data-v="${m}">${l}</button>`;
-  const viP = (x, i) => TMODE === 'hide' ? `<p class="tvi cover" data-act="transReveal" role="button" tabindex="0" aria-label="Bấm để hiện bản dịch">${esc(x)}</p>` : `<p class="tvi">${esc(x)}</p>`;
+  const viP = x => x === SENT_TODO ? '<p class="tvi todo">chưa dịch</p>' : TMODE === 'hide' ? `<p class="tvi cover" data-act="transReveal" role="button" tabindex="0" aria-label="Bấm để hiện bản dịch">${esc(x)}</p>` : `<p class="tvi">${esc(x)}</p>`;
   let body;
   if (TMODE === 'two') {
     const side = TSIDE === 'vi'
       ? (vi.length ? vi.map(x => `<p class="tvi2">${esc(x)}</p>`).join('') : '<p class="small mute">Chưa có bản dịch — bấm ✏️ để ghi nghĩa tiếng Việt.</p>')
       : `${gl.length ? gl.map((g, i) => `<button class="gl-item" data-act="glossEdit" data-i="${i}"><b class="jp">${esc(g.term)}</b>${g.meaning ? ` = ${esc(g.meaning)}` : ''}</button>`).join('') : '<p class="small mute" style="margin:2px 0 8px">Chưa có từ vựng. Bôi đen từ trong bài rồi bấm “＋ Ghi vào từ vựng”, hoặc bấm nút bên dưới.</p>'}<div class="row wrap" style="margin-top:8px"><button class="btn small" data-act="glossAdd">+ Thêm từ</button>${gl.length ? '<button class="btn small primary" data-act="glossBulk">＋ Thêm vào bộ thẻ…</button>' : ''}</div>`;
-    body = `<div class="t2"><div class="tpassage">${jp.map(x => `<p class="tjp jp">${hi(x)}</p>`).join('')}</div>
-      <aside class="tside"><div class="chips" style="margin-bottom:8px"><button class="chip ${TSIDE === 'gloss' ? 'on' : ''}" data-act="transSide" data-v="gloss">Từ vựng${gl.length ? ' · ' + gl.length : ''}</button><button class="chip ${TSIDE === 'vi' ? 'on' : ''}" data-act="transSide" data-v="vi">Bản dịch</button></div>${side}</aside></div>`;
+    body = `<div class="t2"><div class="tpassage"><div class="colh orig"><span class="lb orig">原文</span> Văn bản gốc · Tiếng Nhật</div>${jp.map(x => `<p class="tjp jp">${hi(x)}</p>`).join('')}</div>
+      <aside class="tside trn"><div class="chips" style="margin-bottom:8px"><button class="chip ${TSIDE === 'gloss' ? 'on' : ''}" data-act="transSide" data-v="gloss">Từ vựng${gl.length ? ' · ' + gl.length : ''}</button><button class="chip ${TSIDE === 'vi' ? 'on' : ''}" data-act="transSide" data-v="vi">Bản dịch</button></div>${side}</aside></div>`;
   } else if (TMODE === 'jp' || !vi.length) body = jp.map(x => `<div class="tpair"><p class="tjp jp">${hi(x)}</p></div>`).join('');
-  else if (paired) body = jp.map((x, i) => `<div class="tpair"><p class="tjp jp">${hi(x)}</p>${viP(vi[i], i)}</div>`).join('');
-  else body = `<div class="tpair"><div class="tjp jp">${jp.map(x => `<p>${hi(x)}</p>`).join('')}</div></div><div class="tpair"><div class="tvi" ${TMODE === 'hide' ? 'data-act="transReveal" role="button" tabindex="0"' : ''}>${vi.map(x => `<p>${esc(x)}</p>`).join('')}</div><p class="small mute" style="margin:6px 0 0">Số đoạn tiếng Nhật (${jp.length}) và tiếng Việt (${vi.length}) khác nhau nên không ghép cặp. Muốn đối chiếu từng đoạn, để mỗi dòng tiếng Nhật ứng với một dòng tiếng Việt.</p></div>`;
+  else if (pi.level === 'para') body = jp.map((x, i) => `<div class="tpair"><p class="tjp jp">${hi(x)}</p>${viP(vi[i])}</div>`).join('');
+  else if (pi.level === 'sent') { let k = 0; body = pi.S.map(ss => `<div class="tpair sent">${ss.map(s => `<div class="srow"><p class="tjp jp">${hi(s)}</p>${viP(vi[k++])}</div>`).join('')}</div>`).join(''); }
+  else body = `<div class="tpair"><div class="tjp jp">${jp.map(x => `<p>${hi(x)}</p>`).join('')}</div></div><div class="tpair"><div class="tvi" ${TMODE === 'hide' ? 'data-act="transReveal" role="button" tabindex="0"' : ''}>${vi.map(x => `<p>${esc(x)}</p>`).join('')}</div><p class="small mute" style="margin:6px 0 0">Số dòng bản dịch (${vi.length}) không khớp số đoạn (${jp.length}) hay số câu (${pi.S.reduce((a, x) => a + x.length, 0)}) tiếng Nhật nên chưa ghép cặp. Muốn đối chiếu, để mỗi dòng dịch ứng với một đoạn hoặc một câu — hoặc dùng “Dịch từng câu” khi sửa.</p></div>`;
   return `<div class="page${TMODE === 'two' ? ' wide' : ''}">${pageTop(t.title || clip(t.jp, 24), true, `<button class="iconbtn" data-act="transEdit" data-id="${t.id}" aria-label="Sửa">✏️</button>`)}
   <div class="row wrap small mute" style="margin:0 0 8px;gap:10px"><span>${[...t.jp].length.toLocaleString('vi-VN')} chữ</span><span>${jp.length} đoạn</span>${jl ? `<span class="tag ${jl.toLowerCase()}">${jl}</span>` : ''}${t.note ? `<span>${esc(t.note)}</span>` : ''}</div>
   <div class="chips" style="margin-bottom:10px">${mode('two', 'Hai bên')}${mode('pair', 'Đối chiếu')}${mode('hide', 'Che bản dịch')}${mode('jp', 'Chỉ tiếng Nhật')}</div>
@@ -190,41 +191,73 @@ ACT.transMode = el => { TMODE = el.dataset.v; const v = $('#view'), top = v.scro
 ACT.transReveal = el => el.classList.toggle('shown');
 document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.act === 'transReveal') { e.preventDefault(); e.target.classList.toggle('shown'); } });
 
-// ── Thêm / sửa ──
-function openTransForm(id) {
-  const t = id ? S.translations.find(x => x.id === id) : { title: '', jp: '', vi: '', note: '', jlpt_level: TFILT.jlpt || '' }; if (!t) return;
-  const base = id ? { ...t } : null, v = k => esc(t[k] ?? '');
-  const s = openSheet(`<h2>${id ? 'Sửa bản dịch' : 'Thêm bản dịch'}</h2><form id="tf" autocomplete="off">
-    <label class="field"><span>Tiêu đề (không bắt buộc)</span><input name="title" value="${v('title')}" maxlength="200" placeholder="vd. Bài đọc Minna bài 12"></label>
-    <label class="field" id="tw-jp"><span>Tiếng Nhật * <small class="mute" id="tc-jp"></small></span><textarea name="jp" class="jp tarea" rows="8" maxlength="30000" placeholder="Dán câu hoặc đoạn văn tiếng Nhật vào đây…" ${id ? '' : 'autofocus'}>${v('jp')}</textarea></label>
-    <label class="field"><span>Nghĩa tiếng Việt <small class="mute" id="tc-vi"></small></span><textarea name="vi" class="tarea" rows="8" maxlength="40000" placeholder="Ghi bản dịch tiếng Việt…">${v('vi')}</textarea></label>
-    <p class="small mute" id="tpair" style="margin:-4px 0 12px"></p>
-    <label class="field"><span>Từ vựng — mỗi dòng: từ = nghĩa <small class="mute">(hiện ở cột bên phải khi đọc)</small></span><textarea name="glossary" class="tarea" rows="5" maxlength="20000" placeholder="友達 = bạn bè&#10;映画 = phim">${v('glossary')}</textarea></label>
-    <label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${t.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label>
-    <label class="field"><span>Ghi chú</span><input name="note" value="${v('note')}" maxlength="500" placeholder="Nguồn, từ khó, ngữ pháp cần nhớ…"></label>
-    <div class="row sheet-actions">${id ? '<button type="button" class="btn danger" data-act="transDel">Xóa</button>' : ''}<button type="button" class="btn grow" data-close>Hủy</button><button type="submit" class="btn primary grow">Lưu</button></div></form>`, { sticky: true });
-  const f = s.$('#tf'); f._id = id; f._s = s;
-  const info = () => {
-    const j = f.elements.jp.value, vv = f.elements.vi.value, a = splitParas(j).length, b = splitParas(vv).length;
-    s.$('#tc-jp').textContent = j ? `· ${[...j].length.toLocaleString('vi-VN')} chữ` : ''; s.$('#tc-vi').textContent = vv ? `· ${[...vv].length.toLocaleString('vi-VN')} chữ` : '';
-    s.$('#tpair').textContent = !vv.trim() ? 'Mỗi dòng / đoạn tiếng Nhật ứng với một dòng / đoạn tiếng Việt thì trang đọc sẽ ghép cặp để đối chiếu.' : a === b ? `✓ ${a} đoạn tiếng Nhật khớp ${b} đoạn tiếng Việt — sẽ hiện đối chiếu từng đoạn.` : `Tiếng Nhật ${a} đoạn, tiếng Việt ${b} đoạn — chưa ghép cặp được (vẫn lưu bình thường).`;
-  };
-  f.addEventListener('input', info); info();
-  f.addEventListener('submit', async e => {
-    e.preventDefault(); if (f._busy) return;
-    const jp = f.elements.jp.value.trim(); $('#tw-jp', f).classList.toggle('err', !jp); if (!jp) return toast('Cần nhập văn bản tiếng Nhật', true);
-    const data = { title: f.elements.title.value.trim() || null, jp, vi: f.elements.vi.value.trim() || null, note: f.elements.note.value.trim() || null, jlpt_level: safeJlpt(f.elements.jlpt_level.value) };
-    { const gtxt = fmtGlossary(parseGlossary(f.elements.glossary.value)); if (gtxt || (id && base.glossary)) data.glossary = gtxt || null; }   // không gửi cột glossary khi trống (máy chủ chưa nâng schema vẫn lưu được)
-    f._busy = true; let note = id ? 'Đã lưu' : 'Đã thêm bản dịch';
-    const ok = await guard(async () => {
-      const r = await saveTranslation(id, data, base, askConflict);
-      if (r.cancelled) note = 'Đã giữ bản từ thiết bị khác, thay đổi của bạn không được lưu'; else if (r.merged) note = 'Đã lưu — đã gộp với thay đổi từ thiết bị khác';
-    });
-    f._busy = false; if (ok !== undefined) { toast(note); s.close(); render(); }
-  });
+// ── Thêm / sửa: một trang chia đôi (trái = văn bản gốc, phải = bản dịch); chế độ "Từng câu" ghép mỗi câu với một ô dịch ──
+let TED = null, TEDMODE = 'text';
+const tedFresh = id => { const t = id ? S.translations.find(x => x.id === id) : null; return { id: id || '', title: t?.title || '', jp: t?.jp || '', vi: t?.vi || '', glossary: t?.glossary || '', note: t?.note || '', jlpt: t ? (t.jlpt_level || '') : (TFILT.jlpt || ''), base: t ? { ...t } : null }; };
+function openTransForm(id) { if (id && !S.translations.find(x => x.id === id)) return; TED = tedFresh(id); TEDMODE = 'text'; ACT.sub({ dataset: { name: 'transedit', id: id || '' } }); }
+function viewTransEdit() {
+  if (!TED) return viewTrans();
+  const D = TED, v = x => esc(x ?? ''), id = D.id;
+  const head = `<div class="trow3"><label class="field"><span>Tiêu đề (không bắt buộc)</span><input name="title" value="${v(D.title)}" maxlength="200" placeholder="vd. Bài đọc Minna bài 12"></label>
+    <label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${D.jlpt === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div>`;
+  const modes = `<div class="chips" style="margin:2px 0 10px"><button type="button" class="chip ${TEDMODE === 'text' ? 'on' : ''}" data-act="tedMode" data-v="text">Hai khung</button><button type="button" class="chip ${TEDMODE === 'sent' ? 'on' : ''}" data-act="tedMode" data-v="sent">Dịch từng câu</button></div>`;
+  let main;
+  if (TEDMODE === 'text') {
+    main = `<div class="ted2"><section class="tcol orig" id="tw-jp"><h3 class="colh orig"><span class="lb orig">原文</span> Văn bản gốc · Tiếng Nhật * <small class="mute" id="tc-jp"></small></h3>
+      <textarea name="jp" class="jp tarea" maxlength="30000" placeholder="Dán câu hoặc đoạn văn tiếng Nhật vào đây…" ${id ? '' : 'autofocus'}>${v(D.jp)}</textarea></section>
+      <section class="tcol trn"><h3 class="colh trn"><span class="lb trn">VI</span> Bản dịch · Tiếng Việt <small class="mute" id="tc-vi"></small></h3>
+      <textarea name="vi" class="tarea" maxlength="40000" placeholder="Ghi bản dịch tiếng Việt… (mỗi dòng ứng với một đoạn hoặc một câu tiếng Nhật)">${v(D.vi)}</textarea>
+      <p class="small mute" id="tpair" style="margin:6px 0 0"></p></section></div>`;
+  } else {
+    const pi = pairInfo(D.jp, D.vi);
+    if (!pi.P.length) main = '<p class="mute">Hãy nhập văn bản tiếng Nhật ở chế độ “Hai khung” trước.</p><input type="hidden" name="jp" value="">';
+    else {
+      let k = 0;
+      main = `<input type="hidden" name="jp" value="${v(D.jp)}"><p class="small mute" style="margin:0 0 8px">Mỗi câu tiếng Nhật có một ô để ghi nghĩa. Câu bỏ trống sẽ lưu là “${SENT_TODO}” (chưa dịch). Muốn sửa văn bản gốc: quay về “Hai khung”.</p>
+      ${pi.level === 'para' && pi.V.length && pi.S.some(s => s.length > 1) ? `<details class="small mute" style="margin-bottom:8px"><summary>Bản dịch hiện có (theo đoạn) — sẽ được thay khi bạn dịch từng câu</summary>${pi.V.map(x => `<p style="margin:4px 0">${esc(x)}</p>`).join('')}</details>` : ''}
+      <div class="sedit">${pi.S.map((ss, pidx) => `<div class="sgrp">${ss.map(s => { const cur = pi.level === 'sent' ? pi.V[k] : ''; const i = k++; return `<div class="srow2"><div class="sjp jp"><span class="lb orig">原</span>${esc(s)}</div><label class="svi"><span class="lb trn">VI</span><textarea data-sv="${i}" rows="2" maxlength="2000" placeholder="Dịch câu này…">${v(cur === SENT_TODO ? '' : cur)}</textarea></label></div>`; }).join('')}</div>`).join('')}</div><p class="small mute" id="tpair" style="margin:8px 0 0">${k} câu</p>`;
+    }
+  }
+  return `<div class="page wide">${pageTop(id ? 'Sửa bản dịch' : 'Thêm bản dịch', true, '')}
+  <form id="tf" autocomplete="off" data-id="${id}">${head}${modes}${main}
+    <details class="tedx" ${D.glossary || D.note ? 'open' : ''}><summary>Từ vựng và ghi chú</summary>
+      <label class="field"><span>Từ vựng — mỗi dòng: từ = nghĩa <small class="mute">(hiện ở cột bên phải khi đọc)</small></span><textarea name="glossary" class="tarea" rows="5" maxlength="20000" placeholder="友達 = bạn bè&#10;映画 = phim">${v(D.glossary)}</textarea></label>
+      <label class="field"><span>Ghi chú</span><input name="note" value="${v(D.note)}" maxlength="500" placeholder="Nguồn, từ khó, ngữ pháp cần nhớ…"></label></details>
+    <div class="row sheet-actions tedbar">${id ? '<button type="button" class="btn danger" data-act="transDel">Xóa</button>' : ''}<button type="button" class="btn grow" data-act="back">Hủy</button><button type="submit" class="btn primary grow">Lưu</button></div></form></div>`;
 }
+// Gom dữ liệu đang gõ trong form về TED (cả hai chế độ)
+function tedCapture(f) {
+  const D = TED, e = f.elements; D.title = e.title.value; D.jlpt = e.jlpt_level.value; D.glossary = e.glossary.value; D.note = e.note.value; D.jp = e.jp.value;
+  const sv = [...f.querySelectorAll('[data-sv]')];
+  if (sv.length) { const lines = sv.map(x => x.value.replace(/\s+/g, ' ').trim()); D.vi = lines.some(Boolean) ? lines.map(x => x || SENT_TODO).join('\n') : ''; }
+  else if (e.vi) D.vi = e.vi.value;
+  return D;
+}
+function tedInfo(f) {
+  if (!f.elements.vi) return; const j = f.elements.jp.value, vv = f.elements.vi.value, pi = pairInfo(j, vv), n = pi.S.reduce((a, x) => a + x.length, 0);
+  $('#tc-jp').textContent = j ? `· ${[...j].length.toLocaleString('vi-VN')} chữ` : ''; $('#tc-vi').textContent = vv ? `· ${[...vv].length.toLocaleString('vi-VN')} chữ` : '';
+  $('#tpair').textContent = !vv.trim() ? 'Mỗi dòng tiếng Việt ứng với một đoạn hoặc một câu tiếng Nhật thì trang đọc sẽ ghép cặp để đối chiếu. Hoặc bấm “Dịch từng câu”.'
+    : pi.level === 'para' ? `✓ ${pi.P.length} đoạn tiếng Nhật khớp ${pi.V.length} dòng dịch — đối chiếu từng đoạn.`
+    : pi.level === 'sent' ? `✓ ${n} câu tiếng Nhật khớp ${pi.V.length} dòng dịch — đối chiếu từng câu.`
+    : `Tiếng Nhật ${pi.P.length} đoạn (${n} câu), bản dịch ${pi.V.length} dòng — chưa ghép cặp được (vẫn lưu bình thường).`;
+}
+document.addEventListener('input', e => { const f = e.target.closest && e.target.closest('#tf'); if (f) tedInfo(f); });
+ACT.tedMode = el => { const f = $('#tf'); if (!f || TEDMODE === el.dataset.v) return; tedCapture(f); TEDMODE = el.dataset.v; const v = $('#view'), top = v.scrollTop; render(); v.scrollTop = top; };
+document.addEventListener('submit', async e => {
+  const f = e.target; if (!f || f.id !== 'tf') return; e.preventDefault(); if (f._busy) return;
+  const D = tedCapture(f), id = D.id || null, jp = D.jp.trim(), wrap = $('#tw-jp'); wrap && wrap.classList.toggle('err', !jp);
+  if (!jp) { if (TEDMODE !== 'text') { TEDMODE = 'text'; render(); } return toast('Cần nhập văn bản tiếng Nhật', true); }
+  const base = D.base, data = { title: D.title.trim() || null, jp, vi: (D.vi || '').trim() || null, note: D.note.trim() || null, jlpt_level: safeJlpt(D.jlpt) };
+  { const gtxt = fmtGlossary(parseGlossary(D.glossary)); if (gtxt || (id && base && base.glossary)) data.glossary = gtxt || null; }   // không gửi cột glossary khi trống (máy chủ chưa nâng schema vẫn lưu được)
+  f._busy = true; let note = id ? 'Đã lưu' : 'Đã thêm bản dịch';
+  const ok = await guard(async () => {
+    const r = await saveTranslation(id, data, base, askConflict);
+    if (r.cancelled) note = 'Đã giữ bản từ thiết bị khác, thay đổi của bạn không được lưu'; else if (r.merged) note = 'Đã lưu — đã gộp với thay đổi từ thiết bị khác';
+  });
+  f._busy = false; if (ok !== undefined) { toast(note); TED = null; leaveSub(); }
+});
 ACT.transDel = async el => {
-  const f = el.closest('form'), t = S.translations.find(x => x.id === f._id); if (!t) return;
+  const f = el.closest('form'), t = S.translations.find(x => x.id === f.dataset.id); if (!t) return;
   if (!await confirmBox(`Xóa bản dịch "${t.title || clip(t.jp, 20)}"? Không thể hoàn tác.`, 'Xóa', true)) return;
-  if (await guard(() => deleteTranslation(t.id), 'Đã xóa') !== undefined) { f._s.close(); if (NAV.sub) leaveSub(); else render(); }
+  if (await guard(() => deleteTranslation(t.id), 'Đã xóa') !== undefined) { TED = null; leaveSub(); }
 };

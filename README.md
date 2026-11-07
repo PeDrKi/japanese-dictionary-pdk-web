@@ -297,3 +297,9 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - v3.43: ô Từ loại không có mục con vẫn rộng bằng 1 ô.
 - v3.44: lưới tập viết (đường chéo liền, đường giữa và ¼ nét đứt) sau chữ trên thẻ.
 - v3.45: từ nhiều chữ → mỗi chữ một ô có lưới, trải ngang, tự thu nhỏ và xuống dòng khi dài.
+
+## v3.46 — Bản dịch chia đôi + dịch từng câu
+- Thêm/Sửa bản dịch là một trang (không còn popup): màn rộng chia đôi — trái "Văn bản gốc" (原文, viền vàng), phải "Bản dịch" (VI, viền xanh); điện thoại xếp dọc.
+- Chế độ "Dịch từng câu": mỗi câu tiếng Nhật (tách theo 。！？) có một ô dịch riêng. Lưu mỗi câu một dòng trong cột `vi`; câu chưa dịch lưu là "…". Không đổi schema.
+- Ghép cặp tự động: số dòng dịch = số đoạn → đối chiếu theo đoạn; = số câu → đối chiếu theo câu.
+- Trang đọc: gốc và dịch khác màu viền, phông, nền.

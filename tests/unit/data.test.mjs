@@ -99,3 +99,13 @@ test('filterCards: theo danh mục (gộp thẻ của mọi bộ trong danh mụ
   assert.deepEqual(f({ cat: '_none' }), ['水']);
   assert.deepEqual(f({ cat: 'k1', jlpt: 'N4' }), []);      // kết hợp được với bộ lọc khác
 });
+
+test('splitSents / pairInfo: ghép bản dịch theo đoạn hoặc theo câu', () => {
+  assert.equal(JSON.stringify(app.run(`splitSents('今日は雨です。でも行きます！「本当？」はい。')`)), JSON.stringify(['今日は雨です。', 'でも行きます！', '「本当？」', 'はい。']));
+  assert.equal(JSON.stringify(app.run(`splitSents('ありがとう')`)), JSON.stringify(['ありがとう']));
+  const jp = '今日は雨です。でも行きます！\n明日は晴れです。';
+  assert.equal(app.run(`pairInfo(${JSON.stringify(jp)}, 'a\\nb').level`), 'para');
+  assert.equal(app.run(`pairInfo(${JSON.stringify(jp)}, 'a\\nb\\nc').level`), 'sent');
+  assert.equal(app.run(`pairInfo(${JSON.stringify(jp)}, 'a\\nb\\nc\\nd').level`), 'none');
+  assert.equal(app.run(`pairInfo(${JSON.stringify(jp)}, '').level`), 'none');
+});
