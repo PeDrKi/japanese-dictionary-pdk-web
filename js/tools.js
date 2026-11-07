@@ -67,7 +67,7 @@ ACT.cfJisho = async el => {
 };
 ACT.jishoPick = async el => {
   const { res, form, s } = _jr, r = res[+el.dataset.i], type = guessType(r.word);
-  form.dataset.type = type; syncFormType(form); const set = (n, v) => { if (form.elements[n] && v) form.elements[n].value = v; };
+  form.dataset.type = type; syncFormType(form); const set = (n, v) => { if (form.elements[n] && v) { form.elements[n].value = v; if (n === 'pos') posSync(form); } };
   set('character', r.word); set('meaning_en', r.en); set('jlpt_level', r.jlpt); set('pos', r.pos);
   if (type === 'kanji') set('reading_kun', r.reading); else set('reading_kana', r.reading);
   set('romaji', kanaToRomaji(r.reading)); s.close(); updateAdvSummary(form);
@@ -114,7 +114,7 @@ function updateAdvSummary(form) {
 function wireAutofill(form) {
   let timer = 0, token = 0; form._auto = new Set(); form._typeTouched = false;
   const box = $('#cf-suggest', form), mv = $('#w-meaning_vi', form);
-  const set = (n, v) => { const el = form.elements[n]; if (!el || !v) return false; if (el.value && !form._auto.has(n)) return false; el.value = v; form._auto.add(n); return true; };
+  const set = (n, v) => { const el = form.elements[n]; if (!el || !v) return false; if (el.value && !form._auto.has(n)) return false; el.value = v; if (n === 'pos') posSync(form); form._auto.add(n); return true; };
   form.addEventListener('input', e => { const n = e.target.name; if (n && n !== 'character') { form._auto.delete(n); if (n === 'meaning_vi') mv.classList.remove('auto'); } });
   form.elements.character.addEventListener('keydown', e => {   // Enter trong ô chữ: mở danh sách Jisho thay vì lưu form
     if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.isComposing && form.elements.character.value.trim()) { e.preventDefault(); const b = $('[data-act=cfJisho]', form); if (b && !b.disabled) b.click(); }

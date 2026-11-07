@@ -33,7 +33,7 @@ function viewStudyLauncher() {
   <div class="mute small" style="margin:2px 0 8px"><b>Lọc thêm</b></div>
   <div class="field"><span>Loại thẻ</span><div class="chips"><button class="chip ${SC.type ? '' : 'on'}" data-act="scSet" data-k="type" data-v="">Tất cả</button>${TYPES.map(t => chip('type', t, TYPE_LABEL[t])).join('')}</div></div>
   <div class="field"><span>JLPT</span><div class="chips"><button class="chip ${SC.jlpt ? '' : 'on'}" data-act="scSet" data-k="jlpt" data-v="">Tất cả</button>${JLPT.map(t => chip('jlpt', t, t)).join('')}</div></div>
-  <div class="field"><span>Từ loại</span><div class="chips" style="flex-wrap:wrap"><button class="chip ${SC.pos ? '' : 'on'}" data-act="scSet" data-k="pos" data-v="">Tất cả</button>${POS.map(t => chip('pos', t, POS_LABEL[t])).join('')}</div></div>
+  <div class="field"><span>Từ loại</span>${posChips(SC.pos, 'scSet', 'pos')}</div>
   <div class="field"><span>Trạng thái</span><div class="chips"><button class="chip ${SC.status ? '' : 'on'}" data-act="scSet" data-k="status" data-v="">Tất cả</button>${STATUSES.map(t => chip('status', t, STATUS_LABEL[t])).join('')}</div></div>
   ${liveDecks().length ? `<label class="field"><span>Bộ thẻ</span><select id="sc-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${SC.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>` : ''}
   <div class="row wrap" style="margin-bottom:6px"><button class="chip ${SC.fav ? 'on' : ''}" data-act="scFav">★ Chỉ yêu thích</button></div></details>

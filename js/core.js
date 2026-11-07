@@ -28,6 +28,18 @@ const POS_ALIAS = { 'danh từ': 'noun', 'danh tu': 'noun', 'meishi': 'noun', n:
   'liên từ': 'conjunction', 'lien tu': 'conjunction', 'setsuzokushi': 'conjunction',
   'thán từ': 'interjection', 'than tu': 'interjection', 'kandoushi': 'interjection' };
 const safePos = v => { const s = String(v ?? '').trim().toLowerCase(); return POS.includes(s) ? s : (POS_ALIAS[s] || null); };
+// Từ loại 2 cấp (chỉ để chọn / lọc; giá trị lưu trong thẻ vẫn là POS ở trên). Cha có con: Động từ → nhóm 1/2/3 (hoặc "chưa rõ nhóm" = verb), Tính từ → đuôi い / な.
+// Khi LỌC, chọn cả cha (chưa chọn con) dùng ký hiệu 'verb*' / 'adj*' = mọi con của nhóm đó.
+const POS_TREE = [
+  { id: 'noun' }, { id: 'verb', kids: ['verb', 'verb1', 'verb2', 'verb3'] }, { id: 'adj', kids: ['adj_i', 'adj_na'] },
+  { id: 'pronoun' }, { id: 'particle' }, { id: 'adverb' }, { id: 'conjunction' }, { id: 'interjection' }];
+const POS_PARENT_LABEL = { verb: 'Động từ', adj: 'Tính từ' };
+const POS_KID_LABEL = { verb: 'Chưa rõ nhóm', verb1: 'Nhóm 1', verb2: 'Nhóm 2', verb3: 'Nhóm 3', adj_i: 'Đuôi い', adj_na: 'Đuôi な' };
+const posParent = v => !v ? '' : /^verb/.test(v) ? 'verb' : /^adj/.test(v) ? 'adj' : v;            // 'verb2' / 'verb*' → 'verb'; 'adj_i' → 'adj'
+const posParentLabel = id => POS_PARENT_LABEL[id] || POS_LABEL[id] || '';
+const posKids = id => (POS_TREE.find(n => n.id === id) || {}).kids || null;
+const posMatch = (filter, pos) => !filter || (filter.endsWith('*') ? posParent(pos) === filter.slice(0, -1) : pos === filter);   // 'verb*' khớp mọi động từ
+const posPath = v => !v ? '' : POS_KID_LABEL[v] && posParent(v) !== v ? `${posParentLabel(posParent(v))} › ${POS_KID_LABEL[v]}` : (v === 'verb' ? 'Động từ' : (POS_LABEL[v] || ''));
 const DECK_COLORS = ['#3ECFCF', '#F0B429', '#E85D5D', '#9B7FE8', '#4ECB85', '#4A90D9', '#FF6B9D'];
 const ICON_GROUPS = [
   ['Học tập', '📁 📚 📖 📘 📗 📙 📕 📓 📒 📝 ✏️ 🖊️ 🎓 🏫 🧠 💡 🔍 🗂️ 📌 📎 🔖 🧾 📊 🗒️ 🧮 🔤 🔠 🔡 🈁 🈯 🈳 🈶 🈚 🈸 🈺 🈷️ 🉐 🉑 🀄'],

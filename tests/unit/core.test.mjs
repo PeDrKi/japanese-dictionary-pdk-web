@@ -201,3 +201,15 @@ test('hiPassage: gạch chân từ có trong từ vựng, ưu tiên từ dài, t
   assert.equal(hi('a<b>と(c)', ['(c)']), 'a&lt;b&gt;と<mark class="gl">(c)</mark>');
   assert.equal(hi('abc', []), 'abc');
 });
+
+test('từ loại 2 cấp: cha ↔ con, khớp bộ lọc, đường dẫn hiển thị', () => {
+  const { posParent, posKids, posMatch, posPath } = Object.fromEntries(['posParent', 'posKids', 'posMatch', 'posPath'].map(n => [n, g(n)]));
+  assert.deepEqual([posParent('verb2'), posParent('verb*'), posParent('verb'), posParent('adj_i'), posParent('adj*'), posParent('noun'), posParent('')], ['verb', 'verb', 'verb', 'adj', 'adj', 'noun', '']);
+  assert.deepEqual(Array.from(posKids('verb')), ['verb', 'verb1', 'verb2', 'verb3']);
+  assert.deepEqual(Array.from(posKids('adj')), ['adj_i', 'adj_na']);
+  assert.equal(posKids('noun'), null);
+  assert.ok(posMatch('', 'noun') && posMatch('verb*', 'verb3') && posMatch('verb*', 'verb') && !posMatch('verb*', 'adj_i') && posMatch('adj*', 'adj_na') && !posMatch('adj*', null) && posMatch('verb2', 'verb2') && !posMatch('verb2', 'verb1') && !posMatch('verb', 'verb1'));
+  assert.deepEqual(['verb', 'verb1', 'adj_i', 'adj_na', 'noun', null].map(posPath), ['Động từ', 'Động từ › Nhóm 1', 'Tính từ › Đuôi い', 'Tính từ › Đuôi な', 'Danh từ', '']);
+  const all = new Set(Array.from(g('POS_TREE')).flatMap(n => n.kids ? Array.from(n.kids) : [n.id]));
+  assert.deepEqual([...all].sort(), [...g('POS')].sort());       // cây phủ đúng mọi giá trị POS, không thừa không thiếu
+});

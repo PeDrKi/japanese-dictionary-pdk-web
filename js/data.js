@@ -378,7 +378,7 @@ function filterCards(f = {}) {
   if (f.type) list = list.filter(c => c.type === f.type);
   if (f.jlpt) list = list.filter(c => c.jlpt_level === f.jlpt);
   if (f.status) list = list.filter(c => c.status === f.status);
-  if (f.pos) list = list.filter(c => c.pos === f.pos);
+  if (f.pos) list = list.filter(c => posMatch(f.pos, c.pos));
   if (f.fav) list = list.filter(c => c.is_favorite);
   if (f.due) { const t = localDate(); list = list.filter(c => isDue(c, t)); }
   if (f.deck) { const s = new Set(S.cardsOfDeck.get(f.deck) || []); list = list.filter(c => s.has(c.id)); }

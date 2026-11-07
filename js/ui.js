@@ -119,6 +119,32 @@ function updateSyncBadge() {
   b.textContent = SYNC.needsSchema ? '⚠️ Cần chạy schema.sql bản mới trên Supabase'
     : n ? `⏳ ${n} thay đổi chờ đồng bộ` : `☁️ Đã đồng bộ${t ? ' · ' + t : ''}`;
 }
+// Bộ chọn từ loại 2 cấp dạng chip: hàng trên = loại; chọn Động từ / Tính từ thì hàng dưới hiện các loại con
+function posChips(val, act, k) {
+  const par = posParent(val), kids = posKids(par);
+  const chip = (v, l, on, cls = '') => `<button type="button" class="chip ${cls} ${on ? 'on' : ''}" data-act="${act}" data-k="${k}" data-v="${v}">${l}</button>`;
+  const top = chip('', 'Tất cả', !val) + POS_TREE.map(n => chip(n.kids ? n.id + '*' : n.id, posParentLabel(n.id) + (n.kids ? ' ▾' : ''), par === n.id)).join('');
+  const sub = kids ? `<div class="chips pos-kids" style="flex-wrap:wrap">${chip(par + '*', 'Tất cả ' + posParentLabel(par).toLowerCase(), val === par + '*')}${kids.map(x => chip(x, POS_KID_LABEL[x], val === x)).join('')}</div>` : '';
+  return `<div class="chips" style="flex-wrap:wrap">${top}</div>${sub}`;
+}
+// Ô chọn từ loại trong form thẻ: hai ô chọn nối nhau (loại → loại con); giá trị thật nằm ở <input type=hidden name=pos> nên phần lưu thẻ không đổi
+function posField(val) {
+  const par = posParent(val), kids = posKids(par);
+  return `<div class="field" id="posf"><span>Từ loại</span><div class="grid2">
+    <select id="pos-par" aria-label="Từ loại"><option value="">— chưa chọn —</option>${POS_TREE.map(n => `<option value="${n.id}" ${par === n.id ? 'selected' : ''}>${posParentLabel(n.id)}</option>`).join('')}</select>
+    <select id="pos-kid" aria-label="Loại con" ${kids ? '' : 'hidden'}>${kids ? posKidOptions(par, val) : ''}</select></div>
+    <input type="hidden" name="pos" value="${esc(val || '')}"><span class="small mute" id="pos-hint" ${par === 'adj' && !val ? '' : 'hidden'}>Chọn đuôi い hoặc な để lưu từ loại</span></div>`;
+}
+const posKidOptions = (par, val) => (par === 'adj' ? '<option value="">— chọn đuôi —</option>' : '') + posKids(par).map(x => `<option value="${x}" ${val === x ? 'selected' : ''}>${POS_KID_LABEL[x]}</option>`).join('');
+function posSync(form, forcePar) {      // đọc giá trị trong input ẩn → cập nhật hai ô chọn (dùng khi Jisho / tự điền đặt từ loại); forcePar = cha vừa chọn (khi giá trị còn rỗng, vd Tính từ chưa chọn đuôi)
+  const h = form.elements.pos, par = forcePar !== undefined ? forcePar : posParent(h.value), kids = posKids(par), $p = form.querySelector('#pos-par'), $k = form.querySelector('#pos-kid');
+  $p.value = par; $k.hidden = !kids; $k.innerHTML = kids ? posKidOptions(par, h.value) : ''; form.querySelector('#pos-hint').hidden = !(par === 'adj' && !h.value);
+}
+function posWire(form) {
+  const h = form.elements.pos, $p = form.querySelector('#pos-par'), $k = form.querySelector('#pos-kid'), hint = form.querySelector('#pos-hint');
+  $p.onchange = () => { const kids = posKids($p.value); h.value = kids ? (posParent(h.value) === $p.value ? h.value : $p.value === 'verb' ? 'verb' : '') : $p.value; posSync(form, $p.value); h.dispatchEvent(new Event('change', { bubbles: true })); };
+  $k.onchange = () => { h.value = $k.value; hint.hidden = !($p.value === 'adj' && !h.value); h.dispatchEvent(new Event('change', { bubbles: true })); };
+}
 function themeInit() { const t = LS.get('jp_theme', 'auto'); if (t !== 'auto') document.documentElement.dataset.theme = t; }
 function themeCycle() {
   const order = ['auto', 'dark', 'light']; const nx = order[(order.indexOf(LS.get('jp_theme', 'auto')) + 1) % 3]; LS.set('jp_theme', nx);

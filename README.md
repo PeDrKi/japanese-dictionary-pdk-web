@@ -286,3 +286,9 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - **Khác → Cài đặt → Hiệu ứng chuyển động**: bấm để đổi vòng **Theo hệ thống → Tắt (tĩnh) → Bật**. "Tắt" làm toàn bộ app đứng yên (không còn hiệu ứng GSAP lẫn hoạt ảnh CSS), "Bật" luôn chạy hiệu ứng dù hệ điều hành đang xin giảm chuyển động, "Theo hệ thống" nghe theo cài đặt của máy (mặc định).
 - Trang **Đăng nhập / Đăng ký** có liên kết nhỏ "Tắt hiệu ứng chuyển động" ngay dưới thẻ, để tắt được từ trước khi vào app (trang dựng lại tĩnh, giữ nguyên email đã gõ).
 - Lựa chọn lưu trên từng thiết bị. Không cần chạy lại schema.sql.
+
+## v3.42 — Từ loại 2 cấp
+- Động từ → Chưa rõ nhóm / Nhóm 1 / Nhóm 2 / Nhóm 3; Tính từ → Đuôi い / Đuôi な.
+- Áp dụng ở form thẻ, bộ lọc, cấu hình học và trang chi tiết (hiển thị "Động từ › Nhóm 1").
+- Chọn cha (vd. Động từ) trong bộ lọc = lọc mọi con. Tính từ phải chọn đuôi い/な mới lưu từ loại.
+- Không đổi schema, không cần chạy lại schema.sql.

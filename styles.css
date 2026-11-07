@@ -433,3 +433,7 @@ mark.gl { background: none; color: inherit; text-decoration: underline; text-dec
   .ax-card { padding: 24px 20px 22px; }
 }
 @media (min-width: 860px) and (max-height: 640px) { .ax-quote { display: none; } }
+
+/* Từ loại 2 cấp: hàng con thụt vào, có vạch bên trái để thấy quan hệ cha → con */
+.pos-kids { margin: 8px 0 0 10px; padding-left: 12px; border-left: 2px solid var(--accent); }
+#posf .grid2 { gap: 8px; } #posf select[hidden], #posf .small[hidden] { display: none; }

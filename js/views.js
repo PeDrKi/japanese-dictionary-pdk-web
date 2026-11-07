@@ -131,7 +131,7 @@ ACT.openFilter = () => {
   const chip = (k, v, l) => `<button class="chip ${FILT[k] === v ? 'on' : ''}" data-act="fset" data-k="${k}" data-v="${v}">${l}</button>`;
   const s = openSheet(`<h2>Bộ lọc</h2>
     <div class="field"><span>Cấp độ JLPT</span><div class="chips wrap" style="flex-wrap:wrap">${chip('jlpt', '', 'Tất cả')}${JLPT.map(j => chip('jlpt', j, j)).join('')}</div></div>
-    <div class="field"><span>Từ loại</span><div class="chips" style="flex-wrap:wrap">${chip('pos', '', 'Tất cả')}${POS.map(j => chip('pos', j, POS_LABEL[j])).join('')}</div></div>
+    <div class="field"><span>Từ loại</span><div id="posbox">${posChips(FILT.pos, 'fset', 'pos')}</div></div>
     <div class="field"><span>Trạng thái</span><div class="chips" style="flex-wrap:wrap">${chip('status', '', 'Tất cả')}${STATUSES.map(j => chip('status', j, STATUS_LABEL[j])).join('')}</div></div>
     <label class="field"><span>Bộ thẻ</span><select id="f-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${FILT.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>
     ${S.cats.length ? `<label class="field"><span>Danh mục</span><select id="f-cat"><option value="">Tất cả</option>${S.cats.map(c => `<option value="${c.id}" ${FILT.cat === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}<option value="_none" ${FILT.cat === '_none' ? 'selected' : ''}>Chưa phân loại</option></select></label>` : ''}
@@ -139,7 +139,11 @@ ACT.openFilter = () => {
     <div class="row"><button class="btn grow" data-act="fclear">Xóa lọc</button><button class="btn primary grow" data-act="fapply">Áp dụng</button></div>`);
   window._fs = s;
 };
-ACT.fset = el => { FILT[el.dataset.k] = el.dataset.v; $$('[data-act=fset]', _fs.el).filter(b => b.dataset.k === el.dataset.k).forEach(b => b.classList.toggle('on', b === el)); };
+ACT.fset = el => {
+  FILT[el.dataset.k] = el.dataset.v;
+  if (el.dataset.k === 'pos') { $('#posbox', _fs.el).innerHTML = posChips(FILT.pos, 'fset', 'pos'); return; }   // từ loại 2 cấp: vẽ lại để hiện / ẩn hàng con
+  $$('[data-act=fset]', _fs.el).filter(b => b.dataset.k === el.dataset.k).forEach(b => b.classList.toggle('on', b === el));
+};
 ACT.ftoggle = el => { FILT[el.dataset.k] = !FILT[el.dataset.k]; el.classList.toggle('on', FILT[el.dataset.k]); };
 ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', cat: '', shown: PAGE_SIZE, page: 0 }); _fs.close(); render(); };
 ACT.fapply = () => { FILT.deck = $('#f-deck', _fs.el).value; FILT.cat = $('#f-cat', _fs.el)?.value || ''; resetPaging(); _fs.close(); NAV.tab = 'cards'; render(); };
@@ -156,7 +160,7 @@ ACT.bulkDeckSet = async el => { await guard(() => linkCardsToDeck([...FILT.sel],
 // ── Chi tiết thẻ ──
 function openCardDetail(id) {
   const c = S.byId.get(id); if (!c) return;
-  const kv = [['Từ loại', POS_LABEL[c.pos]], ['Âm On', c.reading_on], ['Âm Kun', c.reading_kun], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
+  const kv = [['Từ loại', posPath(c.pos)], ['Âm On', c.reading_on], ['Âm Kun', c.reading_kun], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
     ['Nghĩa (EN)', c.meaning_en], ['Số nét', c.stroke_count], ['Ví dụ', c.example_jp], ['Dịch ví dụ', c.example_vi], ['Nguồn', c.source], ['Ghi chú', c.notes]].filter(x => x[1]);
   const decks = (S.deckOfCard.get(id) || []).map(i => S.decks.find(d => d.id === i)).filter(Boolean);
   const rads = (S.radOfCard.get(id) || []).map(i => S.radicals.find(d => d.id === i)).filter(Boolean);
@@ -211,7 +215,7 @@ function openCardForm(id, preset = {}) {
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>
     ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks"></div></div>` : ''}
     <details class="adv" id="cf-adv" ${id || preset.example_jp || preset.source ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
-    <label class="field"><span>Từ loại</span><select name="pos"><option value="">— chưa chọn —</option>${POS.map(j => `<option value="${j}" ${c.pos === j ? 'selected' : ''}>${POS_LABEL[j]}</option>`).join('')}</select></label>
+    ${posField(c.pos)}
     <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div>
     <div class="grid2 fit" data-for="kanji vocab"><label class="field"><span>Âm Hán Việt</span><input name="reading_hanviet" value="${v('reading_hanviet')}"></label>
       <label class="field" data-for="kanji"><span>Số nét</span><input name="stroke_count" type="number" inputmode="numeric" min="1" max="60" value="${v('stroke_count')}"></label></div>
@@ -226,7 +230,7 @@ function openCardForm(id, preset = {}) {
     <div class="row sheet-actions"><button type="button" class="btn grow" data-close>Hủy</button><button type="submit" class="btn primary grow">Lưu thẻ</button></div>
   </form>`, { sticky: true });
   const form = s.$('#cf'); form.dataset.type = c.type; form._deckSel = decks; form._isNew = !id; form._id = id; form._sheet = s;
-  initMultiRead(form); syncFormType(form); updateAdvSummary(form); renderDeckField(form);
+  posWire(form); initMultiRead(form); syncFormType(form); updateAdvSummary(form); renderDeckField(form);
   form.addEventListener('change', () => updateAdvSummary(form));
   if (!id) wireAutofill(form);
   form.addEventListener('submit', async e => {

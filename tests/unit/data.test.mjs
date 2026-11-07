@@ -20,6 +20,16 @@ app.run('reindex()');
 const f = o => Array.from(app.run('filterCards')(o), c => c.id);
 
 test('filterCards: không lọc → chỉ thẻ chưa xóa', () => assert.deepEqual(f({}), ['食べる', '水', '日', 'あ']));
+test('filterCards: từ loại 2 cấp — "verb*" / "adj*" lấy mọi loại con, loại con lấy đúng loại đó', () => {
+  const keep = S.cards; S.cards = [...keep, mk('v0', { pos: 'verb' }), mk('v1', { pos: 'verb1' }), mk('ai', { pos: 'adj_i' }), mk('an', { pos: 'adj_na' })]; app.run('reindex()');
+  assert.deepEqual(f({ pos: 'verb*' }), ['食べる', 'v0', 'v1']);
+  assert.deepEqual(f({ pos: 'verb' }), ['v0']);                  // "Chưa rõ nhóm" = đúng giá trị verb
+  assert.deepEqual(f({ pos: 'verb1' }), ['v1']);
+  assert.deepEqual(f({ pos: 'adj*' }), ['ai', 'an']);
+  assert.deepEqual(f({ pos: 'adj_na' }), ['an']);
+  assert.deepEqual(f({ pos: 'noun' }), ['水']);
+  S.cards = keep; app.run('reindex()');
+});
 test('filterCards: theo loại / JLPT / từ loại / trạng thái / yêu thích', () => {
   assert.deepEqual(f({ type: 'kanji' }), ['日']);
   assert.deepEqual(f({ jlpt: 'N5' }), ['食べる', '水']);
