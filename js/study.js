@@ -100,8 +100,8 @@ function runSession(cfg) {
       <span class="small mute">${MODE_LABEL[cfg.mode]}</span></div><div class="prog"><i style="width:${done / total * 100}%"></i></div>`;
   };
   const paper = (c, extra = '') => {
-    const ch = [...c.character].length > 3 ? ' long' : '';
-    return `<div class="paper" id="paper"><span class="corner">${TYPE_LABEL[c.type]}${safeJlpt(c.jlpt_level) ? ' · ' + safeJlpt(c.jlpt_level) : ''}</span><div class="ch${ch}">${esc(c.character)}</div>${extra}</div>`;
+    const cb = charBox(c.character);
+    return `<div class="paper${cb.multi ? ' multi' : ''}" id="paper"><span class="corner">${TYPE_LABEL[c.type]}${safeJlpt(c.jlpt_level) ? ' · ' + safeJlpt(c.jlpt_level) : ''}</span>${cb.html}${extra}</div>`;
   };
   const finish = () => {
     const n = st.ok + st.bad, acc = n ? Math.round(st.ok / n * 100) : 0;

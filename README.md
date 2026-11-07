@@ -292,3 +292,8 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - Áp dụng ở form thẻ, bộ lọc, cấu hình học và trang chi tiết (hiển thị "Động từ › Nhóm 1").
 - Chọn cha (vd. Động từ) trong bộ lọc = lọc mọi con. Tính từ phải chọn đuôi い/な mới lưu từ loại.
 - Không đổi schema, không cần chạy lại schema.sql.
+
+## v3.43–v3.45 — Giao diện thẻ
+- v3.43: ô Từ loại không có mục con vẫn rộng bằng 1 ô.
+- v3.44: lưới tập viết (đường chéo liền, đường giữa và ¼ nét đứt) sau chữ trên thẻ.
+- v3.45: từ nhiều chữ → mỗi chữ một ô có lưới, trải ngang, tự thu nhỏ và xuống dòng khi dài.

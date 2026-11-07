@@ -162,3 +162,10 @@ function dropSubHistory() {
 }
 ACT.back = () => { if (layers.length) layers[layers.length - 1].close(); else if (NAV.sub) leaveSub(); else history.back(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && layers.length) layers[layers.length - 1].close(); });
+
+/* Chữ trên thẻ: 1 chữ → ô vuông lớn; nhiều chữ → mỗi chữ một ô, trải ngang, tự xuống dòng */
+function charBox(str) {
+  const a = [...String(str || '')];
+  if (a.length < 2) return { multi: false, html: `<div class="ch">${esc(str)}</div>` };
+  return { multi: true, html: `<div class="cells" style="--n:${a.length}">${a.map(x => `<span class="cell"><span class="ch">${esc(x)}</span></span>`).join('')}</div>` };
+}

@@ -135,12 +135,16 @@ nav#tabs button[aria-current="page"]::before { content: ''; position: absolute; 
 
 /* Giấy tập viết — thẻ ôn tập */
 .paper { position: relative; aspect-ratio: 1 / 1; max-width: min(360px, 82vw); width: 100%; margin: 0 auto; border-radius: 10px; background-color: var(--surface); border: 2px solid var(--line);
-  background-image:
-    linear-gradient(to right, transparent calc(50% - .5px), var(--guide) calc(50% - .5px), var(--guide) calc(50% + .5px), transparent calc(50% + .5px)),
-    linear-gradient(to bottom, transparent calc(50% - .5px), var(--guide) calc(50% - .5px), var(--guide) calc(50% + .5px), transparent calc(50% + .5px)),
-    linear-gradient(to bottom right, transparent calc(50% - .5px), var(--guide) calc(50% - .5px), var(--guide) calc(50% + .5px), transparent calc(50% + .5px)),
-    linear-gradient(to top right, transparent calc(50% - .5px), var(--guide) calc(50% - .5px), var(--guide) calc(50% + .5px), transparent calc(50% + .5px));
-  display: grid; place-items: center; user-select: none; }
+  display: grid; place-items: center; user-select: none; overflow: hidden; }
+/* Lưới tập viết: đường chéo liền + đường giữa và 1/4, 3/4 nét đứt (theo font.drawio) */
+.paper:not(.multi)::before, .cell::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: no-repeat center / 100% 100%
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cg stroke='%23949494' fill='none' vector-effect='non-scaling-stroke'%3E%3Cpath d='M0 0L100 100M100 0L0 100' stroke-width='1' vector-effect='non-scaling-stroke'/%3E%3Cpath d='M25 0V100M50 0V100M75 0V100M0 25H100M0 50H100M0 75H100' stroke-width='2' stroke-dasharray='1 3' vector-effect='non-scaling-stroke'/%3E%3C/g%3E%3C/svg%3E"); opacity: .55; }
+.paper > .ch, .cell > .ch { position: relative; z-index: 1; }
+.paper.multi { aspect-ratio: auto; display: block; padding: 32px 12px 16px; }
+.paper .cells { width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.cell { position: relative; flex: 0 0 clamp(52px, calc((100% - 6px * (var(--n) - 1)) / var(--n)), 112px); aspect-ratio: 1; display: grid; place-items: center;
+  border: 1.5px solid var(--line); border-radius: 6px; background: var(--surface); overflow: hidden; container-type: inline-size; }
+.paper .cell > .ch { font-family: var(--serif); font-weight: 500; font-size: 66cqw; line-height: 1; padding: 0; }
 .paper .ch { font: 500 clamp(64px, 24vw, 130px)/1.1 var(--serif); text-align: center; padding: 8px; overflow-wrap: anywhere; }
 .paper .ch.long { font-size: clamp(30px, 11vw, 56px); }
 .paper .corner { position: absolute; top: 8px; left: 10px; font-size: 12px; color: var(--mute); }
@@ -436,4 +440,4 @@ mark.gl { background: none; color: inherit; text-decoration: underline; text-dec
 
 /* Từ loại 2 cấp: hàng con thụt vào, có vạch bên trái để thấy quan hệ cha → con */
 .pos-kids { margin: 8px 0 0 10px; padding-left: 12px; border-left: 2px solid var(--accent); }
-#posf .grid2 { gap: 8px; } #posf select[hidden], #posf .small[hidden] { display: none; }
+#posf .grid2 { gap: 8px; } #posf select[hidden] { display: block; visibility: hidden; } #posf .small[hidden] { display: none; }
