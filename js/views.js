@@ -441,7 +441,7 @@ function openDeckForm(id) {
     ${iconPicker(d.icon)}
     <div class="field"><span>Màu</span><div class="row wrap">${DECK_COLORS.map(i => `<button type="button" class="chip ${d.color === i ? 'on' : ''}" data-act="dfPick" data-k="color" data-v="${i}" style="background:${i};width:34px;height:34px;padding:0;border-color:${d.color === i ? 'var(--text)' : 'transparent'}" aria-label="${i}"></button>`).join('')}</div></div>
     ${S.cats.length ? `<label class="field"><span>Danh mục</span><select name="category_id"><option value="">Chưa phân loại</option>${S.cats.map(c => `<option value="${c.id}" ${d.category_id === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}</select></label>` : ''}
-    <div class="row">${id ? '<button type="button" class="btn danger" data-act="dfDelete">Xóa</button>' : ''}<button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow">Lưu</button></div></form>`);
+    ${id && S.vaultOk ? '<button type="button" class="btn" data-act="dfStash" style="width:100%;margin-bottom:8px">📦 Cất cả bộ thẻ vào kho</button>' : ''}<div class="row">${id ? '<button type="button" class="btn danger" data-act="dfDelete">Xóa</button>' : ''}<button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow">Lưu</button></div></form>`);
   const base = id ? { ...d } : null;
   const f = s.$('#df'); f._v = { color: d.color }; f._id = id; f._s = s;
   f.addEventListener('submit', async e => {
@@ -455,6 +455,12 @@ function openDeckForm(id) {
   });
 }
 ACT.dfPick = el => { const f = el.closest('form'); f._v[el.dataset.k] = el.dataset.v; $$(`[data-act=dfPick][data-k=${el.dataset.k}]`, f).forEach(b => { b.classList.toggle('on', b === el); if (el.dataset.k === 'color') b.style.borderColor = b === el ? 'var(--text)' : 'transparent'; }); };
+ACT.dfStash = async el => {
+  const f = el.closest('form'), ids = [...(S.cardsOfDeck.get(f._id) || [])];
+  if (!ids.length) return toast('Bộ thẻ này không có thẻ nào để cất');
+  const vid = await chooseVault(`Cất ${ids.length} thẻ của bộ này vào kho nào?`); if (!vid) return;
+  if (await stashCards(ids, vid, `Đã cất ${ids.length} thẻ vào kho "${vaultOf(vid)?.name}"`)) { f._s.close(); render(); }
+};
 ACT.dfDelete = async el => {
   const f = el.closest('form'); if (!await confirmBox('Xóa bộ thẻ này? Các thẻ bên trong vẫn được giữ lại.', 'Xóa', true)) return;
   await guard(() => deleteDeck(f._id), 'Đã xóa bộ thẻ'); f._s.close(); if (FILT.deck === f._id) FILT.deck = ''; render();

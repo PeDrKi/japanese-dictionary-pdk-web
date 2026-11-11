@@ -74,7 +74,7 @@ async function loadAll(opts = {}) {
   const sig = await getSig();                                   // lấy chữ ký TRƯỚC khi tải: thay đổi xảy ra giữa chừng sẽ bị phát hiện ở lần sau
   const since = new Date(Date.now() - 400 * 864e5).toISOString(); // đủ để tính chuỗi ngày học dài
   const [cards, decks, cats, dcs, rads, rcs, dec, daily] = await Promise.all([
-    fetchAll('cards', q => q.order('created_at', { ascending: false }).order('id')),
+    fetchAll('cards', q => q.order('created_at', { ascending: true }).order('id')),
     fetchAll('decks'), fetchAll('deck_categories'), fetchAll('deck_cards'), fetchAll('radicals'), fetchAll('radical_cards'),
     fetchAll('user_decompositions', q => q, 'character'),
     fetchAll('study_sessions', q => q.gte('studied_at', since).order('studied_at'), 'id', 'result,studied_at'),
@@ -198,7 +198,7 @@ const EDIT_FIELDS = {
 };
 function putLocal(table, row) {
   const arr = S[table], i = arr.findIndex(x => x.id === row.id);
-  if (i >= 0) arr[i] = row; else if (table === 'cards' || table === 'grammar_points' || table === 'translations') arr.unshift(row); else arr.push(row);
+  if (i >= 0) arr[i] = row; else if (table === 'grammar_points' || table === 'translations') arr.unshift(row); else arr.push(row);
   reindex();
 }
 async function saveMerged(table, id, base, data, ask) {
@@ -242,7 +242,7 @@ async function addCard(data, id = uuid7()) {
     if (e.code !== '23505') throw e;                       // trùng khoá chính = lần Lưu trước đã vào máy chủ (mất mạng giữa chừng) → lấy lại bản đó
     saved = (await must(sb.from('cards').select('*').eq('id', id)))[0]; if (!saved) throw e;
   }
-  const i = S.cards.findIndex(x => x.id === saved.id); if (i >= 0) S.cards[i] = saved; else S.cards.unshift(saved);
+  const i = S.cards.findIndex(x => x.id === saved.id); if (i >= 0) S.cards[i] = saved; else S.cards.push(saved);
   reindex(); return saved;
 }
 async function addCardsBulk(list) {
@@ -251,10 +251,10 @@ async function addCardsBulk(list) {
   try { for (let i = 0; i < rows.length; i += 200) out.push(...await mut(sb.from('cards').insert(rows.slice(i, i + 200)).select())); }
   catch (e) {
     // Lỗi giữa chừng: các lô trước đã vào máy chủ → thêm vào danh sách hiện có để bước kiểm tra trùng lần thử lại thấy chúng
-    if (out.length) { S.cards.unshift(...out.reverse()); reindex(); e.message += ` (đã thêm được ${out.length}/${rows.length} thẻ trước khi lỗi; thử lại sẽ bỏ qua các thẻ đã có)`; }
+    if (out.length) { S.cards.push(...out); reindex(); e.message += ` (đã thêm được ${out.length}/${rows.length} thẻ trước khi lỗi; thử lại sẽ bỏ qua các thẻ đã có)`; }
     throw e;
   }
-  S.cards.unshift(...out.reverse()); reindex(); return out;
+  S.cards.push(...out); reindex(); return out;
 }
 // Sửa hẹp (chỉ vài trường, giá trị tuyệt đối) — an toàn không cần so sánh version, không đụng trường khác
 async function updateCards(ids, patch) {

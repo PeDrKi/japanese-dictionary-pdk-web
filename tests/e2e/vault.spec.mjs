@@ -79,6 +79,15 @@ export default async ({ session }) => {
     check('không lỗi JS ngoài lỗi trùng tên có chủ đích', errors.filter(e => !e.includes('Đã có kho tên')).length === 0, errors.join('|'));
   }, { name: 'kho thẻ: xóa kho' });
 
+  await session(SEED, async ({ page, check, db, errors }) => {
+    await page.waitForSelector('#view'); await page.click('#tabs [data-tab=decks]'); await page.waitForSelector('[data-act=editDeck]');
+    await page.click('[data-act=editDeck]'); await page.waitForSelector('[data-act=dfStash]'); await page.click('[data-act=dfStash]');
+    await page.waitForSelector('#vp-new'); await page.fill('#vp-new [name=name]', 'Cả bộ'); await page.click('#vp-new [type=submit]'); await page.waitForTimeout(600);
+    const d = await db();
+    check('cất cả bộ thẻ: mọi thẻ của bộ vào kho, vẫn giữ liên kết bộ thẻ', d.vaults.length === 1 && d.deck_cards.length === 1 && d.cards.filter(c => c.vault_id).length >= 1, JSON.stringify(d.cards.map(c => c.vault_id)));
+    check('không lỗi JS', errors.length === 0, errors.join('|'));
+  }, { name: 'kho thẻ: cất cả bộ thẻ' });
+
   await session({ ...SEED, oldSchema: true }, async ({ page, check, errors }) => {
     await page.waitForSelector('#view'); await page.click('#tabs [data-tab=vault]');
     check('máy chủ chưa nâng schema: tab Kho báo cần nâng cấp, app vẫn dùng được', (await page.locator('#view').innerText()).includes('schema.sql') && !(await page.$('[data-act=vaultNew]')));

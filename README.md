@@ -313,3 +313,4 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - Trong Kho: tìm, chọn nhiều, đưa ra, chuyển kho; đổi tên / xóa kho (xóa kho = trả hết thẻ ra).
 - Cảnh báo trùng (thẻ mới, import CSV, ghi từ vào thẻ) tính cả thẻ trong kho và nêu tên kho. Sao lưu/khôi phục có kèm kho.
 - Schema cũ (chưa có bảng vaults): tính năng tự tắt, app vẫn chạy.
+- v3.50: form sửa bộ thẻ có nút "📦 Cất cả bộ thẻ vào kho" (bộ thẻ vẫn còn, thẻ bị ẩn). v3.49: danh sách thẻ xếp cũ → mới.
