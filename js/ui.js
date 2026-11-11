@@ -97,7 +97,7 @@ document.addEventListener('click', e => {
 
 // ── Mảnh HTML dùng chung ────────────────────────────────────────────────────
 function cardMainText(c) {
-  if (c.type === 'kanji') return [c.reading_on, c.reading_kun].filter(Boolean).join(' / ');
+  if (c.type === 'kanji') return [c.reading_kun, c.reading_on].filter(Boolean).join(' / ');
   return c.reading_kana || '';
 }
 function cardRow(c, extra = '') {

@@ -161,7 +161,7 @@ ACT.bulkDeckSet = async el => { await guard(() => linkCardsToDeck([...FILT.sel],
 // ── Chi tiết thẻ ──
 function openCardDetail(id) {
   const c = S.byId.get(id); if (!c) return;
-  const kv = [['Từ loại', posPath(c.pos)], ['Âm On', c.reading_on], ['Âm Kun', c.reading_kun], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
+  const kv = [['Từ loại', posPath(c.pos)], ['Âm Kun', c.reading_kun], ['Âm On', c.reading_on], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
     ['Nghĩa (EN)', c.meaning_en], ['Số nét', c.stroke_count], ['Ví dụ', c.example_jp], ['Dịch ví dụ', c.example_vi], ['Nguồn', c.source], ['Ghi chú', c.notes]].filter(x => x[1]);
   const decks = (S.deckOfCard.get(id) || []).map(i => S.decks.find(d => d.id === i)).filter(Boolean);
   const rads = (S.radOfCard.get(id) || []).map(i => S.radicals.find(d => d.id === i)).filter(Boolean);
@@ -211,8 +211,8 @@ function openCardForm(id, preset = {}) {
     <label class="field" id="w-character"><span>Chữ / từ *</span><input name="character" class="jp" style="font-size:20px" value="${v('character')}" maxlength="50" ${id ? '' : 'autofocus'}></label>
     <div class="row" style="margin:-4px 0 12px"><button type="button" class="btn ghost small" data-act="cfJisho">🔍 Chọn kết quả khác</button><button type="button" class="btn ghost small" data-act="cfKana">あ Bàn phím kana</button></div>
     <div class="grid2 mrgrid" data-for="kanji">
-      <div class="field" data-mr="reading_on"><span>Âm On (ON-yomi)</span><input type="hidden" name="reading_on" value="${v('reading_on')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_on">+ Thêm âm On</button></div>
       <div class="field" data-mr="reading_kun"><span>Âm Kun (KUN-yomi)</span><input type="hidden" name="reading_kun" value="${v('reading_kun')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_kun">+ Thêm âm Kun</button></div></div>
+      <div class="field" data-mr="reading_on"><span>Âm On (ON-yomi)</span><input type="hidden" name="reading_on" value="${v('reading_on')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_on">+ Thêm âm On</button></div>
     <label class="field" data-for="vocab hiragana katakana"><span>Cách đọc (kana)</span><input name="reading_kana" class="jp" value="${v('reading_kana')}"></label>
     <label class="field" id="w-meaning_vi"><span>Nghĩa tiếng Việt *</span><input name="meaning_vi" value="${v('meaning_vi')}" maxlength="200"></label>
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>

@@ -2,8 +2,8 @@
 'use strict';
 
 const SC = { mode: 'flash', ask: 'meaning_vi', typing: 'meaning', source: 'due', deck: '', type: '', jlpt: '', pos: '', status: '', fav: false, limit: 20, split: true, adv: false };
-const QUIZ_ASK = [['meaning_vi', 'Nghĩa tiếng Việt'], ['meaning_en', 'Nghĩa tiếng Anh'], ['romaji', 'Romaji'], ['reading_hanviet', 'Âm Hán Việt'], ['on', 'Âm On-yomi'], ['kun', 'Âm Kun-yomi']];
-const TYPING_ASK = [['meaning', 'Nghĩa VN'], ['romaji', 'Romaji'], ['kana', 'Kana'], ['on', 'Âm On'], ['kun', 'Âm Kun'], ['hanviet', 'Hán Việt']];
+const QUIZ_ASK = [['meaning_vi', 'Nghĩa tiếng Việt'], ['meaning_en', 'Nghĩa tiếng Anh'], ['romaji', 'Romaji'], ['reading_hanviet', 'Âm Hán Việt'], ['kun', 'Âm Kun-yomi'], ['on', 'Âm On-yomi']];
+const TYPING_ASK = [['meaning', 'Nghĩa VN'], ['romaji', 'Romaji'], ['kana', 'Kana'], ['kun', 'Âm Kun'], ['on', 'Âm On'], ['hanviet', 'Hán Việt']];
 const MODE_LABEL = { flash: 'Flashcard', quiz: 'Quiz', typing: 'Luyện gõ' };
 // Nhớ lần ôn trước: mở app lên là Bắt đầu ôn luôn, không phải chọn lại
 const SC_KEYS = Object.keys(SC).concat('adv');
@@ -121,7 +121,7 @@ function runSession(cfg) {
 
   // ── Flashcard ──
   const paintFlash = () => {
-    const c = st.cur; const rd = c.type === 'kanji' ? [c.reading_on, c.reading_kun].filter(Boolean).join(' / ') : c.reading_kana || '';
+    const c = st.cur; const rd = c.type === 'kanji' ? [c.reading_kun, c.reading_on].filter(Boolean).join(' / ') : c.reading_kana || '';
     win.set(`<div class="page">${bar()}<div class="sp"></div><div class="sp"></div>${paper(c)}
       <div class="back" id="back">${st.revealed ? `<div class="rd">${esc(rd)}</div>${c.reading_hanviet ? `<div class="hv"><span class="lb trn">Hán Việt</span> ${esc(c.reading_hanviet)}</div>` : ''}<div class="mn">${esc(c.meaning_vi)}</div>${c.meaning_en ? `<div class="mute small">${esc(c.meaning_en)}</div>` : ''}${c.example_jp ? `<div class="ex">${esc(c.example_jp)}${c.example_vi ? `<br><span class="small">${esc(c.example_vi)}</span>` : ''}</div>` : ''}`
         : '<div class="mute small" style="padding-top:26px">Chạm vào thẻ để lật · Space</div>'}</div>
@@ -133,7 +133,7 @@ function runSession(cfg) {
   // ── Quiz ──
   const paintQuiz = () => {
     const c = st.cur, f = cfg.ask || 'meaning_vi'; let hint = '';
-    if (!['romaji', 'on', 'kun'].includes(f)) hint = c.type === 'kanji' ? ([c.reading_on, c.reading_kun].filter(Boolean)[0] || '') : (c.reading_kana || '');
+    if (!['romaji', 'on', 'kun'].includes(f)) hint = c.type === 'kanji' ? ([c.reading_kun, c.reading_on].filter(Boolean)[0] || '') : (c.reading_kana || '');
     const correct = fieldValue(c, f) || c.meaning_vi || c.meaning_en || '?';
     if (!st.opts) {
       const pool = [...new Set(liveCards().filter(x => x.id !== c.id).map(x => fieldValue(x, f)).filter(v => v && v !== correct))];

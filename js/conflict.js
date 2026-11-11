@@ -2,7 +2,7 @@
 'use strict';
 
 const FIELD_LABEL = {
-  type: 'Loại', character: 'Chữ / từ', reading_on: 'Âm On', reading_kun: 'Âm Kun', reading_kana: 'Cách đọc (kana)',
+  type: 'Loại', character: 'Chữ / từ', reading_kun: 'Âm Kun', reading_on: 'Âm On', reading_kana: 'Cách đọc (kana)',
   reading_hanviet: 'Âm Hán Việt', romaji: 'Romaji', meaning_vi: 'Nghĩa tiếng Việt', meaning_en: 'Nghĩa tiếng Anh',
   example_jp: 'Câu ví dụ', example_vi: 'Dịch câu ví dụ', stroke_count: 'Số nét', jlpt_level: 'JLPT', status: 'Trạng thái',
   source: 'Nguồn', notes: 'Ghi chú', is_favorite: 'Yêu thích', name: 'Tên', description: 'Mô tả', color: 'Màu', icon: 'Biểu tượng',
