@@ -314,3 +314,8 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - Cảnh báo trùng (thẻ mới, import CSV, ghi từ vào thẻ) tính cả thẻ trong kho và nêu tên kho. Sao lưu/khôi phục có kèm kho.
 - Schema cũ (chưa có bảng vaults): tính năng tự tắt, app vẫn chạy.
 - v3.50: form sửa bộ thẻ có nút "📦 Cất cả bộ thẻ vào kho" (bộ thẻ vẫn còn, thẻ bị ẩn). v3.49: danh sách thẻ xếp cũ → mới.
+
+## v3.51 — Chuyển CẢ BỘ THẺ vào kho (cần chạy lại schema.sql bản 14)
+- Form sửa bộ thẻ (⋯) → "📦 Chuyển cả bộ thẻ này vào kho": bộ thẻ biến khỏi tab Bộ thẻ / danh mục, nằm trong tab Kho cùng các thẻ của nó (thẻ cũng bị ẩn như thẻ cất lẻ).
+- Trong Kho: mục bộ thẻ có "Đưa ra" (bộ + thẻ trở lại như cũ) và "Chuyển kho". Xóa kho đưa cả bộ thẻ và thẻ ra.
+- Sao lưu/khôi phục có kèm kho của bộ thẻ. (Thay cho nút "cất các thẻ của bộ" ở v3.50.)

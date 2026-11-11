@@ -61,13 +61,27 @@ ACT.vaultOpen = el => { VT.id = el.dataset.id; VT.sel = new Set(); VT.q = ''; AC
 // ── Trong một kho ──
 function vaultListHtml(id) {
   const q = VT.q.trim().toLowerCase();
-  const list = vaultCards(id).filter(c => !q || [c.character, c.meaning_vi, c.reading_on, c.reading_kun, c.reading_kana, c.reading_hanviet, c.romaji].some(x => x && String(x).toLowerCase().includes(q)));
+  const list = vaultLooseCards(id).filter(c => !q || [c.character, c.meaning_vi, c.reading_on, c.reading_kun, c.reading_kana, c.reading_hanviet, c.romaji].some(x => x && String(x).toLowerCase().includes(q)));
   return list.map(c => `<button class="item${VT.sel.has(c.id) ? ' sel' : ''}" data-act="vaultPick" data-id="${c.id}"><span class="big jp${[...c.character].length > 3 ? ' long' : ''}">${esc(c.character)}</span>
     <span class="grow"><span class="t">${esc(c.meaning_vi)}</span><br><span class="s jp">${esc(cardMainText(c)) || '&nbsp;'}</span></span><span class="mute">${VT.sel.has(c.id) ? '✓' : ''}</span></button>`).join('')
     || emptyBox('蔵', q ? 'Không có thẻ phù hợp' : 'Kho này đang trống');
 }
+function vaultDecksHtml(id) {
+  const ds = vaultDecks(id); if (!ds.length) return '';
+  return `<div class="list" style="margin-bottom:12px">${ds.map(d => `<div class="item"><span class="big" style="font-size:24px">${esc(d.icon || '📚')}</span><span class="grow"><span class="t">${esc(d.name)}</span><br><span class="s">Bộ thẻ · ${deckCardIds(d.id).filter(i => alive(S.byId.get(i) || {})).length} thẻ</span></span>
+    <button class="btn" data-act="vaultDeckMove" data-id="${d.id}">Chuyển kho</button><button class="btn primary" data-act="vaultDeckOut" data-id="${d.id}">Đưa ra</button></div>`).join('')}</div>`;
+}
+ACT.vaultDeckOut = async el => {
+  const d = S.decks.find(x => x.id === el.dataset.id); if (!d) return;
+  if (await guard(() => moveDeckToVault(d.id, null), `Đã đưa bộ "${d.name}" ra khỏi kho`) !== undefined) render();
+};
+ACT.vaultDeckMove = async el => {
+  const d = S.decks.find(x => x.id === el.dataset.id); if (!d) return;
+  const vid = await chooseVault(`Chuyển bộ "${d.name}" sang kho nào?`, { except: VT.id }); if (!vid) return;
+  if (await guard(() => moveDeckToVault(d.id, vid), `Đã chuyển bộ "${d.name}" sang "${vaultOf(vid)?.name}"`) !== undefined) render();
+};
 function vaultBar(id) {
-  const n = VT.sel.size, all = vaultCards(id).length;
+  const n = VT.sel.size, all = vaultLooseCards(id).length;
   return `<div class="selbar"><button class="btn ghost" data-act="vaultSelAll">${n ? `Đã chọn ${n}` : all ? 'Chọn tất cả' : '—'}</button>
     <button class="btn primary" data-act="vaultOut" ${n ? '' : 'disabled'}>Đưa ra khỏi kho</button><button class="btn" data-act="vaultMove" ${n ? '' : 'disabled'}>Chuyển kho</button></div>`;
 }
@@ -76,7 +90,8 @@ function viewVaultItem(sub) {
   VT.id = v.id;
   const menu = '<button class="btn" data-act="vaultEdit">Sửa / Xóa kho</button>';
   return `<div class="page">${pageTop(`${v.icon || '📦'} ${v.name}`, true, menu)}
-    <p class="mute small" style="margin:0 2px 8px">${vaultCount(v.id)} thẻ · chạm để chọn, rồi đưa ra hoặc chuyển kho.</p>
+    <p class="mute small" style="margin:0 2px 8px">${vaultDecks(v.id).length ? `${vaultDecks(v.id).length} bộ thẻ · ` : ''}${vaultCount(v.id)} thẻ · chạm để chọn, rồi đưa ra hoặc chuyển kho.</p>
+    <div id="vdecks">${vaultDecksHtml(v.id)}</div>
     <input type="search" id="vq" placeholder="Tìm trong kho…" value="${esc(VT.q)}" aria-label="Tìm trong kho" style="margin-bottom:10px">
     <div class="list" id="vlist">${vaultListHtml(v.id)}</div><div id="vbar">${vaultBar(v.id)}</div></div>`;
 }
@@ -84,7 +99,7 @@ const vaultRefresh = () => { const l = $('#vlist'); if (l) { l.innerHTML = vault
 document.addEventListener('input', e => { if (e.target.id === 'vq') { VT.q = e.target.value; vaultRefresh(); } });
 ACT.vaultPick = el => { const id = el.dataset.id; VT.sel.has(id) ? VT.sel.delete(id) : VT.sel.add(id); vaultRefresh(); };
 ACT.vaultSelAll = () => {
-  const all = vaultCards(VT.id).map(c => c.id); const every = all.length && all.every(i => VT.sel.has(i));
+  const all = vaultLooseCards(VT.id).map(c => c.id); const every = all.length && all.every(i => VT.sel.has(i));
   VT.sel = every ? new Set() : new Set(all); vaultRefresh();
 };
 ACT.vaultOut = async () => {
@@ -106,8 +121,8 @@ ACT.vaultEdit = () => {
     const ok = await guard(() => renameVault(v.id, f.elements.name.value, f.elements.icon.value.trim()), 'Đã lưu kho'); f._busy = false; if (ok !== undefined) { s.close(); render(); } };
 };
 ACT.vaultDel = async () => {
-  const v = vaultOf(VT.id); if (!v) return; const n = vaultCount(v.id);
-  if (!await confirmBox(n ? `Xóa kho "${v.name}"? ${n} thẻ trong kho sẽ được đưa ra, quay lại danh sách và ôn tập với tiến độ cũ.` : `Xóa kho "${v.name}"?`, 'Xóa kho', true)) return;
+  const v = vaultOf(VT.id); if (!v) return; const n = vaultCount(v.id), nd = vaultDecks(v.id).length;
+  if (!await confirmBox(n ? `Xóa kho "${v.name}"? ${nd ? nd + ' bộ thẻ và ' : ''}${n} thẻ trong kho sẽ được đưa ra, quay lại danh sách và ôn tập với tiến độ cũ.` : `Xóa kho "${v.name}"?`, 'Xóa kho', true)) return;
   if (await guard(() => deleteVault(v.id), 'Đã xóa kho') !== undefined) { _ve?.close(); VT.id = null; leaveSub(); }
 };
 

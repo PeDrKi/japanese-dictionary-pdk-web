@@ -36,7 +36,7 @@ const alive = x => !x.deleted_at;
 function reindex() {
   S.byId = new Map(S.cards.map(c => [c.id, c]));
   S.deckOfCard = new Map(); S.cardsOfDeck = new Map(); S.radOfCard = new Map(); S.cardsOfRad = new Map();
-  const liveDeck = new Set(S.decks.filter(alive).map(d => d.id));
+  const liveDeck = new Set(S.decks.filter(d => alive(d) && !d.vault_id).map(d => d.id));
   const shown = id => { const c = S.byId.get(id); return !!c && !c.vault_id; };      // thẻ đang nằm trong kho thì ẩn khỏi bộ thẻ / bộ thủ
   const liveRad = new Set(S.radicals.filter(alive).map(r => r.id));
   const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
@@ -47,7 +47,7 @@ function reindex() {
 const liveCards = () => S.cards.filter(c => alive(c) && !c.vault_id);
 // Mọi thẻ chưa xóa, kể cả thẻ trong kho — dùng để kiểm tra trùng
 const allLiveCards = () => S.cards.filter(alive);
-const liveDecks = () => S.decks.filter(alive);
+const liveDecks = () => S.decks.filter(d => alive(d) && !d.vault_id);      // bộ thẻ đang nằm trong kho thì ẩn
 const liveRadicals = () => S.radicals.filter(alive).sort((a, b) => a.sort_order - b.sort_order);
 
 // ── Gọi API ─────────────────────────────────────────────────────────────────
@@ -525,7 +525,22 @@ const liveVaults = () => [...S.vaults].sort((a, b) => (a.sort_order - b.sort_ord
 const vaultOf = id => S.vaults.find(v => v.id === id) || null;
 const vaultCards = id => S.cards.filter(c => alive(c) && c.vault_id === id);
 const vaultCount = id => vaultCards(id).length;
-const VAULT_NEED = 'Cần chạy lại schema.sql (bản 13) trên Supabase để dùng Kho thẻ.';
+const VAULT_NEED = 'Cần chạy lại schema.sql (bản 14) trên Supabase để dùng Kho thẻ.';
+const deckVaultOk = () => S.vaultOk && (!S.decks.length || 'vault_id' in S.decks[0]);
+const vaultDecks = id => S.decks.filter(d => alive(d) && d.vault_id === id);
+const deckCardIds = deckId => S.deckCards.filter(dc => alive(dc) && dc.deck_id === deckId).map(dc => dc.card_id);
+// Thẻ "thuộc về" một bộ thẻ đang nằm trong kho này (hiện dưới bộ thẻ, không hiện lẻ)
+const vaultLooseCards = id => { const inDeck = new Set(vaultDecks(id).flatMap(d => deckCardIds(d.id))); return vaultCards(id).filter(c => !inDeck.has(c.id)); };
+// Cất CẢ BỘ THẺ vào kho (vaultId) hoặc đưa ra (null): bộ thẻ rời tab Bộ thẻ, các thẻ của bộ cùng vào kho
+async function moveDeckToVault(deckId, vaultId) {
+  if (!deckVaultOk()) throw new Error(VAULT_NEED);
+  const d = S.decks.find(x => x.id === deckId); if (!d) throw new Error('Không tìm thấy bộ thẻ');
+  if (vaultId && !vaultOf(vaultId)) throw new Error('Kho này không còn nữa');
+  const old = d.vault_id || null, ids = deckCardIds(deckId).filter(id => { const c = S.byId.get(id); return c && alive(c) && (vaultId ? !c.vault_id || c.vault_id === old : c.vault_id === old); });
+  if (ids.length) await updateCards(ids, { vault_id: vaultId || null });
+  const [r] = await mut(sb.from('decks').update({ vault_id: vaultId || null }).eq('id', deckId).select()); if (r) putLocal('decks', r);
+  reindex();
+}
 function vaultName(raw) { const n = String(raw || '').trim().replace(/\s+/g, ' '); if (!n) throw new Error('Cần nhập tên kho'); if (n.length > 60) throw new Error('Tên kho tối đa 60 ký tự'); return n; }
 async function addVault(name, icon = null) {
   if (!S.vaultOk) throw new Error(VAULT_NEED);
@@ -551,6 +566,7 @@ async function moveToVault(ids, vaultId) {
 }
 // Xóa kho: đưa toàn bộ thẻ ra khỏi kho trước (thẻ quay lại danh sách với tiến độ cũ), rồi xóa kho
 async function deleteVault(id) {
+  for (const d of vaultDecks(id)) { const [r] = await mut(sb.from('decks').update({ vault_id: null }).eq('id', d.id).select()); if (r) putLocal('decks', r); }
   const ids = vaultCards(id).map(c => c.id);
   if (ids.length) await updateCards(ids, { vault_id: null });
   await mut(sb.from('vaults').delete().eq('id', id));

@@ -6,6 +6,7 @@
   const seed = window.__SEED || {};
   const DB = window.__DB = { n: 0, calls: [], me: seed.me || { role: 'user', status: 'active' }, fail: null };
   for (const t of TABLES) DB[t] = JSON.parse(JSON.stringify(seed[t] || []));
+  if (!seed.oldSchema && DB.decks) DB.decks.forEach(d => { if (!('vault_id' in d)) d.vault_id = null; });   // cột decks.vault_id (schema 14)
   if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; delete DB.translations; delete DB.vaults; }   // mô phỏng máy chủ chưa chạy schema v7
   const USER = { id: '11111111-1111-4111-8111-111111111111', email: seed.email || 'test@example.com' };
   const nowIso = () => new Date().toISOString();
@@ -65,7 +66,8 @@
       }
       if (this.op === 'delete') {
         const gone = tab.filter(match), keep = tab.filter(r => !match(r)); if (keep.length !== tab.length) bump(); DB[this.t] = keep;
-        if (this.t === 'vaults' && DB.cards) DB.cards.forEach(c => { if (gone.some(g => g.id === c.vault_id)) c.vault_id = null; });   // on delete set null
+        if (this.t === 'vaults' && DB.cards) DB.cards.forEach(c => { if (gone.some(g => g.id === c.vault_id)) c.vault_id = null; });
+        if (this.t === 'vaults' && DB.decks) DB.decks.forEach(c => { if (gone.some(g => g.id === c.vault_id)) c.vault_id = null; });   // on delete set null
         const cascade = { conj_forms: ['conj_cells', 'form_id'], conj_verbs: ['conj_cells', 'verb_id'] }[this.t];   // on delete cascade như schema.sql
         if (cascade && DB[cascade[0]]) DB[cascade[0]] = DB[cascade[0]].filter(r => !gone.some(g => g.id === r[cascade[1]]));
         return { data: null, error: null };
@@ -91,7 +93,7 @@
   }
   const session = () => ({ access_token: 'fake', refresh_token: 'fake', expires_at: Math.floor(Date.now() / 1000) + 3600, user: USER });
   const RPC = {
-    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 13, error: null }),
+    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 14, error: null }),
     jp_sync_sig: () => ({ data: 'sig-' + DB.n, error: null }),
     jp_me: () => ({ data: [DB.me], error: null }),
     log_study: logStudy,

@@ -81,12 +81,23 @@ export default async ({ session }) => {
 
   await session(SEED, async ({ page, check, db, errors }) => {
     await page.waitForSelector('#view'); await page.click('#tabs [data-tab=decks]'); await page.waitForSelector('[data-act=editDeck]');
+    check('trước khi chuyển: tab Bộ thẻ có bộ N5', (await page.locator('#view').innerText()).includes('Từ vựng N5'));
     await page.click('[data-act=editDeck]'); await page.waitForSelector('[data-act=dfStash]'); await page.click('[data-act=dfStash]');
-    await page.waitForSelector('#vp-new'); await page.fill('#vp-new [name=name]', 'Cả bộ'); await page.click('#vp-new [type=submit]'); await page.waitForTimeout(600);
-    const d = await db();
-    check('cất cả bộ thẻ: mọi thẻ của bộ vào kho, vẫn giữ liên kết bộ thẻ', d.vaults.length === 1 && d.deck_cards.length === 1 && d.cards.filter(c => c.vault_id).length >= 1, JSON.stringify(d.cards.map(c => c.vault_id)));
+    await page.waitForSelector('#vp-new'); await page.fill('#vp-new [name=name]', 'Cả bộ'); await page.click('#vp-new [type=submit]'); await page.waitForTimeout(700);
+    let d = await db(); const v = d.vaults[0], dk = d.decks.find(x => x.vault_id);
+    check('bộ thẻ chuyển vào kho: decks.vault_id + thẻ của bộ cùng vào kho, giữ liên kết bộ-thẻ', !!v && dk && dk.vault_id === v.id && d.deck_cards.length === 1 && d.cards.filter(c => c.vault_id === v.id).length === 1, JSON.stringify(d.decks.map(x => x.vault_id)));
+    check('bộ thẻ biến khỏi tab Bộ thẻ', !(await page.locator('#view').innerText()).includes('Từ vựng N5'));
+    await page.click('#tabs [data-tab=cards]'); await page.waitForSelector('#cardlist');
+    check('thẻ của bộ cũng ẩn khỏi thư viện (còn 3)', (await page.locator('#cardlist .item').count()) === 3);
+    await page.click('#tabs [data-tab=vault]'); await page.waitForSelector('[data-act=vaultOpen]'); await page.click('[data-act=vaultOpen]'); await page.waitForSelector('#vdecks');
+    check('trong Kho thấy bộ thẻ, không lặp thẻ lẻ', (await page.locator('#vdecks .item').count()) === 1 && (await page.locator('#vlist .item').count()) === 0, await page.locator('#vlist').innerText());
+    await page.click('[data-act=vaultDeckOut]'); await page.waitForTimeout(700);
+    d = await db();
+    check('đưa bộ thẻ ra: bộ + thẻ trở lại', d.decks.every(x => !x.vault_id) && d.cards.every(c => !c.vault_id));
+    await page.click('#tabs [data-tab=decks]');
+    check('bộ N5 hiện lại trong tab Bộ thẻ', (await page.locator('#view').innerText()).includes('Từ vựng N5'));
     check('không lỗi JS', errors.length === 0, errors.join('|'));
-  }, { name: 'kho thẻ: cất cả bộ thẻ' });
+  }, { name: 'kho thẻ: chuyển cả bộ thẻ' });
 
   await session({ ...SEED, oldSchema: true }, async ({ page, check, errors }) => {
     await page.waitForSelector('#view'); await page.click('#tabs [data-tab=vault]');

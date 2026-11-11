@@ -839,5 +839,15 @@ grant execute on function public.jp_sync_sig() to authenticated;
 create or replace function public.jp_schema_version() returns integer
 language sql stable as $$ select 13 $$;
 
+-- ============================================================================
+-- PHIÊN BẢN 14 — Cất CẢ BỘ THẺ vào kho: bộ thẻ biến khỏi danh mục / tab Bộ thẻ, nằm trong tab Kho
+-- (các thẻ của bộ cũng được cất cùng kho). Đưa bộ thẻ ra khỏi kho → bộ thẻ và thẻ quay lại như cũ.
+-- ============================================================================
+alter table public.decks add column if not exists vault_id uuid references public.vaults(id) on delete set null;
+create index if not exists decks_vault on public.decks (vault_id) where vault_id is not null;
+
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 14 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';
