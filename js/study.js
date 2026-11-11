@@ -91,12 +91,12 @@ function startStudy(cfg) {
 
 // ── Phiên ôn ────────────────────────────────────────────────────────────────
 function runSession(cfg) {
-  const total = cfg.items.length; const st = { queue: shuffle(cfg.items.slice()), cur: null, ok: 0, bad: 0, answered: false, revealed: false, timer: null };
+  let total = cfg.items.length; const st = { queue: shuffle(cfg.items.slice()), cur: null, ok: 0, bad: 0, answered: false, revealed: false, timer: null };
   const win = openFull('', { onClose: () => { document.removeEventListener('keydown', onKey); clearTimeout(st.timer); $('.kpad')?.remove(); render(); } });
   const requeue = () => st.queue.splice(Math.min(3, st.queue.length), 0, st.cur);
   const bar = () => {
     const done = Math.max(0, total - st.queue.length - (st.cur ? 1 : 0)), acc = st.ok + st.bad ? Math.round(st.ok / (st.ok + st.bad) * 100) : null;
-    return `<div class="studybar"><button class="iconbtn" data-close aria-label="Kết thúc">✕</button><div class="grow small mute">Thẻ ${Math.min(done + 1, total)}/${total} · ✓ ${st.ok} · ✗ ${st.bad}${acc !== null ? ` · ${acc}%` : ''}</div>
+    return `<div class="studybar"><button class="iconbtn" data-close aria-label="Kết thúc">✕</button>${S.vaultOk && st.cur ? '<button class="iconbtn" data-vault="1" aria-label="Cất thẻ này vào kho" title="Cất vào kho">📦</button>' : ''}<div class="grow small mute">Thẻ ${Math.min(done + 1, total)}/${total} · ✓ ${st.ok} · ✗ ${st.bad}${acc !== null ? ` · ${acc}%` : ''}</div>
       <span class="small mute">${MODE_LABEL[cfg.mode]}</span></div><div class="prog"><i style="width:${done / total * 100}%"></i></div>`;
   };
   const paper = (c, extra = '') => {
@@ -117,11 +117,13 @@ function runSession(cfg) {
   };
   const answer = (correct) => { st.lastOk = correct; FX.verdict(win.el, correct); correct ? st.ok++ : (st.bad++, requeue()); logStudy(st.cur.id, correct ? 'correct' : 'incorrect'); };
 
+  win.el.addEventListener('click', e => { if (e.target.closest('[data-vault]')) stashFromStudy(st, win, { setTotal: n => { total = Math.max(0, total - n); }, next }); });
+
   // ── Flashcard ──
   const paintFlash = () => {
     const c = st.cur; const rd = c.type === 'kanji' ? [c.reading_on, c.reading_kun].filter(Boolean).join(' / ') : c.reading_kana || '';
     win.set(`<div class="page">${bar()}<div class="sp"></div><div class="sp"></div>${paper(c)}
-      <div class="back" id="back">${st.revealed ? `<div class="rd">${esc(rd)}</div><div class="mn">${esc(c.meaning_vi)}</div>${c.meaning_en ? `<div class="mute small">${esc(c.meaning_en)}</div>` : ''}${c.example_jp ? `<div class="ex">${esc(c.example_jp)}${c.example_vi ? `<br><span class="small">${esc(c.example_vi)}</span>` : ''}</div>` : ''}`
+      <div class="back" id="back">${st.revealed ? `<div class="rd">${esc(rd)}</div>${c.reading_hanviet ? `<div class="hv"><span class="lb trn">Hán Việt</span> ${esc(c.reading_hanviet)}</div>` : ''}<div class="mn">${esc(c.meaning_vi)}</div>${c.meaning_en ? `<div class="mute small">${esc(c.meaning_en)}</div>` : ''}${c.example_jp ? `<div class="ex">${esc(c.example_jp)}${c.example_vi ? `<br><span class="small">${esc(c.example_vi)}</span>` : ''}</div>` : ''}`
         : '<div class="mute small" style="padding-top:26px">Chạm vào thẻ để lật · Space</div>'}</div>
       ${st.revealed ? '<div class="row"><button class="btn bad grow" id="no" style="min-height:56px">✗ Không nhớ</button><button class="btn ok grow" id="yes" style="min-height:56px">✓ Đã nhớ</button></div>' : ''}</div>`);
     win.$('#paper').onclick = () => { if (!st.revealed) { st.revealed = true; paint(); FX.flip(win.$('#paper')) || win.$('#paper')?.classList.add('flip'); } };
@@ -208,7 +210,7 @@ function runSession(cfg) {
 
   const paint = () => ({ flash: paintFlash, quiz: paintQuiz, typing: paintTyping }[cfg.mode])();
   function onKey(e) {
-    if (!win.el.isConnected || e.target.tagName === 'INPUT') return;
+    if (!win.el.isConnected || e.target.tagName === 'INPUT' || layers.length > 1) return;   // đang mở hộp chọn kho thì phím không tác động lên thẻ
     if (cfg.mode === 'flash' && st.cur) {
       if (!st.revealed && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); win.$('#paper')?.click(); }
       else if (st.revealed && (e.key === 'ArrowLeft' || e.key === '1')) win.$('#no')?.click();

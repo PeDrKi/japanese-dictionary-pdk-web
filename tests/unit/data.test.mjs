@@ -109,3 +109,13 @@ test('splitSents / pairInfo: ghép bản dịch theo đoạn hoặc theo câu', 
   assert.equal(app.run(`pairInfo(${JSON.stringify(jp)}, 'a\\nb\\nc\\nd').level`), 'none');
   assert.equal(app.run(`pairInfo(${JSON.stringify(jp)}, '').level`), 'none');
 });
+
+test('kho thẻ: liveCards ẩn thẻ trong kho, allLiveCards vẫn thấy; bộ thẻ không đếm thẻ trong kho', () => {
+  const r = app.run(`(() => {
+    S.cards = [{ id: 'a', character: 'A', type: 'kanji' }, { id: 'b', character: 'B', type: 'kanji', vault_id: 'v' }, { id: 'c', character: 'C', type: 'kanji', deleted_at: 'x' }];
+    S.decks = [{ id: 'd' }]; S.deckCards = [{ deck_id: 'd', card_id: 'a' }, { deck_id: 'd', card_id: 'b' }]; S.vaults = [{ id: 'v', name: 'Kho', sort_order: 0 }];
+    reindex();
+    return JSON.stringify({ live: liveCards().map(c => c.id), all: allLiveCards().map(c => c.id), inDeck: S.cardsOfDeck.get('d'), vc: vaultCount('v'), dup: findDuplicates('B', 'kanji').length });
+  })()`);
+  assert.equal(r, JSON.stringify({ live: ['a'], all: ['a', 'b'], inDeck: ['a'], vc: 1, dup: 1 }));
+});

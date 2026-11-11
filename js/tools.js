@@ -228,9 +228,11 @@ ACT.csvTools = () => {
     const f = e.target.files[0]; e.target.value = ''; if (!f || s.busy) return;
     s.busy = true;
     const { valid, errors } = csvRowsToCards(parseCsv(await f.text()));
-    const exist = new Set(liveCards().map(c => c.type + '|' + c.character)); const fresh = valid.filter(c => { const k = c.type + '|' + c.character; if (exist.has(k)) return false; exist.add(k); return true; });   // bỏ cả dòng trùng ngay trong file
+    const exist = new Set(allLiveCards().map(c => c.type + '|' + c.character)); const fresh = valid.filter(c => { const k = c.type + '|' + c.character; if (exist.has(k)) return false; exist.add(k); return true; });   // bỏ cả dòng trùng ngay trong file
     s.close();
-    if (!await confirmBox(`Nhập ${fresh.length} thẻ mới? (${valid.length - fresh.length} trùng bị bỏ qua${errors.length ? `, ${errors.length} dòng lỗi: ${errors.slice(0, 3).map(x => 'dòng ' + x[0] + ' ' + x[1]).join('; ')}` : ''})`, 'Nhập')) return;
+    const inVault = allLiveCards().filter(c => c.vault_id && valid.some(v => v.type === c.type && v.character === c.character));   // dòng trùng với thẻ đang cất trong kho
+    const vnote = inVault.length ? `, trong đó ${inVault.length} thẻ đang ở kho: ${[...new Set(inVault.map(c => vaultOf(c.vault_id)?.name).filter(Boolean))].slice(0, 3).join(', ')}` : '';
+    if (!await confirmBox(`Nhập ${fresh.length} thẻ mới? (${valid.length - fresh.length} trùng bị bỏ qua${vnote}${errors.length ? `, ${errors.length} dòng lỗi: ${errors.slice(0, 3).map(x => 'dòng ' + x[0] + ' ' + x[1]).join('; ')}` : ''})`, 'Nhập')) return;
     await guard(() => addCardsBulk(fresh), `Đã nhập ${fresh.length} thẻ`); render();
   };
 };

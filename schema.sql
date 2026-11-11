@@ -789,5 +789,55 @@ alter table public.translations add constraint translations_glossary_chk check (
 create or replace function public.jp_schema_version() returns integer
 language sql stable as $$ select 12 $$;
 
+-- ══ PHIÊN BẢN 13: KHO THẺ ═══════════════════════════════════════════════════════════════════════════════
+-- Kho: nơi cất thẻ tạm thời. Thẻ có vault_id khác rỗng bị ẨN khỏi mọi nơi (danh sách, bộ thẻ, ôn tập, thống kê)
+-- nhưng giữ nguyên bộ thẻ + tiến độ SRS; đưa ra khỏi kho (vault_id = null) là về lại như cũ.
+create table if not exists public.vaults (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name        text not null check (length(btrim(name)) between 1 and 60),
+  icon        text check (icon is null or length(icon) <= 16),
+  sort_order  integer not null default 0,
+  version     bigint not null default 1,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create unique index if not exists vaults_user_name on public.vaults (user_id, lower(btrim(name)));
+drop trigger if exists trg_touch on public.vaults;
+create trigger trg_touch before insert or update on public.vaults for each row execute function public.touch_versioned();
+alter table public.vaults enable row level security;
+drop policy if exists "own rows" on public.vaults;
+create policy "own rows" on public.vaults for all to authenticated
+  using (user_id = auth.uid() and public.jp_is_active()) with check (user_id = auth.uid() and public.jp_is_active());
+grant select, insert, update, delete on public.vaults to authenticated;
+
+-- Xóa kho → thẻ tự ra khỏi kho (app cũng tự đưa ra trước khi xóa)
+alter table public.cards add column if not exists vault_id uuid references public.vaults(id) on delete set null;
+create index if not exists cards_vault on public.cards (vault_id) where vault_id is not null;
+
+create or replace function public.jp_sync_sig() returns text
+language sql stable set search_path = public as $$
+  select md5(concat_ws('|',
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from decks),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radicals),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from deck_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radical_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from user_decompositions),
+    (select count(*)::text || coalesce(max(studied_at)::text, '') from study_sessions),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from grammar_points),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_forms),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_verbs),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_cells),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from translations),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from vaults),
+    (select coalesce(md5(string_agg(id::text || name || coalesce(icon, '') || sort_order::text, ',' order by id)), '') from deck_categories)
+  )) $$;
+revoke execute on function public.jp_sync_sig() from public, anon;
+grant execute on function public.jp_sync_sig() to authenticated;
+
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 13 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';

@@ -2,11 +2,11 @@
    Mô phỏng đủ phần của supabase-js mà app dùng: auth, from().select/insert/update/upsert/delete + eq/in/gte/order/range, rpc().
    Dữ liệu nằm trong window.__DB (test đọc/ghi trực tiếp để kiểm tra). Dữ liệu ban đầu: window.__SEED. */
 (() => {
-  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells', 'translations'];
+  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells', 'translations', 'vaults'];
   const seed = window.__SEED || {};
   const DB = window.__DB = { n: 0, calls: [], me: seed.me || { role: 'user', status: 'active' }, fail: null };
   for (const t of TABLES) DB[t] = JSON.parse(JSON.stringify(seed[t] || []));
-  if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; delete DB.translations; }   // mô phỏng máy chủ chưa chạy schema v7
+  if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; delete DB.translations; delete DB.vaults; }   // mô phỏng máy chủ chưa chạy schema v7
   const USER = { id: '11111111-1111-4111-8111-111111111111', email: seed.email || 'test@example.com' };
   const nowIso = () => new Date().toISOString();
   const bump = () => { DB.n++; };
@@ -46,6 +46,7 @@
           if (this.t === 'cards') Object.assign(row, { srs_interval: 1, srs_ease: 2.5, srs_due_date: null, status: 'new', is_favorite: false, ...raw });
           if (this.t === 'translations') row.glossary = row.glossary ?? null;   // cột có từ schema v12
           if (this.t === 'cards' && !row.id) row.id = crypto.randomUUID();
+          if (this.t === 'vaults' && this.op === 'insert' && tab.some(r => String(r.name).trim().toLowerCase() === String(row.name).trim().toLowerCase())) return err('duplicate key value violates unique constraint "vaults_user_name"', '23505');
           const k = keyOf(this.t, row), i = tab.findIndex(r => keyOf(this.t, r) === k);
           if (i >= 0) {
             if (this.op === 'insert') return err('duplicate key value violates unique constraint', '23505');
@@ -64,6 +65,7 @@
       }
       if (this.op === 'delete') {
         const gone = tab.filter(match), keep = tab.filter(r => !match(r)); if (keep.length !== tab.length) bump(); DB[this.t] = keep;
+        if (this.t === 'vaults' && DB.cards) DB.cards.forEach(c => { if (gone.some(g => g.id === c.vault_id)) c.vault_id = null; });   // on delete set null
         const cascade = { conj_forms: ['conj_cells', 'form_id'], conj_verbs: ['conj_cells', 'verb_id'] }[this.t];   // on delete cascade như schema.sql
         if (cascade && DB[cascade[0]]) DB[cascade[0]] = DB[cascade[0]].filter(r => !gone.some(g => g.id === r[cascade[1]]));
         return { data: null, error: null };
@@ -89,7 +91,7 @@
   }
   const session = () => ({ access_token: 'fake', refresh_token: 'fake', expires_at: Math.floor(Date.now() / 1000) + 3600, user: USER });
   const RPC = {
-    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 12, error: null }),
+    jp_schema_version: () => ({ data: seed.oldSchema ? 6 : 13, error: null }),
     jp_sync_sig: () => ({ data: 'sig-' + DB.n, error: null }),
     jp_me: () => ({ data: [DB.me], error: null }),
     log_study: logStudy,

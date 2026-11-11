@@ -28,7 +28,7 @@ function initSupabase() {
 // ── State ───────────────────────────────────────────────────────────────────
 const S = { me: { role: 'user', status: 'active' },
   user: null, cards: [], decks: [], cats: [], deckCards: [], radicals: [], radCards: [], decomps: new Map(),
-  daily: [], sessTotal: 0, sessCorrect: 0, grammar_points: [], grammarOk: true, conj_forms: [], conj_verbs: [], conj_cells: [], conjMap: new Map(), conjOk: true, translations: [], transOk: true,
+  daily: [], sessTotal: 0, sessCorrect: 0, grammar_points: [], grammarOk: true, conj_forms: [], conj_verbs: [], conj_cells: [], conjMap: new Map(), conjOk: true, translations: [], transOk: true, vaults: [], vaultOk: true,
   byId: new Map(), deckOfCard: new Map(), cardsOfDeck: new Map(), radOfCard: new Map(), cardsOfRad: new Map(),
 };
 const alive = x => !x.deleted_at;
@@ -37,12 +37,16 @@ function reindex() {
   S.byId = new Map(S.cards.map(c => [c.id, c]));
   S.deckOfCard = new Map(); S.cardsOfDeck = new Map(); S.radOfCard = new Map(); S.cardsOfRad = new Map();
   const liveDeck = new Set(S.decks.filter(alive).map(d => d.id));
+  const shown = id => { const c = S.byId.get(id); return !!c && !c.vault_id; };      // thẻ đang nằm trong kho thì ẩn khỏi bộ thẻ / bộ thủ
   const liveRad = new Set(S.radicals.filter(alive).map(r => r.id));
   const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
-  for (const dc of S.deckCards) if (alive(dc) && liveDeck.has(dc.deck_id) && S.byId.has(dc.card_id)) { push(S.deckOfCard, dc.card_id, dc.deck_id); push(S.cardsOfDeck, dc.deck_id, dc.card_id); }
-  for (const rc of S.radCards) if (alive(rc) && liveRad.has(rc.radical_id) && S.byId.has(rc.card_id)) { push(S.radOfCard, rc.card_id, rc.radical_id); push(S.cardsOfRad, rc.radical_id, rc.card_id); }
+  for (const dc of S.deckCards) if (alive(dc) && liveDeck.has(dc.deck_id) && shown(dc.card_id)) { push(S.deckOfCard, dc.card_id, dc.deck_id); push(S.cardsOfDeck, dc.deck_id, dc.card_id); }
+  for (const rc of S.radCards) if (alive(rc) && liveRad.has(rc.radical_id) && shown(rc.card_id)) { push(S.radOfCard, rc.card_id, rc.radical_id); push(S.cardsOfRad, rc.radical_id, rc.card_id); }
 }
-const liveCards = () => S.cards.filter(alive);
+// Thẻ "đang dùng": chưa xóa và KHÔNG nằm trong kho — mọi màn hình (danh sách, ôn tập, thống kê…) đều dựa vào đây
+const liveCards = () => S.cards.filter(c => alive(c) && !c.vault_id);
+// Mọi thẻ chưa xóa, kể cả thẻ trong kho — dùng để kiểm tra trùng
+const allLiveCards = () => S.cards.filter(alive);
 const liveDecks = () => S.decks.filter(alive);
 const liveRadicals = () => S.radicals.filter(alive).sort((a, b) => a.sort_order - b.sort_order);
 
@@ -87,6 +91,8 @@ async function loadAll(opts = {}) {
     S.conj_forms = cf; S.conj_verbs = cv; S.conj_cells = cc; S.conjOk = true;
   } catch { S.conj_forms = []; S.conj_verbs = []; S.conj_cells = []; S.conjOk = false; }
   reindexConj();
+  // Kho thẻ (schema v13): chưa chạy schema mới thì bỏ qua êm (không ai bị ẩn thẻ)
+  try { S.vaults = await fetchAll('vaults', q => q.order('sort_order').order('created_at')); S.vaultOk = true; } catch { S.vaults = []; S.vaultOk = false; }
   // Bản dịch (schema v11)
   try { S.translations = await fetchAll('translations', q => q.order('created_at', { ascending: false })); S.transOk = true; } catch { S.translations = []; S.transOk = false; }
   S.cards = cards; S.decks = decks; S.cats = cats.sort((a, b) => a.sort_order - b.sort_order); S.deckCards = dcs; S.radicals = rads; S.radCards = rcs;
@@ -271,7 +277,7 @@ async function toggleFavorite(ids) {
   await updateCards(cs.map(c => c.id), { is_favorite: want });
 }
 function findDuplicates(character, type, excludeId) {
-  return liveCards().filter(c => c.character === character.trim() && c.type === type && c.id !== excludeId);
+  return allLiveCards().filter(c => c.character === character.trim() && c.type === type && c.id !== excludeId);
 }
 
 // ── Thẻ ↔ bộ thẻ ───────────────────────────────────────────────────────────
@@ -511,4 +517,43 @@ function pairInfo(jp, vi) {
   const P = splitParas(jp), V = splitParas(vi); if (!V.length) return { level: 'none', P, V, S: P.map(splitSents) };
   const S = P.map(splitSents), n = S.reduce((a, x) => a + x.length, 0);
   return { level: V.length === P.length ? 'para' : V.length === n ? 'sent' : 'none', P, V, S };
+}
+
+
+// ── Kho thẻ ─────────────────────────────────────────────────────────────────
+const liveVaults = () => [...S.vaults].sort((a, b) => (a.sort_order - b.sort_order) || String(a.name).localeCompare(String(b.name), 'vi'));
+const vaultOf = id => S.vaults.find(v => v.id === id) || null;
+const vaultCards = id => S.cards.filter(c => alive(c) && c.vault_id === id);
+const vaultCount = id => vaultCards(id).length;
+const VAULT_NEED = 'Cần chạy lại schema.sql (bản 13) trên Supabase để dùng Kho thẻ.';
+function vaultName(raw) { const n = String(raw || '').trim().replace(/\s+/g, ' '); if (!n) throw new Error('Cần nhập tên kho'); if (n.length > 60) throw new Error('Tên kho tối đa 60 ký tự'); return n; }
+async function addVault(name, icon = null) {
+  if (!S.vaultOk) throw new Error(VAULT_NEED);
+  const n = vaultName(name);
+  if (S.vaults.some(v => v.name.toLowerCase() === n.toLowerCase())) throw new Error(`Đã có kho tên "${n}"`);
+  let r; try { [r] = await mut(sb.from('vaults').insert({ id: uuid7(), name: n, icon: icon || null, sort_order: S.vaults.length }).select()); }
+  catch (e) { if (e.code === '23505') throw new Error(`Đã có kho tên "${n}"`); throw e; }
+  S.vaults.push(r); return r;
+}
+async function renameVault(id, name, icon) {
+  const n = vaultName(name);
+  if (S.vaults.some(v => v.id !== id && v.name.toLowerCase() === n.toLowerCase())) throw new Error(`Đã có kho tên "${n}"`);
+  let r; try { [r] = await mut(sb.from('vaults').update({ name: n, icon: icon || null }).eq('id', id).select()); }
+  catch (e) { if (e.code === '23505') throw new Error(`Đã có kho tên "${n}"`); throw e; }
+  if (r) { const i = S.vaults.findIndex(v => v.id === id); if (i >= 0) S.vaults[i] = r; }
+  return r;
+}
+// Cất thẻ vào kho (vaultId = id kho) hoặc đưa ra (null). Giữ nguyên bộ thẻ + tiến độ SRS.
+async function moveToVault(ids, vaultId) {
+  if (!S.vaultOk) throw new Error(VAULT_NEED);
+  if (vaultId && !vaultOf(vaultId)) throw new Error('Kho này không còn nữa');
+  await updateCards(ids, { vault_id: vaultId || null });
+}
+// Xóa kho: đưa toàn bộ thẻ ra khỏi kho trước (thẻ quay lại danh sách với tiến độ cũ), rồi xóa kho
+async function deleteVault(id) {
+  const ids = vaultCards(id).map(c => c.id);
+  if (ids.length) await updateCards(ids, { vault_id: null });
+  await mut(sb.from('vaults').delete().eq('id', id));
+  S.vaults = S.vaults.filter(v => v.id !== id);
+  S.cards.forEach(c => { if (c.vault_id === id) c.vault_id = null; }); reindex();
 }

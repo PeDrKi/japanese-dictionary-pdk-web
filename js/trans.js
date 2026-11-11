@@ -49,7 +49,7 @@ const closeSelBar = () => { $('#selnote')?.remove(); try { window.getSelection()
 ACT.noteVocab = () => {
   const t = TSEL; if (!t) return; closeSelBar();
   const dup = S.cards.find(c => alive(c) && c.character === t.text);
-  if (dup) { toast(`"${t.text}" đã có trong thư viện`); return ACT.openCard ? ACT.openCard({ dataset: { id: dup.id } }) : undefined; }
+  if (dup) { toast(dup.vault_id ? `"${t.text}" đang ở kho "${vaultOf(dup.vault_id)?.name || ''}"` : `"${t.text}" đã có trong thư viện`); return ACT.openCard ? ACT.openCard({ dataset: { id: dup.id } }) : undefined; }
   openCardForm(null, { type: guessType(t.text), character: t.text, example_jp: t.sentence === t.text ? '' : t.sentence, example_vi: t.vi && t.paragraph === t.sentence ? t.vi : '', source: t.title });
   const f = $('#cf'); if (f) { f.elements.character.dispatchEvent(new Event('input', { bubbles: true })); focusNextField(f); }   // tự tra Jisho, con trỏ nhảy tới ô nghĩa
 };
@@ -121,7 +121,7 @@ ACT.glossDel = async el => {
 ACT.glossToCard = el => {
   const f = el.closest('form'), cur = S.translations.find(x => x.id === f._tid); if (!cur) return;
   const term = f.elements.term.value.trim(), meaning = f.elements.meaning.value.trim(); if (!term) return;
-  if (S.cards.find(c => alive(c) && c.character === term)) return toast(`"${term}" đã có trong thư viện`);
+  { const d = S.cards.find(c => alive(c) && c.character === term); if (d) return toast(d.vault_id ? `"${term}" đang ở kho "${vaultOf(d.vault_id)?.name || ''}"` : `"${term}" đã có trong thư viện`); }
   const para = splitParas(cur.jp).find(x => x.includes(term)) || '', jp = splitParas(cur.jp), vis = splitParas(cur.vi), i = jp.indexOf(para);
   const sentence = para ? sentenceOf(para, term) : '';
   f._s.close();

@@ -3,7 +3,7 @@
    Khôi phục: chỉ THÊM phần còn thiếu, không ghi đè dữ liệu đang có — nên an toàn khi bấm nhầm hoặc khôi phục 2 lần. */
 'use strict';
 const BACKUP_FORMAT = 1;
-const BACKUP_TABLES = ['deck_categories', 'decks', 'cards', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells', 'translations', 'study_sessions'];
+const BACKUP_TABLES = ['deck_categories', 'decks', 'cards', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells', 'translations', 'vaults', 'study_sessions'];
 const BACKUP_MAX_BYTES = 200 * 1024 * 1024;
 const BACKUP_STALE_DAYS = 30;
 
@@ -63,7 +63,19 @@ function planRestore(b, cur) {
     if (hit && hit !== r.id) { radMap.set(r.id, hit); skip('radicals'); continue; }
     rads.push(clean(r));
   }
-  const cards = D('cards').map(clean);
+  // Kho thẻ: tên trùng kho đang có → dùng kho đó; thẻ trỏ tới kho không còn ở đâu thì ra khỏi kho (tránh vi phạm khóa ngoại)
+  const vaultMap = new Map(), vaultByName = new Map((cur.vaults || []).map(v => [String(v.name).toLowerCase(), v.id]));
+  const vaults = [];
+  for (const v of D('vaults')) {
+    const hit = vaultByName.get(String(v.name).toLowerCase());
+    if (hit && hit !== v.id) { vaultMap.set(v.id, hit); skip('vaults'); continue; }
+    vaults.push(clean(v));
+  }
+  const vaultIds = new Set([...(cur.vaults || []).map(v => v.id), ...vaults.map(v => v.id)]);
+  const cards = D('cards').map(clean).map(c => {
+    if (c.vault_id) { const m = vaultMap.get(c.vault_id) || c.vault_id; c.vault_id = vaultIds.has(m) ? m : null; }
+    return c;
+  });
 
   const cardIds = new Set([...(cur.cards || []).map(c => c.id), ...cards.map(c => c.id)]);
   const deckIds = new Set([...(cur.decks || []).map(d => d.id), ...decks.map(d => d.id)]);
@@ -87,7 +99,7 @@ function planRestore(b, cur) {
   const cells = D('conj_cells').map(clean).filter(c => (cfIds.has(c.form_id) && cvIds.has(c.verb_id)) || (skip('conj_cells'), false));
 
   return { tables: [
-    ['deck_categories', cats, 'id'], ['decks', decks, 'id'], ['cards', cards, 'id'], ['deck_cards', dcs, 'id'],
+    ['deck_categories', cats, 'id'], ['decks', decks, 'id'], ...(vaults.length ? [['vaults', vaults, 'id']] : []), ['cards', cards, 'id'], ['deck_cards', dcs, 'id'],
     ['radicals', rads, 'id'], ['radical_cards', rcs, 'id'], ['user_decompositions', D('user_decompositions').map(clean), 'user_id,character'],
     ['grammar_points', D('grammar_points').map(clean), 'id'],
     ['conj_forms', D('conj_forms').map(clean), 'id'], ['conj_verbs', D('conj_verbs').map(clean), 'id'], ['conj_cells', cells, 'verb_id,form_id'], ['translations', D('translations').map(clean), 'id'], ['study_sessions', sess, 'id'],
@@ -116,7 +128,7 @@ async function fetchEverything() {
         : t === 'conj_cells' ? await fetchAll(t, q => q.order('verb_id'), 'form_id')
         : t === 'study_sessions' ? await fetchAll(t, q => q, 'id', 'id,card_id,result,studied_at')
         : await fetchAll(t);
-    } catch (e) { if (t === 'grammar_points' || t.startsWith('conj_') || t === 'translations') data[t] = []; else throw e; }
+    } catch (e) { if (t === 'grammar_points' || t.startsWith('conj_') || t === 'translations' || t === 'vaults') data[t] = []; else throw e; }
   }
   return data;
 }
@@ -136,7 +148,7 @@ ACT.backupTools = () => {
     if (!await confirmBox(`Khôi phục ${c.cards} thẻ, ${c.decks} bộ thẻ, ${c.grammar_points} mẫu ngữ pháp, ${c.conj_verbs} động từ chia, ${c.translations} bản dịch, ${c.study_sessions} lượt ôn? Dữ liệu đang có được giữ nguyên.`, 'Khôi phục')) return;
     await guard(async () => {
       await flushQueue();
-      const plan = planRestore(b, { cats: S.cats, decks: S.decks, cards: S.cards, deckCards: S.deckCards, radicals: S.radicals, radCards: S.radCards, conjForms: S.conj_forms, conjVerbs: S.conj_verbs });
+      const plan = planRestore(b, { cats: S.cats, decks: S.decks, cards: S.cards, deckCards: S.deckCards, radicals: S.radicals, radCards: S.radCards, conjForms: S.conj_forms, conjVerbs: S.conj_verbs, vaults: S.vaults });
       let n = 0;
       for (const [t, rows, conflict] of plan.tables) {
         for (let i = 0; i < rows.length; i += 200) {

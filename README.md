@@ -303,3 +303,13 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - Chế độ "Dịch từng câu": mỗi câu tiếng Nhật (tách theo 。！？) có một ô dịch riêng. Lưu mỗi câu một dòng trong cột `vi`; câu chưa dịch lưu là "…". Không đổi schema.
 - Ghép cặp tự động: số dòng dịch = số đoạn → đối chiếu theo đoạn; = số câu → đối chiếu theo câu.
 - Trang đọc: gốc và dịch khác màu viền, phông, nền.
+
+## v3.47 — Hán Việt trong ôn tập
+- Flashcard: mặt sau hiện thêm "Hán Việt" (nếu thẻ có). Quiz ("Âm Hán Việt") và Luyện gõ ("Hán Việt") đã có từ trước.
+
+## v3.48 — Kho thẻ (cần chạy lại schema.sql bản 13)
+- Tab 蔵 Kho: nhiều kho có tên; thẻ trong kho bị ẩn khỏi mọi nơi (danh sách, tìm kiếm, bộ thẻ, ôn tập, thống kê), giữ nguyên bộ thẻ + tiến độ.
+- Cất thẻ: nút "Cất vào kho" ở chi tiết thẻ; chọn nhiều thẻ → "📦 Kho"; nút 📦 trong màn ôn tập (luôn hỏi chọn kho, thẻ rời khỏi phiên).
+- Trong Kho: tìm, chọn nhiều, đưa ra, chuyển kho; đổi tên / xóa kho (xóa kho = trả hết thẻ ra).
+- Cảnh báo trùng (thẻ mới, import CSV, ghi từ vào thẻ) tính cả thẻ trong kho và nêu tên kho. Sao lưu/khôi phục có kèm kho.
+- Schema cũ (chưa có bảng vaults): tính năng tự tắt, app vẫn chạy.

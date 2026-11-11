@@ -2,14 +2,14 @@
 'use strict';
 
 // Ngữ pháp / Bộ thủ / Thống kê: là mục của thanh bên trên màn hình rộng (không có nút ← khi đứng ở mục chính)
-const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'trans'].includes(NAV.tab);
+const isTopTab = () => !NAV.sub && ['grammar', 'radicals', 'trans', 'vault'].includes(NAV.tab);
 function render() {
   const v = $('#view'); if (!v) return;
   const sub = NAV.sub;
   if (sub) {
-    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, conj: viewConj, trans: viewTrans, transitem: viewTransItem, transedit: viewTransEdit, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
+    v.innerHTML = { stats: viewStats, trash: viewTrash, radicals: viewRadicals, radical: viewRadical, grammar: viewGrammar, conj: viewConj, trans: viewTrans, vault: viewVaults, vaultitem: viewVaultItem, transitem: viewTransItem, transedit: viewTransEdit, starters: viewStarters, admin: viewAdmin }[sub.name]?.(sub) || '';
   } else {
-    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, conj: viewConj, trans: viewTrans, more: viewMore }[NAV.tab]();
+    v.innerHTML = { today: viewToday, cards: viewCards, study: viewStudyLauncher, decks: viewDecks, grammar: viewGrammar, radicals: viewRadicals, stats: viewStats, conj: viewConj, trans: viewTrans, vault: viewVaults, more: viewMore }[NAV.tab]();
   }
   $$('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === NAV.tab ? 'page' : 'false'));
   const d = dueCount(), bd = $('#duebadge'); if (bd) { bd.textContent = d > 99 ? '99+' : d; bd.classList.toggle('hidden', !d); }
@@ -90,7 +90,7 @@ function selectBar() {
   const n = FILT.sel.size;
   return `<div class="selbar"><button class="btn ghost" data-act="selAll">${n ? `Đã chọn ${n}` : 'Chọn tất cả'}</button>
     <button class="btn" data-act="bulkFav" ${n ? '' : 'disabled'}>★</button>
-    <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn" data-act="bulkConj" ${n ? '' : 'disabled'}>Chia ĐT</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
+    <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn" data-act="bulkVault" ${n ? '' : 'disabled'}>📦 Kho</button><button class="btn" data-act="bulkConj" ${n ? '' : 'disabled'}>Chia ĐT</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
 }
 function cardsBody() {
   const list = currentList(), pages = pageMode() === 'pages';
@@ -168,6 +168,7 @@ function openCardDetail(id) {
   const cb = charBox(c.character);
   const s = openSheet(`
     <div class="paper${cb.multi ? ' multi' : ''}" style="${cb.multi ? '' : 'max-width:200px'}"><span class="corner">${TYPE_LABEL[c.type]}</span><span class="corner2">${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}</span>${cb.html}</div>
+    ${c.vault_id ? `<p class="small" style="text-align:center;margin:10px 0 0;color:var(--accent)">📦 Đang cất trong kho "${esc(vaultOf(c.vault_id)?.name || '')}" — không nằm trong ôn tập</p>` : ''}
     <div style="text-align:center;margin:10px 0 14px"><div style="font-size:21px;font-weight:700">${esc(c.meaning_vi)}</div>
       <div class="row" style="justify-content:center;margin-top:4px"><span class="st ${c.status}"></span><span class="mute small">${STATUS_LABEL[c.status]} · ${c.study_count || 0} lần học</span></div></div>
     <dl class="kv">${kv.map(([k, v]) => `<dt>${k}</dt><dd class="${/On|Kun|đọc|Ví dụ$/.test(k) ? 'jp' : ''}">${esc(v)}</dd>`).join('')}
@@ -177,6 +178,7 @@ function openCardDetail(id) {
     <div class="grid2"><button class="btn" data-act="editCard" data-id="${id}">✏️ Sửa</button><button class="btn" data-act="favCard" data-id="${id}">${c.is_favorite ? '★ Bỏ yêu thích' : '☆ Yêu thích'}</button>
     ${c.type === 'kanji' || [...c.character].some(ch => ch >= '一' && ch <= '鿿') ? `<button class="btn" data-act="decompose" data-ch="${esc(c.character)}">🧩 Tách bộ</button>` : ''}
     <button class="btn" data-act="cardRadicals" data-id="${id}">部 Bộ thủ</button>
+    ${S.vaultOk ? (c.vault_id ? `<button class="btn" data-act="vaultOutOne" data-id="${id}">📦 Đưa ra khỏi kho</button>` : `<button class="btn" data-act="vaultOne" data-id="${id}">📦 Cất vào kho</button>`) : ''}
     <button class="btn danger" data-act="delCard" data-id="${id}">🗑 Xóa</button></div>`);
   window._cd = s;
 }
@@ -249,7 +251,10 @@ function openCardForm(id, preset = {}) {
     // Trường bạn không đụng tới giữ NGUYÊN giá trị gốc (không bị cắt độ dài / chuẩn hoá lại → không sinh xung đột giả, không mất chữ)
     if (id && base) for (const k of Object.keys(data)) if (typeof data[k] === 'string' && k in f && base[k] != null && String(f[k]).trim() === String(base[k]).trim()) data[k] = base[k];
     const dups = findDuplicates(data.character, t, id);
-    if (dups.length && !await confirmBox(`Thẻ "${data.character}" (${TYPE_LABEL[t]}) đã tồn tại. Vẫn lưu?`, 'Vẫn lưu')) return;
+    if (dups.length) {
+      const kv = dups.find(x => x.vault_id), where = kv ? ` (đang ở kho "${vaultOf(kv.vault_id)?.name || ''}" — đưa ra khỏi kho để dùng lại thẻ đó)` : '';
+      if (!await confirmBox(`Thẻ "${data.character}" (${TYPE_LABEL[t]}) đã tồn tại${where}. Vẫn lưu?`, 'Vẫn lưu')) return;
+    }
     let note = id ? 'Đã lưu thẻ' : 'Đã thêm thẻ';
     if (form._busy) return; form._busy = true; const sb_ = $('button[type=submit]', form); if (sb_) sb_.disabled = true;
     const ok = await guard(async () => {
@@ -478,7 +483,7 @@ const THEME_LABEL = { auto: 'Theo hệ thống', dark: 'Tối', light: 'Sáng' }
 const themeLabel = () => THEME_LABEL[LS.get('jp_theme', 'auto')] || THEME_LABEL.auto;
 function viewMore() {
   const arrow = '<span class="mute">›</span>';
-  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'trans'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span>${arrow}</button>`;
+  const link = (g, t, s, name) => `<button class="item${['grammar', 'radicals', 'trans', 'vault'].includes(name) ? ' mobonly' : ''}" data-act="sub" data-name="${name}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span>${arrow}</button>`;
   const act = (g, t, s, a) => `<button class="item" data-act="${a}"><span class="big jp" style="font-size:26px">${g}</span><span class="grow"><span class="t">${t}</span><br><span class="s">${s}</span></span>${arrow}</button>`;
   // Dòng cài đặt gọn: nhãn bên trái, giá trị hiện tại bên phải
   const set = (t, val, a, extra = '') => `<button class="item mini ${extra}" data-act="${a}"><span class="grow t">${t}</span><span class="val">${val}</span>${arrow}</button>`;
@@ -492,6 +497,7 @@ function viewMore() {
     + link('活', 'Chia động từ', `${S.conj_verbs.length} động từ`, 'conj')
     + link('文', 'Ngữ pháp', `${S.grammar_points.length} mẫu`, 'grammar')
     + link('訳', 'Bản dịch', `${S.translations.length} bài`, 'trans')
+    + link('蔵', 'Kho thẻ', S.vaultOk ? `${S.vaults.length} kho · ${S.cards.filter(c => alive(c) && c.vault_id).length} thẻ đang cất` : 'Cần nâng cấp schema', 'vault')
     + link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ', 'radicals'))}
   ${sec('Thêm thẻ',
     act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa"', 'quickAdd')
