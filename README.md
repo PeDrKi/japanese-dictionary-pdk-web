@@ -320,3 +320,4 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - Trong Kho: mục bộ thẻ có "Đưa ra" (bộ + thẻ trở lại như cũ) và "Chuyển kho". Xóa kho đưa cả bộ thẻ và thẻ ra.
 - Sao lưu/khôi phục có kèm kho của bộ thẻ. (Thay cho nút "cất các thẻ của bộ" ở v3.50.)
 - v3.52: Âm Kun hiển thị trước Âm On (chi tiết thẻ, form, danh sách, ôn tập).
+- v3.53: sửa thanh "N thẻ phù hợp / Bắt đầu ôn" trên điện thoại bị lơ lửng cách thanh tab ~92px (nay nằm sát thanh tab).
