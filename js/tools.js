@@ -309,3 +309,52 @@ ACT.importDb = () => {
     finally { s.busy = false; }
   };
 };
+
+// ── Ghép kanji: dựng từ mới từ các kanji đã có, xem từ ghép của 1 kanji (compound.js) ──
+let _cmp = null;
+ACT.compound = el => {
+  const first = el?.dataset?.ch;
+  _cmp = { chars: first ? [first] : [], q: '' };
+  if (first) window._cd?.close?.();
+  const s = openSheet(`<h2>Ghép kanji</h2><p class="small mute" style="margin-top:-6px">Chạm các kanji theo thứ tự để ghép thành từ. Ô đọc và Hán Việt chỉ là gợi ý từ các thẻ kanji đã có — hãy kiểm tra lại.</p>
+    <div id="cmp-out"></div>
+    <input class="input" id="cmp-q" placeholder="Tìm kanji (chữ, Hán Việt, nghĩa)" autocomplete="off" style="margin:10px 0">
+    <div id="cmp-pick" class="row wrap" style="gap:6px"></div>`);
+  window._cmpS = s;
+  s.$('#cmp-q').addEventListener('input', e => { _cmp.q = e.target.value; cmpPick(); });
+  cmpOut(); cmpPick();
+};
+function cmpKanjiCards() { return [...kanjiIndex(liveCards()).values()]; }
+function cmpPick() {
+  const q = _cmp.q.trim().toLowerCase(), all = cmpKanjiCards();
+  const l = (q ? all.filter(c => `${c.character} ${c.reading_hanviet || ''} ${c.meaning_vi || ''}`.toLowerCase().includes(q)) : all).slice(0, 150);
+  $('#cmp-pick', _cmpS.el).innerHTML = l.map(c => `<button type="button" class="chip jp" style="font-size:20px;min-width:44px" data-act="cmpAdd" data-ch="${esc(c.character)}" title="${esc(c.reading_hanviet || c.meaning_vi || '')}">${esc(c.character)}</button>`).join('')
+    || `<p class="mute small">${all.length ? 'Không có kanji phù hợp.' : 'Chưa có thẻ kanji nào trong thư viện — hãy thêm thẻ loại 漢字 trước.'}</p>`;
+}
+function cmpOut() {
+  const ch = _cmp.chars, b = ch.length >= 1 ? buildCompound(liveCards(), ch) : null;
+  const tray = `<div class="row wrap" style="gap:6px;min-height:52px;align-items:center;justify-content:center;background:var(--surface-2,rgba(128,128,128,.08));border-radius:12px;padding:8px">${ch.length
+    ? ch.map((c, i) => `<button type="button" class="chip jp on" style="font-size:26px" data-act="cmpDel" data-i="${i}" title="Bỏ chữ này">${esc(c)}</button>`).join('') : '<span class="mute small">Chưa chọn kanji nào</span>'}</div>`;
+  let body = '';
+  if (b && ch.length >= 2) {
+    const hint = b.hints.map(h => `<span class="jp">${esc(h.ch)}</span> ${esc([h.hanviet, h.meaning].filter(Boolean).join(' · ') || 'chưa có thẻ kanji')}`).join(' &nbsp;·&nbsp; ');
+    body = `<dl class="kv" style="margin-top:10px"><dt>Từ</dt><dd class="jp" style="font-size:22px">${esc(b.word)}</dd>
+      <dt>Hán Việt</dt><dd>${esc(b.hanviet) || '<span class="mute">—</span>'}</dd><dt>Cách đọc (gợi ý)</dt><dd class="jp">${esc(b.kana) || '<span class="mute">—</span>'}</dd></dl>
+      <p class="small mute">${hint}</p>
+      <div class="row" style="margin-top:8px">${b.existing ? `<button class="btn grow" data-act="openCard" data-id="${b.existing.id}">Đã có trong thư viện — mở thẻ</button>` : `<button class="btn primary grow" data-act="cmpMake">Tạo thẻ từ "${esc(b.word)}"</button>`}
+      <button class="btn" data-act="cmpUndo">Xóa chữ cuối</button></div>`;
+  } else if (ch.length === 1) body = `<p class="small mute" style="margin-top:8px">Chọn thêm ít nhất 1 kanji nữa.</p>`;
+  const have = ch.length ? wordsFromKanji(liveCards(), ch) : [];
+  const words = ch.length === 1 ? compoundsOf(liveCards(), ch[0]) : have;
+  const list = words.length ? `<h3 style="margin:14px 0 6px;font-size:14px">${ch.length === 1 ? 'Từ đã có chứa chữ này' : 'Từ đã có, ghép từ các chữ đã chọn'} (${words.length})</h3>
+    <div class="row wrap" style="gap:6px">${words.slice(0, 40).map(w => `<button type="button" class="chip jp" data-act="cmpOpen" data-id="${w.id}">${esc(w.character)}<span class="mute small"> ${esc(w.meaning_vi || '')}</span></button>`).join('')}</div>` : '';
+  $('#cmp-out', _cmpS.el).innerHTML = tray + body + list;
+}
+ACT.cmpAdd = el => { _cmp.chars.push(el.dataset.ch); cmpOut(); };
+ACT.cmpDel = el => { _cmp.chars.splice(+el.dataset.i, 1); cmpOut(); };
+ACT.cmpUndo = () => { _cmp.chars.pop(); cmpOut(); };
+ACT.cmpOpen = el => { _cmpS.close(); openCardDetail(el.dataset.id); };
+ACT.cmpMake = () => {
+  const b = buildCompound(liveCards(), _cmp.chars); _cmpS.close();
+  openCardForm(null, { type: 'vocab', character: b.word, reading_hanviet: b.hanviet, reading_kana: b.kana });
+};

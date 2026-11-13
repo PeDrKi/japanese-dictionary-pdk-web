@@ -174,6 +174,7 @@ function openCardDetail(id) {
     <dl class="kv">${kv.map(([k, v]) => `<dt>${k}</dt><dd class="${/On|Kun|đọc|Ví dụ$/.test(k) ? 'jp' : ''}">${esc(v)}</dd>`).join('')}
       <dt>Lịch ôn</dt><dd>${dueInfo(c)}<br><span class="mute small">${easeLabel(c.srs_ease)} · giãn cách ${c.srs_interval} ngày</span></dd></dl>
     ${decks.length || rads.length ? `<div class="row wrap" style="margin-top:10px">${decks.map(d => `<span class="tag">${esc(d.icon || '')} ${esc(d.name)}</span>`).join('')}${rads.map(r => `<span class="tag jp">部 ${esc(r.character)}</span>`).join('')}</div>` : ''}
+    ${cmpDetail(c)}
     <div class="sp"></div>
     <div class="grid2"><button class="btn" data-act="editCard" data-id="${id}">Sửa</button><button class="btn" data-act="favCard" data-id="${id}">${c.is_favorite ? '★ Bỏ yêu thích' : '☆ Yêu thích'}</button>
     ${c.type === 'kanji' || [...c.character].some(ch => ch >= '一' && ch <= '鿿') ? `<button class="btn" data-act="decompose" data-ch="${esc(c.character)}">Tách bộ</button>` : ''}
@@ -182,6 +183,15 @@ function openCardDetail(id) {
     <button class="btn danger" data-act="delCard" data-id="${id}">Xóa</button></div>`);
   window._cd = s;
 }
+// Mục "Từ ghép" của thẻ kanji: các từ đã có chứa chữ này + nút mở công cụ ghép
+function cmpDetail(c) {
+  if (c.type !== 'kanji') return '';
+  const w = compoundsOf(liveCards(), c.character);
+  return `<h3 style="margin:14px 0 6px;font-size:14px">Từ ghép${w.length ? ` (${w.length})` : ''}</h3>
+    ${w.length ? `<div class="row wrap" style="gap:6px">${w.slice(0, 20).map(x => `<button type="button" class="chip jp" data-act="cmpGo" data-id="${x.id}">${esc(x.character)}<span class="mute small"> ${esc(x.meaning_vi || '')}</span></button>`).join('')}</div>` : '<p class="small mute" style="margin:0">Chưa có từ nào chứa chữ này.</p>'}
+    <button class="btn small" style="margin-top:8px" data-act="compound" data-ch="${esc(c.character)}">Ghép với kanji khác</button>`;
+}
+ACT.cmpGo = el => { _cd?.close(); openCardDetail(el.dataset.id); };
 ACT.editCard = el => { _cd?.close(); openCardForm(el.dataset.id); };
 ACT.favCard = async el => { await guard(() => toggleFavorite([el.dataset.id])); _cd?.close(); render(); };
 ACT.delCard = async el => { if (!await confirmBox('Chuyển thẻ này vào thùng rác?', 'Xóa', true)) return; await guard(() => softDeleteCards([el.dataset.id]), 'Đã chuyển vào thùng rác'); _cd?.close(); render(); };
@@ -365,7 +375,7 @@ function deckStats(d) {
 function deckRow(d, st) {
   const col = d.color || '#4A90D9', pct = st.n ? Math.round(st.known / st.n * 100) : 0;
   return `<div class="item deckrow" style="padding:0"><button class="row grow" style="background:none;border:0;padding:12px;text-align:left;min-width:0;gap:12px" data-act="openDeck" data-id="${d.id}">
-      <span class="deckicon" style="background:color-mix(in srgb, ${esc(col)} 22%, var(--surface2))">${esc(d.icon || '')}</span>
+      <span class="deckicon" style="background:color-mix(in srgb, ${esc(col)} 22%, var(--surface2))">${esc(d.icon || [...(d.name || '?')][0].toUpperCase())}</span>
       <span class="grow" style="min-width:0"><span class="t" style="display:block">${esc(d.name)}</span>
         <span class="s" style="display:block">${st.n} thẻ${pct ? ` · thuộc ${pct}%` : ''}${st.due ? ` · <b style="color:var(--accent)">${st.due} cần ôn</b>` : ''}</span>
         ${d.description ? `<span class="s" style="display:block;opacity:.8">${esc(d.description)}</span>` : ''}
@@ -504,7 +514,8 @@ function viewMore() {
     + link('文', 'Ngữ pháp', `${S.grammar_points.length} mẫu`, 'grammar')
     + link('訳', 'Bản dịch', `${S.translations.length} bài`, 'trans')
     + link('蔵', 'Kho thẻ', S.vaultOk ? `${S.vaults.length} kho · ${S.cards.filter(c => alive(c) && c.vault_id).length} thẻ đang cất` : 'Cần nâng cấp schema', 'vault')
-    + link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ', 'radicals'))}
+    + link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ', 'radicals')
+    + act('合', 'Ghép kanji', 'Ghép kanji đã có thành từ mới', 'compound'))}
   ${sec('Thêm thẻ',
     act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa"', 'quickAdd')
     + link('組', 'Bộ thẻ mẫu', 'Từ vựng, kanji có sẵn', 'starters')
