@@ -42,17 +42,10 @@ const posMatch = (filter, pos) => !filter || (filter.endsWith('*') ? posParent(p
 const posPath = v => !v ? '' : POS_KID_LABEL[v] && posParent(v) !== v ? `${posParentLabel(posParent(v))} › ${POS_KID_LABEL[v]}` : (v === 'verb' ? 'Động từ' : (POS_LABEL[v] || ''));
 const DECK_COLORS = ['#3ECFCF', '#F0B429', '#E85D5D', '#9B7FE8', '#4ECB85', '#4A90D9', '#FF6B9D'];
 const ICON_GROUPS = [
-  ['Học tập', '📁 📚 📖 📘 📗 📙 📕 📓 📒 📝 ✏️ 🖊️ 🎓 🏫 🧠 💡 🔍 🗂️ 📌 📎 🔖 🧾 📊 🗒️ 🧮 🔤 🔠 🔡 🈁 🈯 🈳 🈶 🈚 🈸 🈺 🈷️ 🉐 🉑 🀄'],
-  ['Nhật Bản', '🎌 🗾 🌸 🏯 ⛩️ 🗻 🍣 🍙 🍱 🍜 🍡 🍵 🎍 🎎 🎏 🎐 🎑 🎋 🎆 🎇 🧧 🎴 👘 🥋 🏮 🍶 🥢 🛕 🚄 🎭 🪷 🎨 ⛰️ 🐟 🦀 🌊'],
-  ['Đồ ăn', '🍎 🍊 🍋 🍌 🍉 🍇 🍓 🍑 🍒 🍍 🥝 🍅 🥕 🌽 🥔 🍆 🥦 🍞 🧀 🥚 🍳 🥞 🍗 🍖 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍲 🍛 🍤 🍦 🍩 🍪 🎂 🍰 🍫 🍬 ☕ 🥛 🍺 🍷 🧃'],
-  ['Thiên nhiên', '🌳 🌲 🌴 🌵 🌿 🍀 🍁 🍂 🍃 🌺 🌻 🌼 🌷 🌹 💐 🌾 ☀️ 🌙 ⭐ 🌟 ☁️ ⛅ 🌧️ ⛈️ ❄️ ☃️ 🌈 💧 🔥 🌍 🏔️ 🏖️ 🌋'],
-  ['Động vật', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🐺 🐴 🦄 🐝 🦋 🐌 🐞 🐢 🐍 🐙 🐠 🐬 🐳 🦈 🐘 🦒 🐇 🐿️'],
-  ['Con người', '👤 👥 👨 👩 🧑 👶 👴 👵 🙂 😀 😊 😍 🤔 😴 😭 😡 💪 👀 👂 👃 👄 🖐️ 👍 🙏 ❤️ 🦷 🦴 🧍 🏃 🚶 👋 ✋ 🤝'],
-  ['Nhà & đời sống', '🏠 🏢 🏥 🏦 🏪 🛒 🛏️ 🚪 🪑 🛁 🚿 🧹 🧺 👕 👗 👟 🎒 👜 👓 ⌚ 📱 💻 📷 🔑 💰 💳 ✉️ 📞 🕐 📅 🧴 🪥 🧼 💡'],
-  ['Du lịch', '🚗 🚕 🚌 🚆 🚲 🛵 ✈️ 🚢 🚀 🗺️ 🧭 ⛽ 🏨 🎫 🛂 🧳 🌏 🏝️ ⛺ 🚉 🚏 🗼 🗽 🎡 🎢'],
-  ['Công việc', '💼 🏭 🔧 🔨 ⚙️ 🧰 🖥️ ⌨️ 🖨️ 📈 📉 🗄️ 📋 📣 📢 ⚖️ 🔬 🧪 💊 ⚕️ 🩺 🏗️ 🚜 📦 🛠️'],
-  ['Giải trí', '⚽ 🏀 🎾 🏐 ⛳ 🏊 🚴 🎮 🎲 🎯 🎵 🎶 🎤 🎧 🎸 🎹 🥁 🎬 📺 🧩 ♟️ 🎁 🎉 🎈 📻 🎻 🎺'],
-  ['Biểu tượng', '⭐ 💎 🔥 ⚡ ❤️ 🧡 💛 💚 💙 💜 🖤 ✅ ❌ ❗ ❓ ♾️ 🔔 🔒 🏆 🥇 🎖️ 🚩 🔴 🟠 🟡 🟢 🔵 🟣 ⚫ ⚪ 🆕 🆗 🔰'],
+  ['Học tập', '📚 📖 📝 🎓 🧠 💡 📊'],
+  ['Nhật Bản', '🎌 🌸 🗾 🍣 🍜 ⛩️ 🗻 🎍'],
+  ['Đời sống', '🏠 🍎 🌳 🐶 🚗 ✈️ 💼 ⚽'],
+  ['Biểu tượng', '⭐ 🔥 ❤️ ✅ ❗ 🏆 🔖'],
 ].map(([name, list]) => [name, list.split(' ')]);
 const DECK_ICONS = ICON_GROUPS.flatMap(g => g[1]);
 const LIMITS = { character: 50, meaning: 200, reading: 100, example: 500, notes: 1000, source: 100 };
@@ -130,7 +123,7 @@ function isDue(c, today = localDate()) { return !c.srs_due_date || c.srs_due_dat
 function dueInfo(c) {
   if (!c.srs_due_date) return '🆕 Thẻ mới — cần ôn ngay';
   const left = daysBetween(localDate(), c.srs_due_date);
-  if (left <= 0) return '🎯 Cần ôn ngay';
+  if (left <= 0) return 'Cần ôn ngay';
   return `⏳ Còn ${left} ngày nữa (${fmtDMY(c.srs_due_date)})`;
 }
 function easeLabel(e) {

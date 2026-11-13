@@ -63,7 +63,7 @@ ACT.cfJisho = async el => {
       else if (/^[1-8]$/.test(e.key) && items[+e.key - 1] && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); items[+e.key - 1].click(); }
     });
   } catch (e) { toast('Không tra được Jisho: ' + e.message + ' (tính năng này cần chạy trên Vercel)', true); }
-  finally { el.disabled = false; el.textContent = '🔍 Tra Jisho'; }
+  finally { el.disabled = false; el.textContent = 'Tra Jisho'; }
 };
 ACT.jishoPick = async el => {
   const { res, form, s } = _jr, r = res[+el.dataset.i], type = guessType(r.word);
@@ -182,8 +182,8 @@ ACT.decompose = async el => {
   const s = openSheet(`<h2>Tách bộ: <span class="jp" style="font-size:28px">${esc(target)}</span></h2>
     ${chars.length > 1 ? `<div class="row wrap" style="margin-bottom:10px">${chars.filter(c => c >= '㐀').map(c => `<button class="chip jp ${c === target ? 'on' : ''}" data-act="decompose" data-ch="${esc(c)}">${esc(c)}</button>`).join('')}</div>` : ''}
     ${tree.children.length ? `<div class="tree"><ul>${treeHtml(tree, true)}</ul></div>` : emptyBox('?', 'Chưa có dữ liệu tách bộ cho chữ này', 'Bạn có thể tự nhập các thành phần bên dưới.')}
-    ${ov != null ? '<p class="small mute">✏️ Đang dùng cách tách do bạn tự nhập.</p>' : ''}
-    <div class="sp"></div><div class="row"><button class="btn grow" data-act="decompEdit" data-ch="${esc(target)}">✏️ Tự nhập</button>${ov != null ? `<button class="btn grow" data-act="decompClear" data-ch="${esc(target)}">Về mặc định</button>` : ''}</div>`);
+    ${ov != null ? '<p class="small mute">Đang dùng cách tách do bạn tự nhập.</p>' : ''}
+    <div class="sp"></div><div class="row"><button class="btn grow" data-act="decompEdit" data-ch="${esc(target)}">Tự nhập</button>${ov != null ? `<button class="btn grow" data-act="decompClear" data-ch="${esc(target)}">Về mặc định</button>` : ''}</div>`);
   window._dc = s;
 };
 ACT.decompEdit = el => {

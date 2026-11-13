@@ -78,7 +78,7 @@ function viewCards() {
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck), cat = FILT.cat && catName(FILT.cat);
   return `<div class="page">${pageTop(deck ? `${deck.icon || ''} ${deck.name}` : cat || 'Thư viện', false,
     `<button class="btn tool${FILT.select ? ' on' : ''}" data-act="toggleSelect" aria-pressed="${FILT.select}">${FILT.select ? '✕ Xong' : '☑ Chọn'}</button>
-     <button class="btn tool${active ? ' on' : ''}" data-act="openFilter">⚙ Lọc${active ? ` <b class="cnt">${active}</b>` : ''}</button>`)}
+     <button class="btn tool${active ? ' on' : ''}" data-act="openFilter">Lọc${active ? ` <b class="cnt">${active}</b>` : ''}</button>`)}
   <div class="search"><input class="input" id="q" type="search" placeholder="Tìm chữ, nghĩa, romaji, cách đọc…" value="${esc(FILT.search)}" autocomplete="off" aria-label="Tìm thẻ"></div>
   <div class="chips" style="margin-top:8px"><button class="chip ${FILT.type ? '' : 'on'}" data-act="setType" data-v="">Tất cả</button>
     ${TYPES.map(t => `<button class="chip ${FILT.type === t ? 'on' : ''}" data-act="setType" data-v="${t}">${TYPE_LABEL[t]}</button>`).join('')}</div>
@@ -90,7 +90,7 @@ function selectBar() {
   const n = FILT.sel.size;
   return `<div class="selbar"><button class="btn ghost" data-act="selAll">${n ? `Đã chọn ${n}` : 'Chọn tất cả'}</button>
     <button class="btn" data-act="bulkFav" ${n ? '' : 'disabled'}>★</button>
-    <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn" data-act="bulkVault" ${n ? '' : 'disabled'}>📦 Kho</button><button class="btn" data-act="bulkConj" ${n ? '' : 'disabled'}>Chia ĐT</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
+    <button class="btn" data-act="bulkDeck" ${n ? '' : 'disabled'}>Vào bộ thẻ</button><button class="btn" data-act="bulkVault" ${n ? '' : 'disabled'}>Kho</button><button class="btn" data-act="bulkConj" ${n ? '' : 'disabled'}>Chia ĐT</button><button class="btn danger" data-act="bulkDel" ${n ? '' : 'disabled'}>Xóa</button></div>`;
 }
 function cardsBody() {
   const list = currentList(), pages = pageMode() === 'pages';
@@ -154,7 +154,7 @@ ACT.bulkFav = async () => { await guard(() => toggleFavorite([...FILT.sel]), 'Đ
 ACT.bulkDel = async () => { if (!await confirmBox(`Chuyển ${FILT.sel.size} thẻ vào thùng rác?`, 'Xóa', true)) return; await guard(() => softDeleteCards([...FILT.sel]), 'Đã chuyển vào thùng rác'); FILT.sel.clear(); FILT.select = false; render(); };
 ACT.bulkDeck = () => {
   const ds = liveDecks(); if (!ds.length) return toast('Chưa có bộ thẻ nào — tạo ở tab Bộ thẻ', true);
-  const s = openSheet(`<h2>Thêm ${FILT.sel.size} thẻ vào bộ</h2><div class="list">${ds.map(d => `<button class="item" data-act="bulkDeckSet" data-id="${d.id}"><span style="font-size:22px">${esc(d.icon || '📁')}</span><b>${esc(d.name)}</b></button>`).join('')}</div>`); window._bd = s;
+  const s = openSheet(`<h2>Thêm ${FILT.sel.size} thẻ vào bộ</h2><div class="list">${ds.map(d => `<button class="item" data-act="bulkDeckSet" data-id="${d.id}"><span style="font-size:22px">${esc(d.icon || [...d.name][0].toUpperCase())}</span><b>${esc(d.name)}</b></button>`).join('')}</div>`); window._bd = s;
 };
 ACT.bulkDeckSet = async el => { await guard(() => linkCardsToDeck([...FILT.sel], el.dataset.id), 'Đã thêm vào bộ thẻ'); _bd.close(); FILT.sel.clear(); FILT.select = false; render(); };
 
@@ -168,18 +168,18 @@ function openCardDetail(id) {
   const cb = charBox(c.character);
   const s = openSheet(`
     <div class="paper${cb.multi ? ' multi' : ''}" style="${cb.multi ? '' : 'max-width:200px'}"><span class="corner">${TYPE_LABEL[c.type]}</span><span class="corner2">${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}</span>${cb.html}</div>
-    ${c.vault_id ? `<p class="small" style="text-align:center;margin:10px 0 0;color:var(--accent)">📦 Đang cất trong kho "${esc(vaultOf(c.vault_id)?.name || '')}" — không nằm trong ôn tập</p>` : ''}
+    ${c.vault_id ? `<p class="small" style="text-align:center;margin:10px 0 0;color:var(--accent)">Đang cất trong kho "${esc(vaultOf(c.vault_id)?.name || '')}" — không nằm trong ôn tập</p>` : ''}
     <div style="text-align:center;margin:10px 0 14px"><div style="font-size:21px;font-weight:700">${esc(c.meaning_vi)}</div>
       <div class="row" style="justify-content:center;margin-top:4px"><span class="st ${c.status}"></span><span class="mute small">${STATUS_LABEL[c.status]} · ${c.study_count || 0} lần học</span></div></div>
     <dl class="kv">${kv.map(([k, v]) => `<dt>${k}</dt><dd class="${/On|Kun|đọc|Ví dụ$/.test(k) ? 'jp' : ''}">${esc(v)}</dd>`).join('')}
       <dt>Lịch ôn</dt><dd>${dueInfo(c)}<br><span class="mute small">${easeLabel(c.srs_ease)} · giãn cách ${c.srs_interval} ngày</span></dd></dl>
     ${decks.length || rads.length ? `<div class="row wrap" style="margin-top:10px">${decks.map(d => `<span class="tag">${esc(d.icon || '')} ${esc(d.name)}</span>`).join('')}${rads.map(r => `<span class="tag jp">部 ${esc(r.character)}</span>`).join('')}</div>` : ''}
     <div class="sp"></div>
-    <div class="grid2"><button class="btn" data-act="editCard" data-id="${id}">✏️ Sửa</button><button class="btn" data-act="favCard" data-id="${id}">${c.is_favorite ? '★ Bỏ yêu thích' : '☆ Yêu thích'}</button>
-    ${c.type === 'kanji' || [...c.character].some(ch => ch >= '一' && ch <= '鿿') ? `<button class="btn" data-act="decompose" data-ch="${esc(c.character)}">🧩 Tách bộ</button>` : ''}
+    <div class="grid2"><button class="btn" data-act="editCard" data-id="${id}">Sửa</button><button class="btn" data-act="favCard" data-id="${id}">${c.is_favorite ? '★ Bỏ yêu thích' : '☆ Yêu thích'}</button>
+    ${c.type === 'kanji' || [...c.character].some(ch => ch >= '一' && ch <= '鿿') ? `<button class="btn" data-act="decompose" data-ch="${esc(c.character)}">Tách bộ</button>` : ''}
     <button class="btn" data-act="cardRadicals" data-id="${id}">部 Bộ thủ</button>
-    ${S.vaultOk ? (c.vault_id ? `<button class="btn" data-act="vaultOutOne" data-id="${id}">📦 Đưa ra khỏi kho</button>` : `<button class="btn" data-act="vaultOne" data-id="${id}">📦 Cất vào kho</button>`) : ''}
-    <button class="btn danger" data-act="delCard" data-id="${id}">🗑 Xóa</button></div>`);
+    ${S.vaultOk ? (c.vault_id ? `<button class="btn" data-act="vaultOutOne" data-id="${id}">Đưa ra khỏi kho</button>` : `<button class="btn" data-act="vaultOne" data-id="${id}">Cất vào kho</button>`) : ''}
+    <button class="btn danger" data-act="delCard" data-id="${id}">Xóa</button></div>`);
   window._cd = s;
 }
 ACT.editCard = el => { _cd?.close(); openCardForm(el.dataset.id); };
@@ -209,7 +209,7 @@ function openCardForm(id, preset = {}) {
   <form id="cf" autocomplete="off">
     <div class="chips" style="flex-wrap:wrap" id="cf-types">${TYPES.map(t => `<button type="button" class="chip ${c.type === t ? 'on' : ''}" data-act="cfType" data-v="${t}">${TYPE_LABEL[t]}</button>`).join('')}</div>
     <label class="field" id="w-character"><span>Chữ / từ *</span><input name="character" class="jp" style="font-size:20px" value="${v('character')}" maxlength="50" ${id ? '' : 'autofocus'}></label>
-    <div class="row" style="margin:-4px 0 12px"><button type="button" class="btn ghost small" data-act="cfJisho">🔍 Chọn kết quả khác</button><button type="button" class="btn ghost small" data-act="cfKana">あ Bàn phím kana</button></div>
+    <div class="row" style="margin:-4px 0 12px"><button type="button" class="btn ghost small" data-act="cfJisho">Chọn kết quả khác</button><button type="button" class="btn ghost small" data-act="cfKana">あ Bàn phím kana</button></div>
     <div class="grid2 mrgrid" data-for="kanji">
       <div class="field" data-mr="reading_kun"><span>Âm Kun (KUN-yomi)</span><input type="hidden" name="reading_kun" value="${v('reading_kun')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_kun">+ Thêm âm Kun</button></div></div>
       <div class="field" data-mr="reading_on"><span>Âm On (ON-yomi)</span><input type="hidden" name="reading_on" value="${v('reading_on')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_on">+ Thêm âm On</button></div>
@@ -365,7 +365,7 @@ function deckStats(d) {
 function deckRow(d, st) {
   const col = d.color || '#4A90D9', pct = st.n ? Math.round(st.known / st.n * 100) : 0;
   return `<div class="item deckrow" style="padding:0"><button class="row grow" style="background:none;border:0;padding:12px;text-align:left;min-width:0;gap:12px" data-act="openDeck" data-id="${d.id}">
-      <span class="deckicon" style="background:color-mix(in srgb, ${esc(col)} 22%, var(--surface2))">${esc(d.icon || '📁')}</span>
+      <span class="deckicon" style="background:color-mix(in srgb, ${esc(col)} 22%, var(--surface2))">${esc(d.icon || '')}</span>
       <span class="grow" style="min-width:0"><span class="t" style="display:block">${esc(d.name)}</span>
         <span class="s" style="display:block">${st.n} thẻ${pct ? ` · thuộc ${pct}%` : ''}${st.due ? ` · <b style="color:var(--accent)">${st.due} cần ôn</b>` : ''}</span>
         ${d.description ? `<span class="s" style="display:block;opacity:.8">${esc(d.description)}</span>` : ''}
@@ -384,7 +384,7 @@ function decksBody() {
   const shown = all.filter(match).sort(ord);
   if (!all.length) return emptyBox('組', 'Chưa có bộ thẻ nào', 'Gom thẻ theo sách, bài học hoặc chủ đề để ôn gọn hơn. Bấm + để tạo bộ đầu tiên.');
   if (!shown.length) return emptyBox('組', 'Không có bộ thẻ khớp', 'Thử đổi danh mục hoặc từ khóa. <button class="linkbtn" data-act="decksClear">Xóa lọc</button>');
-  const groups = [...cats.map(c => ({ id: c.id, title: `${esc(c.icon || '🗂️')} ${esc(c.name)}` })), { id: '_none', title: cats.length ? 'Chưa phân loại' : '' }];
+  const groups = [...cats.map(c => ({ id: c.id, title: `${esc(c.icon || '')} ${esc(c.name)}` })), { id: '_none', title: cats.length ? 'Chưa phân loại' : '' }];
   const col = catCollapsed(), filtering = !!(DFILT.cat || toks.length);
   return groups.map(g => {
     const list = shown.filter(d => inCat(d) === g.id); if (!list.length) return '';
@@ -434,21 +434,21 @@ ACT.ipPick = el => { const b = el.closest('.ipick'); b.querySelector('.ip-cur').
 ACT.newDeck = () => openDeckForm(null);
 ACT.editDeck = el => openDeckForm(el.dataset.id);
 function openDeckForm(id) {
-  const d = id ? S.decks.find(x => x.id === id) : { name: '', description: '', color: DECK_COLORS[0], icon: DECK_ICONS[0], category_id: '' };
+  const d = id ? S.decks.find(x => x.id === id) : { name: '', description: '', color: DECK_COLORS[0], icon: '', category_id: '' };
   const s = openSheet(`<h2>${id ? 'Sửa bộ thẻ' : 'Bộ thẻ mới'}</h2><form id="df">
     <label class="field"><span>Tên *</span><input name="name" value="${esc(d.name)}" maxlength="60" autofocus></label>
     <label class="field"><span>Mô tả</span><input name="description" value="${esc(d.description || '')}"></label>
     ${iconPicker(d.icon)}
     <div class="field"><span>Màu</span><div class="row wrap">${DECK_COLORS.map(i => `<button type="button" class="chip ${d.color === i ? 'on' : ''}" data-act="dfPick" data-k="color" data-v="${i}" style="background:${i};width:34px;height:34px;padding:0;border-color:${d.color === i ? 'var(--text)' : 'transparent'}" aria-label="${i}"></button>`).join('')}</div></div>
     ${S.cats.length ? `<label class="field"><span>Danh mục</span><select name="category_id"><option value="">Chưa phân loại</option>${S.cats.map(c => `<option value="${c.id}" ${d.category_id === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}</select></label>` : ''}
-    ${id && deckVaultOk() ? '<button type="button" class="btn" data-act="dfStash" style="width:100%;margin-bottom:8px">📦 Chuyển cả bộ thẻ này vào kho</button>' : ''}<div class="row">${id ? '<button type="button" class="btn danger" data-act="dfDelete">Xóa</button>' : ''}<button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow">Lưu</button></div></form>`);
+    ${id && deckVaultOk() ? '<button type="button" class="btn" data-act="dfStash" style="width:100%;margin-bottom:8px">Chuyển cả bộ thẻ này vào kho</button>' : ''}<div class="row">${id ? '<button type="button" class="btn danger" data-act="dfDelete">Xóa</button>' : ''}<button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow">Lưu</button></div></form>`);
   const base = id ? { ...d } : null;
   const f = s.$('#df'); f._v = { color: d.color }; f._id = id; f._s = s;
   f.addEventListener('submit', async e => {
     e.preventDefault(); const x = Object.fromEntries(new FormData(f)); if (!x.name.trim()) return toast('Cần nhập tên bộ thẻ', true);
     let note = 'Đã lưu bộ thẻ';
     const ok = await guard(async () => {
-      const r = await saveDeck(id, { name: x.name.trim(), description: x.description?.trim() || null, icon: (x.icon || '').trim() || '📁', color: f._v.color, category_id: x.category_id || null }, base, askConflict);
+      const r = await saveDeck(id, { name: x.name.trim(), description: x.description?.trim() || null, icon: (x.icon || '').trim(), color: f._v.color, category_id: x.category_id || null }, base, askConflict);
       if (r.cancelled) note = 'Đã giữ bản từ thiết bị khác, thay đổi của bạn không được lưu'; else if (r.merged) note = 'Đã lưu — đã gộp với thay đổi từ thiết bị khác';
     });
     if (ok !== undefined) { toast(note); s.close(); render(); }
@@ -466,16 +466,16 @@ ACT.dfDelete = async el => {
   await guard(() => deleteDeck(f._id), 'Đã xóa bộ thẻ'); f._s.close(); if (FILT.deck === f._id) FILT.deck = ''; render();
 };
 ACT.manageCats = () => {
-  const draw = () => `<h2>Danh mục bộ thẻ</h2><div class="list">${S.cats.map(c => `<div class="item"><span style="font-size:22px">${esc(c.icon || '🗂️')}</span><b class="grow">${esc(c.name)}</b>
+  const draw = () => `<h2>Danh mục bộ thẻ</h2><div class="list">${S.cats.map(c => `<div class="item"><span style="font-size:22px">${esc(c.icon || '')}</span><b class="grow">${esc(c.name)}</b>
     <button class="btn" data-act="catEdit" data-id="${c.id}">Sửa</button><button class="btn danger" data-act="catDel" data-id="${c.id}">Xóa</button></div>`).join('') || '<p class="mute">Chưa có danh mục.</p>'}</div>
     <div class="sp"></div><button class="btn primary block" data-act="catEdit">+ Danh mục mới</button>`;
   const s = openSheet(draw(), { onClose: render }); window._cat = { s, draw };
 };
 const catRedraw = () => { _cat.s.sheet.innerHTML = '<div class="grab"></div>' + _cat.draw(); };
 ACT.catEdit = el => {
-  const id = el.dataset.id, c = id ? S.cats.find(x => x.id === id) : { name: '', icon: '🗂️' };
+  const id = el.dataset.id, c = id ? S.cats.find(x => x.id === id) : { name: '', icon: '' };
   const s = openSheet(`<h2>${id ? 'Sửa' : 'Thêm'} danh mục</h2><form id="cform"><label class="field"><span>Tên *</span><input name="name" value="${esc(c.name)}" autofocus></label>
-    ${iconPicker(c.icon || '🗂️')}
+    ${iconPicker(c.icon || '')}
     <div class="row"><button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow">Lưu</button></div></form>`);
   s.$('#cform').addEventListener('submit', async e => {
     e.preventDefault(); const x = Object.fromEntries(new FormData(e.target)); if (!x.name.trim()) return;

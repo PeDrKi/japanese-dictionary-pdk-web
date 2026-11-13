@@ -32,7 +32,7 @@ function viewStarters() {
   const list = (ST.list || []).filter(d => d.published);
   return `<div class="page">${pageTop('Bộ thẻ mẫu', true)}
   <p class="mute small" style="margin:0 2px 12px">Bộ thẻ có sẵn do quản trị viên biên soạn. Thêm vào là bạn có bản sao riêng để sửa và ôn tập; thẻ trùng với thẻ bạn đã có sẽ được dùng lại, không bị nhân đôi.</p>
-  <div class="list">${ST.list === null ? '<div class="empty mute">Đang tải…</div>' : list.map(d => `<div class="item"><span class="big jp" style="font-size:26px">${esc(d.icon || '📘')}</span>
+  <div class="list">${ST.list === null ? '<div class="empty mute">Đang tải…</div>' : list.map(d => `<div class="item"><span class="big jp" style="font-size:26px">${esc(d.icon || '')}</span>
     <span class="grow"><span class="t">${esc(d.name)}</span><br><span class="s">${d.n} thẻ${d.level ? ' · ' + esc(d.level) : ''}${d.description ? ' · ' + esc(d.description) : ''}</span></span>
     <button class="btn primary" data-act="addStarter" data-id="${d.id}">Thêm</button></div>`).join('')
     || emptyBox('組', ST.err ? 'Không tải được bộ thẻ mẫu' : 'Chưa có bộ thẻ mẫu nào', esc(ST.err) || 'Quản trị viên sẽ sớm bổ sung.')}</div></div>`;
@@ -65,7 +65,7 @@ function viewAdmin() {
   ${AD.err ? `<div class="card" style="border-color:var(--bad);color:var(--bad);margin-bottom:12px">${esc(AD.err)}</div>` : ''}
   <div class="grid2">${stat('Tài khoản', s.users)}${stat('Hoạt động 7 ngày', s.active_7d)}${stat('Tổng số thẻ', s.cards)}${stat('Lượt ôn', s.sessions)}</div>
   <h3 class="fsec">Bộ thẻ mẫu</h3>
-  <div class="list">${(ST.list || []).map(d => `<div class="item"><span class="big jp" style="font-size:24px">${esc(d.icon || '📘')}</span>
+  <div class="list">${(ST.list || []).map(d => `<div class="item"><span class="big jp" style="font-size:24px">${esc(d.icon || '')}</span>
     <span class="grow"><span class="t">${esc(d.name)}</span><br><span class="s">${d.n} thẻ · ${d.published ? 'đang hiển thị với mọi người' : 'đang ẩn'}</span></span>
     <button class="btn" data-act="starterToggle" data-id="${d.id}" data-pub="${d.published ? 0 : 1}">${d.published ? 'Ẩn' : 'Hiện'}</button>
     <button class="btn danger" data-act="starterDelete" data-id="${d.id}" aria-label="Xóa bộ mẫu">✕</button></div>`).join('') || '<div class="mute small" style="padding:6px 2px">Chưa có bộ mẫu nào.</div>'}</div>

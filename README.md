@@ -328,3 +328,4 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - Chỉ lấy thẻ có đủ dữ liệu cả hai vế; trong một lượt không có hai thẻ trùng vế (tránh đáp án mơ hồ). Không có nút "cất vào kho" trong màn ghép.
 - v3.55: Ghép thẻ hiển thị bảng 2 cột × 5 hàng cố định.
 - v3.56: Luyện gõ nghĩa: nghĩa có nhiều vế ngăn bởi , ; / chỉ cần nhập 1 vế (vd. "Tháng / Mặt trăng"). Sửa trùng id form gõ với form bản dịch (gây lỗi JS khi bấm Enter).
+- v3.57: Giảm icon mặc định: bảng chọn icon gọn (4 nhóm ~30 icon); bộ thẻ/danh mục/kho mới không tự gán icon (danh sách bộ thẻ hiện chữ cái đầu); bỏ emoji trang trí trong nhãn nút/menu. Icon đã đặt trước đó giữ nguyên, không cần chạy lại schema.

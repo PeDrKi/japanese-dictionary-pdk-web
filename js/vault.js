@@ -10,7 +10,7 @@ function chooseVault(title = 'Cất vào kho nào?', { except = null } = {}) {
     let done = false;
     const list = () => liveVaults().filter(v => v.id !== except);
     const html = () => `<h2>${esc(title)}</h2>
-      <div class="list" id="vp-list">${list().map(v => `<button class="item" data-vid="${v.id}"><span class="big" style="font-size:24px">${esc(v.icon || '📦')}</span><span class="grow"><span class="t">${esc(v.name)}</span><br><span class="s">${vaultCount(v.id)} thẻ</span></span></button>`).join('') || '<p class="mute small" style="margin:4px 2px 10px">Chưa có kho nào — tạo kho đầu tiên ở bên dưới.</p>'}</div>
+      <div class="list" id="vp-list">${list().map(v => `<button class="item" data-vid="${v.id}"><span class="big" style="font-size:24px">${esc(v.icon || '')}</span><span class="grow"><span class="t">${esc(v.name)}</span><br><span class="s">${vaultCount(v.id)} thẻ</span></span></button>`).join('') || '<p class="mute small" style="margin:4px 2px 10px">Chưa có kho nào — tạo kho đầu tiên ở bên dưới.</p>'}</div>
       <form id="vp-new" class="row" style="margin-top:10px" autocomplete="off"><input name="name" class="grow" maxlength="60" placeholder="＋ Tên kho mới (vd. Đã thuộc)" aria-label="Tên kho mới"><button class="btn primary" type="submit">Tạo và cất</button></form>
       <div class="row" style="margin-top:10px"><button class="btn grow" data-close>Hủy</button></div>`;
     const s = openSheet(html(), { onClose: () => { if (!done) res(null); } });
@@ -22,7 +22,7 @@ function chooseVault(title = 'Cất vào kho nào?', { except = null } = {}) {
     });
   });
 }
-const vaultLabel = id => { const v = vaultOf(id); return v ? `${v.icon || '📦'} ${v.name}` : 'kho'; };
+const vaultLabel = id => { const v = vaultOf(id); return v ? `${v.icon ? v.icon + ' ' : ''}${v.name}` : 'kho'; };
 
 // Cất / đưa ra — dùng chung cho chi tiết thẻ, chọn nhiều, màn ôn
 async function stashCards(ids, vid, okMsg) {
@@ -44,14 +44,14 @@ ACT.bulkVault = async () => {
 function viewVaults() {
   const vs = liveVaults();
   const body = !S.vaultOk ? `<p class="card small">${esc(VAULT_NEED)}</p>`
-    : `<div class="list">${vs.map(v => `<button class="item" data-act="vaultOpen" data-id="${v.id}"><span class="big" style="font-size:26px">${esc(v.icon || '📦')}</span><span class="grow"><span class="t">${esc(v.name)}</span><br><span class="s">${vaultCount(v.id)} thẻ</span></span><span class="mute">›</span></button>`).join('')
+    : `<div class="list">${vs.map(v => `<button class="item" data-act="vaultOpen" data-id="${v.id}"><span class="big" style="font-size:26px">${esc(v.icon || '')}</span><span class="grow"><span class="t">${esc(v.name)}</span><br><span class="s">${vaultCount(v.id)} thẻ</span></span><span class="mute">›</span></button>`).join('')
       || emptyBox('蔵', 'Chưa có kho nào. Cất thẻ vào kho để tạm ẩn khỏi ôn tập; đưa ra là về lại như cũ.')}</div>`;
   return `<div class="page">${pageTop('Kho thẻ', !isTopTab(), S.vaultOk ? '<button class="btn primary" data-act="vaultNew">+ Kho mới</button>' : '')}
     <p class="mute small" style="margin:0 2px 10px">Thẻ trong kho bị ẩn khỏi danh sách, bộ thẻ, ôn tập và thống kê; giữ nguyên bộ thẻ và tiến độ.</p>${body}</div>`;
 }
 ACT.vaultNew = async () => {
   const s = openSheet(`<h2>Kho mới</h2><form id="vn" autocomplete="off"><label class="field"><span>Tên kho</span><input name="name" maxlength="60" autofocus placeholder="vd. Đã thuộc, Tạm gác, Khó"></label>
-    <label class="field"><span>Biểu tượng (không bắt buộc)</span><input name="icon" maxlength="4" placeholder="📦"></label>
+    <label class="field"><span>Biểu tượng (không bắt buộc)</span><input name="icon" maxlength="4" placeholder="(không bắt buộc)"></label>
     <div class="row"><button type="button" class="btn grow" data-close>Hủy</button><button class="btn primary grow" type="submit">Tạo kho</button></div></form>`);
   s.$('#vn').onsubmit = async e => { e.preventDefault(); const f = e.target; if (f._busy) return; f._busy = true;
     const ok = await guard(() => addVault(f.elements.name.value, f.elements.icon.value.trim()), 'Đã tạo kho'); f._busy = false; if (ok !== undefined) { s.close(); render(); } };
@@ -68,7 +68,7 @@ function vaultListHtml(id) {
 }
 function vaultDecksHtml(id) {
   const ds = vaultDecks(id); if (!ds.length) return '';
-  return `<div class="list" style="margin-bottom:12px">${ds.map(d => `<div class="item"><span class="big" style="font-size:24px">${esc(d.icon || '📚')}</span><span class="grow"><span class="t">${esc(d.name)}</span><br><span class="s">Bộ thẻ · ${deckCardIds(d.id).filter(i => alive(S.byId.get(i) || {})).length} thẻ</span></span>
+  return `<div class="list" style="margin-bottom:12px">${ds.map(d => `<div class="item"><span class="big" style="font-size:24px">${esc(d.icon || '')}</span><span class="grow"><span class="t">${esc(d.name)}</span><br><span class="s">Bộ thẻ · ${deckCardIds(d.id).filter(i => alive(S.byId.get(i) || {})).length} thẻ</span></span>
     <button class="btn" data-act="vaultDeckMove" data-id="${d.id}">Chuyển kho</button><button class="btn primary" data-act="vaultDeckOut" data-id="${d.id}">Đưa ra</button></div>`).join('')}</div>`;
 }
 ACT.vaultDeckOut = async el => {
@@ -89,7 +89,7 @@ function viewVaultItem(sub) {
   const v = vaultOf(sub?.id || VT.id); if (!v) return viewVaults();
   VT.id = v.id;
   const menu = '<button class="btn" data-act="vaultEdit">Sửa / Xóa kho</button>';
-  return `<div class="page">${pageTop(`${v.icon || '📦'} ${v.name}`, true, menu)}
+  return `<div class="page">${pageTop(`${v.icon ? v.icon + ' ' : ''}${v.name}`, true, menu)}
     <p class="mute small" style="margin:0 2px 8px">${vaultDecks(v.id).length ? `${vaultDecks(v.id).length} bộ thẻ · ` : ''}${vaultCount(v.id)} thẻ · chạm để chọn, rồi đưa ra hoặc chuyển kho.</p>
     <div id="vdecks">${vaultDecksHtml(v.id)}</div>
     <input type="search" id="vq" placeholder="Tìm trong kho…" value="${esc(VT.q)}" aria-label="Tìm trong kho" style="margin-bottom:10px">
@@ -114,7 +114,7 @@ ACT.vaultMove = async () => {
 ACT.vaultEdit = () => {
   const v = vaultOf(VT.id); if (!v) return;
   const s = openSheet(`<h2>Sửa kho</h2><form id="ve" autocomplete="off"><label class="field"><span>Tên kho</span><input name="name" maxlength="60" value="${esc(v.name)}"></label>
-    <label class="field"><span>Biểu tượng</span><input name="icon" maxlength="4" value="${esc(v.icon || '')}" placeholder="📦"></label>
+    <label class="field"><span>Biểu tượng</span><input name="icon" maxlength="4" value="${esc(v.icon || '')}" placeholder="(không bắt buộc)"></label>
     <div class="row"><button type="button" class="btn danger" data-act="vaultDel">Xóa kho</button><button class="btn primary grow" type="submit">Lưu</button></div></form>`);
   window._ve = s;
   s.$('#ve').onsubmit = async e => { e.preventDefault(); const f = e.target; if (f._busy) return; f._busy = true;
