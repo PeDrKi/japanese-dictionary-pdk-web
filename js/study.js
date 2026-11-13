@@ -1,10 +1,10 @@
 /* study.js — màn chọn bài ôn + 3 chế độ: Flashcard, Quiz trắc nghiệm, Luyện gõ + bàn phím kana */
 'use strict';
 
-const SC = { mode: 'flash', ask: 'meaning_vi', typing: 'meaning', source: 'due', deck: '', type: '', jlpt: '', pos: '', status: '', fav: false, limit: 20, split: true, adv: false };
+const SC = { mode: 'flash', ask: 'meaning_vi', typing: 'meaning', source: 'due', deck: '', type: '', jlpt: '', pos: '', status: '', fav: false, limit: 20, split: true, adv: false, pair: 'meaning', pairs: 10 };
 const QUIZ_ASK = [['meaning_vi', 'Nghĩa tiếng Việt'], ['meaning_en', 'Nghĩa tiếng Anh'], ['romaji', 'Romaji'], ['reading_hanviet', 'Âm Hán Việt'], ['kun', 'Âm Kun-yomi'], ['on', 'Âm On-yomi']];
 const TYPING_ASK = [['meaning', 'Nghĩa VN'], ['romaji', 'Romaji'], ['kana', 'Kana'], ['kun', 'Âm Kun'], ['on', 'Âm On'], ['hanviet', 'Hán Việt']];
-const MODE_LABEL = { flash: 'Flashcard', quiz: 'Quiz', typing: 'Luyện gõ' };
+const MODE_LABEL = { flash: 'Flashcard', quiz: 'Quiz', typing: 'Luyện gõ', match: 'Ghép thẻ' };
 // Nhớ lần ôn trước: mở app lên là Bắt đầu ôn luôn, không phải chọn lại
 const SC_KEYS = Object.keys(SC).concat('adv');
 try { const sv = LS.get('jp_sc', {}); for (const k of SC_KEYS) if (k in sv && typeof sv[k] === typeof SC[k]) SC[k] = sv[k]; if (!MODE_LABEL[SC.mode]) SC.mode = 'flash'; } catch { /* bỏ qua */ }
@@ -16,20 +16,22 @@ function studyPool(cfg = SC) {
 function viewStudyLauncher() {
   if (SC.deck && !liveDecks().some(d => d.id === SC.deck)) SC.deck = '';   // bộ thẻ đã bị xóa
   saveSC();
-  const n = studyPool().length;
+  const n = SC.mode === 'match' ? matchEligible(studyPool(), SC.pair).length : studyPool().length;
   const chip = (k, v, l) => `<button class="chip ${SC[k] === v ? 'on' : ''}" data-act="scSet" data-k="${k}" data-v="${v}">${l}</button>`;
   const asks = SC.mode === 'quiz' ? QUIZ_ASK : SC.mode === 'typing' ? TYPING_ASK : null;
   const askKey = SC.mode === 'quiz' ? 'ask' : 'typing';
   const nAdv = [SC.type, SC.jlpt, SC.pos, SC.status, SC.deck, SC.fav].filter(Boolean).length;
-  const MODE_HINT = { flash: 'Lật thẻ, tự chấm đúng/sai', quiz: 'Chọn 1 trong 4 đáp án', typing: 'Tự gõ đáp án' };
+  const MODE_HINT = { flash: 'Lật thẻ, tự chấm đúng/sai', quiz: 'Chọn 1 trong 4 đáp án', typing: 'Tự gõ đáp án', match: 'Nối chữ với nghĩa / âm, đúng thì biến mất' };
   return `<div class="page">${pageTop('Ôn tập')}
   <div class="field"><span>Bạn muốn ôn kiểu nào?</span><div class="modes">${Object.entries(MODE_LABEL).map(([k, l]) => `<button class="modeopt${SC.mode === k ? ' on' : ''}" data-act="scSet" data-k="mode" data-v="${k}" aria-pressed="${SC.mode === k}"><b>${l}</b><small>${MODE_HINT[k]}</small></button>`).join('')}</div></div>
-  <div class="card sumcard"><span class="mute small">Lần này sẽ ôn</span><div><b>${MODE_LABEL[SC.mode]}</b> · ${SC.source === 'due' ? 'thẻ đến hạn' : 'tất cả thẻ'} · ${SC.limit || 'không giới hạn'} thẻ${nAdv ? ` · đã lọc (${nAdv})` : ''}</div></div>
+  ${SC.mode === 'match' ? `<div class="field"><span>Ghép gì với gì?</span><div class="chips" style="flex-wrap:wrap">${MATCH_PAIRS.map(([k, l]) => chip('pair', k, l)).join('')}</div></div>
+  <div class="field"><span>Số cặp (mỗi lượt ${MATCH_ROUND} cặp)</span><div class="chips">${MATCH_COUNTS.map(v => `<button class="chip ${SC.pairs === v ? 'on' : ''}" data-act="scPairs" data-v="${v}">${v}</button>`).join('')}</div></div>` : ''}
+  <div class="card sumcard"><span class="mute small">Lần này sẽ ôn</span><div><b>${MODE_LABEL[SC.mode]}</b> · ${SC.source === 'due' ? 'thẻ đến hạn' : 'tất cả thẻ'} · ${SC.mode === 'match' ? `${matchDef(SC.pair)[1]} · ${Math.min(SC.pairs, n)} cặp` : `${SC.limit || 'không giới hạn'} thẻ`}${nAdv ? ` · đã lọc (${nAdv})` : ''}</div></div>
   <details class="adv" id="sc-adv" ${SC.adv ? 'open' : ''}><summary>Tùy chỉnh bài ôn <span class="mute small" style="font-weight:400;margin-left:8px">câu hỏi, số thẻ, bộ lọc</span></summary>
   ${asks ? `<div class="field"><span>${SC.mode === 'quiz' ? 'Câu hỏi hỏi về' : 'Bạn sẽ nhập'}</span><div class="chips" style="flex-wrap:wrap">${asks.map(([k, l]) => chip(askKey, k, l)).join('')}</div></div>` : ''}
   ${SC.mode === 'typing' && SC.typing === 'kana' ? `<label class="row" style="margin-bottom:12px"><input type="checkbox" data-act="scSplit" ${SC.split ? 'checked' : ''} style="width:20px;height:20px"><span>Tách từng âm đọc của Kanji thành câu hỏi riêng</span></label>` : ''}
   <div class="field"><span>Ôn những thẻ nào?</span><div class="chips">${chip('source', 'due', 'Đến hạn hôm nay')}${chip('source', 'all', 'Tất cả thẻ')}</div></div>
-  <div class="field"><span>Số thẻ mỗi lượt</span><div class="chips">${[10, 20, 50, 0].map(v => `<button class="chip ${SC.limit === v ? 'on' : ''}" data-act="scLimit" data-v="${v}">${v || 'Tất cả'}</button>`).join('')}</div></div>
+  ${SC.mode === 'match' ? '' : `<div class="field"><span>Số thẻ mỗi lượt</span><div class="chips">${[10, 20, 50, 0].map(v => `<button class="chip ${SC.limit === v ? 'on' : ''}" data-act="scLimit" data-v="${v}">${v || 'Tất cả'}</button>`).join('')}</div></div>`}
   <div class="mute small" style="margin:2px 0 8px"><b>Lọc thêm</b></div>
   <div class="field"><span>Loại thẻ</span><div class="chips"><button class="chip ${SC.type ? '' : 'on'}" data-act="scSet" data-k="type" data-v="">Tất cả</button>${TYPES.map(t => chip('type', t, TYPE_LABEL[t])).join('')}</div></div>
   <div class="field"><span>JLPT</span><div class="chips"><button class="chip ${SC.jlpt ? '' : 'on'}" data-act="scSet" data-k="jlpt" data-v="">Tất cả</button>${JLPT.map(t => chip('jlpt', t, t)).join('')}</div></div>
@@ -37,11 +39,12 @@ function viewStudyLauncher() {
   <div class="field"><span>Trạng thái</span><div class="chips"><button class="chip ${SC.status ? '' : 'on'}" data-act="scSet" data-k="status" data-v="">Tất cả</button>${STATUSES.map(t => chip('status', t, STATUS_LABEL[t])).join('')}</div></div>
   ${liveDecks().length ? `<label class="field"><span>Bộ thẻ</span><select id="sc-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${SC.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>` : ''}
   <div class="row wrap" style="margin-bottom:6px"><button class="chip ${SC.fav ? 'on' : ''}" data-act="scFav">★ Chỉ yêu thích</button></div></details>
-  <div class="startbar"><div class="grow"><b class="jp" style="font-size:20px">${SC.limit && n > SC.limit ? SC.limit : n}</b> <span class="mute small">thẻ${SC.limit && n > SC.limit ? ` (trong ${n} thẻ phù hợp)` : ' phù hợp'}</span>${n ? '' : '<div class="small mute">Không có thẻ khớp — thử bỏ bớt bộ lọc.</div>'}</div>
-  <button class="btn primary" data-act="scStart" ${n ? '' : 'disabled'} style="min-height:48px;padding:0 26px;font-size:16px">Bắt đầu ôn</button></div></div>`;
+  <div class="startbar"><div class="grow"><b class="jp" style="font-size:20px">${SC.mode === 'match' ? n : SC.limit && n > SC.limit ? SC.limit : n}</b> <span class="mute small">thẻ${SC.mode !== 'match' && SC.limit && n > SC.limit ? ` (trong ${n} thẻ phù hợp)` : ' phù hợp'}${SC.mode === 'match' && n < 2 ? ' — cần ≥ 2' : ''}</span>${n ? '' : '<div class="small mute">Không có thẻ khớp — thử bỏ bớt bộ lọc.</div>'}</div>
+  <button class="btn primary" data-act="scStart" ${n >= (SC.mode === 'match' ? 2 : 1) ? '' : 'disabled'} style="min-height:48px;padding:0 26px;font-size:16px">Bắt đầu ôn</button></div></div>`;
 }
 ACT.scSet = el => { SC[el.dataset.k] = el.dataset.v; render(); };
 ACT.scFav = () => { SC.fav = !SC.fav; render(); };
+ACT.scPairs = el => { SC.pairs = +el.dataset.v; render(); };
 ACT.scLimit = el => { SC.limit = +el.dataset.v; render(); };
 ACT.scSplit = el => { SC.split = el.checked; };
 document.addEventListener('toggle', e => { if (e.target.id === 'sc-adv') { SC.adv = e.target.open; saveSC(); } }, true);
@@ -72,6 +75,7 @@ function expandReadingItems(cards, kind) {
   return items;
 }
 function startStudy(cfg) {
+  if (cfg.mode === 'match') return startMatch(cfg);
   let cards = studyPool(cfg.due ? { source: 'due', deck: '', type: '', jlpt: '', pos: '', status: '', fav: false } : cfg);
   shuffle(cards); if (cfg.limit) cards = cards.slice(0, cfg.limit);
   let items;
@@ -159,7 +163,7 @@ function runSession(cfg) {
     const m = cfg.typing || 'meaning'; let a = [];
     if (m === 'meaning') {
       a = [c.meaning_vi, c.meaning_en].filter(Boolean);
-      for (const v of [c.meaning_vi, c.meaning_en]) if (v) for (const p of v.split(',')) { const t = p.trim(); if (t && !a.includes(t)) a.push(t); }
+      for (const v of [c.meaning_vi, c.meaning_en]) if (v) for (const p of v.split(/[,;/，；、]/)) { const t = p.trim(); if (t && !a.includes(t)) a.push(t); }
     } else if (m === 'romaji') {
       a = c.romaji ? [c.romaji] : []; const kana = c.reading_kana || (c.reading_kun || '').split('、')[0];
       if (kana && !c.romaji) a.push(kanaToRomaji(kana));
@@ -187,7 +191,7 @@ function runSession(cfg) {
     win.set(`<div class="page">${bar()}<div class="sp"></div><div style="max-width:240px;margin:0 auto">${paper(c)}</div>
       <div class="mute small" style="text-align:center;margin-top:8px;min-height:20px">${hint ? 'Gợi ý: ' + esc(hint) : ''}</div>
       <p style="text-align:center;margin:6px 0 8px;font-weight:600">${esc(prompt)}</p>
-      <form id="tf"><input id="ti" class="input typein jp" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done">
+      <form id="typf"><input id="ti" class="input typein jp" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done">
       <div class="row" style="margin-top:10px"><button type="button" class="btn" id="kp" aria-label="Bàn phím kana">あ</button><button type="button" class="btn grow" id="skip">Bỏ qua</button><button class="btn primary grow" id="chk">Kiểm tra</button></div></form>
       <div class="feedback" id="fb"></div><div id="nx" style="margin-top:8px"></div></div>`);
     const ti = win.$('#ti'); setTimeout(() => ti.focus(), 60);
@@ -197,7 +201,7 @@ function runSession(cfg) {
       const fb = win.$('#fb'); fb.className = 'feedback'; fb.style.color = 'var(--accent)'; fb.textContent = `⏭ Đã bỏ qua. Đáp án: ${typingAnswers(c).slice(0, 3).join(' / ')}`;
       win.$('#nx').innerHTML = '<button class="btn primary block" id="go">Tiếp ›</button>'; win.$('#go').onclick = next;
     };
-    win.$('#tf').onsubmit = e => {
+    win.$('#typf').onsubmit = e => {
       e.preventDefault(); if (st.answered) { win.$('#go')?.click(); return; }
       const v = ti.value.trim(); if (!v) return; st.answered = true;
       const list = typingAnswers(c), ok = isCorrect(v, list); answer(ok);

@@ -321,3 +321,10 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - Sao lưu/khôi phục có kèm kho của bộ thẻ. (Thay cho nút "cất các thẻ của bộ" ở v3.50.)
 - v3.52: Âm Kun hiển thị trước Âm On (chi tiết thẻ, form, danh sách, ôn tập).
 - v3.53: sửa thanh "N thẻ phù hợp / Bắt đầu ôn" trên điện thoại bị lơ lửng cách thanh tab ~92px (nay nằm sát thanh tab).
+
+## v3.54 — Ghép thẻ (kiểu ôn thứ 4)
+- Ôn tập → "Ghép thẻ": nối chữ với nghĩa / Hán Việt / Âm Kun / Âm On / Romaji, hoặc Hán Việt với Âm Kun / On / Romaji. Chọn kiểu cặp và số cặp (5–25) trước khi bắt đầu; mỗi lượt 5 cặp, nối đúng thì biến mất.
+- Tính vào tiến độ như ôn thường: ghép đúng ngay lần đầu = đúng; nối nhầm = cả hai thẻ bị ghi sai (mỗi thẻ tối đa 1 lần/phiên).
+- Chỉ lấy thẻ có đủ dữ liệu cả hai vế; trong một lượt không có hai thẻ trùng vế (tránh đáp án mơ hồ). Không có nút "cất vào kho" trong màn ghép.
+- v3.55: Ghép thẻ hiển thị bảng 2 cột × 5 hàng cố định.
+- v3.56: Luyện gõ nghĩa: nghĩa có nhiều vế ngăn bởi , ; / chỉ cần nhập 1 vế (vd. "Tháng / Mặt trăng"). Sửa trùng id form gõ với form bản dịch (gây lỗi JS khi bấm Enter).
