@@ -19,6 +19,10 @@ export default async ({ session }) => {
     await page.click('#cmp-pick [data-act=cmpAdd][data-ch="本"]');
     const out = await page.locator('#cmp-out').innerText();
     check('gợi ý Hán Việt "nhật bản" và cách đọc "にちほん"', out.includes('nhật bản') && out.includes('にちほん'), out);
+    await page.fill('#cmp-free [name=t]', '水a'); await page.click('#cmp-free button');
+    const t2 = await page.locator('#cmp-out').innerText();
+    check('thêm chữ chưa có thẻ: vào khay và báo chưa có thẻ kanji', t2.includes('日本水') && t2.includes('Chữ 水 chưa có thẻ kanji'), t2);
+    await page.click('[data-act=cmpUndo]');
     await page.fill('#cmp-q', 'bản');
     check('tìm theo Hán Việt lọc danh sách kanji', (await page.locator('#cmp-pick [data-act=cmpAdd]').count()) === 1);
     await page.click('[data-act=cmpMake]'); await page.waitForSelector('#cf');

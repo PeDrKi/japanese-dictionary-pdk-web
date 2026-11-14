@@ -318,9 +318,11 @@ ACT.compound = el => {
   if (first) window._cd?.close?.();
   const s = openSheet(`<h2>Ghép kanji</h2><p class="small mute" style="margin-top:-6px">Chạm các kanji theo thứ tự để ghép thành từ. Ô đọc và Hán Việt chỉ là gợi ý từ các thẻ kanji đã có — hãy kiểm tra lại.</p>
     <div id="cmp-out"></div>
+    <form id="cmp-free" class="row" style="gap:6px;margin-top:10px"><input class="input grow" name="t" placeholder="Gõ/dán chữ chưa có trong thư viện (vd 水曜)" autocomplete="off" lang="ja"><button class="btn">Thêm</button></form>
     <input class="input" id="cmp-q" placeholder="Tìm kanji (chữ, Hán Việt, nghĩa)" autocomplete="off" style="margin:10px 0">
     <div id="cmp-pick" class="row wrap" style="gap:6px"></div>`);
   window._cmpS = s;
+  s.$('#cmp-free').addEventListener('submit', e => { e.preventDefault(); const i = e.target.t; _cmp.chars.push(...[...i.value].filter(c => isKanjiChar(c))); i.value = ''; cmpOut(); });
   s.$('#cmp-q').addEventListener('input', e => { _cmp.q = e.target.value; cmpPick(); });
   cmpOut(); cmpPick();
 };
@@ -341,6 +343,7 @@ function cmpOut() {
     body = `<dl class="kv" style="margin-top:10px"><dt>Từ</dt><dd class="jp" style="font-size:22px">${esc(b.word)}</dd>
       <dt>Hán Việt</dt><dd>${esc(b.hanviet) || '<span class="mute">—</span>'}</dd><dt>Cách đọc (gợi ý)</dt><dd class="jp">${esc(b.kana) || '<span class="mute">—</span>'}</dd></dl>
       <p class="small mute">${hint}</p>
+      ${b.hints.some(h => !h.hanviet && !h.on) ? `<p class="small mute">Chữ ${b.hints.filter(h => !h.hanviet && !h.on).map(h => esc(h.ch)).join(', ')} chưa có thẻ kanji (hoặc thiếu Hán Việt / âm On) nên chưa tự điền được Hán Việt và cách đọc.</p>` : ''}
       <div class="row" style="margin-top:8px">${b.existing ? `<button class="btn grow" data-act="openCard" data-id="${b.existing.id}">Đã có trong thư viện — mở thẻ</button>` : `<button class="btn primary grow" data-act="cmpMake">Tạo thẻ từ "${esc(b.word)}"</button>`}
       <button class="btn" data-act="cmpUndo">Xóa chữ cuối</button></div>`;
   } else if (ch.length === 1) body = `<p class="small mute" style="margin-top:8px">Chọn thêm ít nhất 1 kanji nữa.</p>`;

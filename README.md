@@ -329,4 +329,5 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - v3.55: Ghép thẻ hiển thị bảng 2 cột × 5 hàng cố định.
 - v3.56: Luyện gõ nghĩa: nghĩa có nhiều vế ngăn bởi , ; / chỉ cần nhập 1 vế (vd. "Tháng / Mặt trăng"). Sửa trùng id form gõ với form bản dịch (gây lỗi JS khi bấm Enter).
 - v3.57: Giảm icon mặc định: bảng chọn icon gọn (4 nhóm ~30 icon); bộ thẻ/danh mục/kho mới không tự gán icon (danh sách bộ thẻ hiện chữ cái đầu); bỏ emoji trang trí trong nhãn nút/menu. Icon đã đặt trước đó giữ nguyên, không cần chạy lại schema.
+- v3.59: Ghép kanji cho phép gõ thêm chữ chưa có thẻ trong thư viện.
 - v3.58: Ghép kanji: thẻ kanji hiện mục "Từ ghép" (các từ đã có chứa chữ đó); Khác → Ghép kanji để chọn kanji theo thứ tự, gợi ý Hán Việt / cách đọc từ thẻ kanji đã có rồi tạo thẻ từ vựng mới (không cần chạy lại schema).
