@@ -849,5 +849,21 @@ create index if not exists decks_vault on public.decks (vault_id) where vault_id
 create or replace function public.jp_schema_version() returns integer
 language sql stable as $$ select 14 $$;
 
+-- ============================================================================
+-- PHIÊN BẢN 15 — Thẻ đặc biệt "tên riêng" + một từ có nhiều nghĩa / từ loại
+--   name_kind : NULL = thẻ thường; 'surname' họ · 'given' tên · 'place' địa danh · 'org' tổ chức / thương hiệu / khác
+--   senses    : chuỗi JSON các nghĩa PHỤ [{"pos":"noun","reading":"がく","meaning":"học vấn"}, …].
+--               Nghĩa chính vẫn nằm ở pos / reading_kana / meaning_vi như cũ (mọi chức năng cũ không đổi).
+-- ============================================================================
+alter table public.cards add column if not exists name_kind text;
+alter table public.cards drop constraint if exists cards_name_kind_check;
+alter table public.cards add constraint cards_name_kind_check
+  check (name_kind is null or name_kind in ('surname', 'given', 'place', 'org'));
+alter table public.cards add column if not exists senses text;
+create index if not exists cards_name_kind on public.cards (user_id, name_kind) where name_kind is not null;
+
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 15 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';

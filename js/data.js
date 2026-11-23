@@ -190,7 +190,7 @@ function logStudy(cardId, result) {
 // Nếu ai đó đã sửa trước: trường khác nhau → tự gộp; cùng 1 trường khác giá trị → hỏi bạn.
 const EDIT_FIELDS = {
   cards: ['type', 'character', 'reading_on', 'reading_kun', 'reading_kana', 'reading_hanviet', 'romaji', 'meaning_vi', 'meaning_en',
-    'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos'],
+    'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos', 'name_kind', 'senses'],
   decks: ['name', 'description', 'color', 'icon', 'category_id'],
   radicals: ['character', 'name', 'color'],
   grammar_points: ['title', 'meaning_vi', 'structure', 'explanation', 'examples', 'jlpt_level'],
@@ -384,7 +384,8 @@ function filterCards(f = {}) {
   if (f.type) list = list.filter(c => c.type === f.type);
   if (f.jlpt) list = list.filter(c => c.jlpt_level === f.jlpt);
   if (f.status) list = list.filter(c => c.status === f.status);
-  if (f.pos) list = list.filter(c => posMatch(f.pos, c.pos));
+  if (f.pos) list = list.filter(c => posMatchCard(f.pos, c));
+  if (f.nk) list = list.filter(c => f.nk === '*' ? !!c.name_kind : c.name_kind === f.nk);
   if (f.fav) list = list.filter(c => c.is_favorite);
   if (f.due) { const t = localDate(); list = list.filter(c => isDue(c, t)); }
   if (f.deck) { const s = new Set(S.cardsOfDeck.get(f.deck) || []); list = list.filter(c => s.has(c.id)); }
@@ -396,7 +397,7 @@ function filterCards(f = {}) {
   if (f.search) {
     const toks = f.search.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const fields = ['character', 'meaning_vi', 'meaning_en', 'romaji', 'reading_kana', 'reading_kun', 'reading_on', 'reading_hanviet'];
-    list = list.filter(c => toks.every(t => fields.some(k => (c[k] || '').toLowerCase().includes(t))));
+    list = list.filter(c => toks.every(t => fields.some(k => (c[k] || '').toLowerCase().includes(t)) || sensesOf(c).some(x => `${x.reading} ${x.meaning}`.toLowerCase().includes(t))));
   }
   return list;
 }
@@ -521,11 +522,13 @@ function pairInfo(jp, vi) {
 
 
 // ── Kho thẻ ─────────────────────────────────────────────────────────────────
-const liveVaults = () => [...S.vaults].sort((a, b) => (a.sort_order - b.sort_order) || String(a.name).localeCompare(String(b.name), 'vi'));
+const liveVaults = () => [...S.vaults].sort((a, b) => (a.sort_order - b.sort_order) || String(a.name).localeCompare(String(b.name), 'vi', { numeric: true }));
 const vaultOf = id => S.vaults.find(v => v.id === id) || null;
 const vaultCards = id => S.cards.filter(c => alive(c) && c.vault_id === id);
 const vaultCount = id => vaultCards(id).length;
 const VAULT_NEED = 'Cần chạy lại schema.sql (bản 14) trên Supabase để dùng Kho thẻ.';
+// Schema v15 (cột name_kind / senses) đã chạy chưa — xem theo dữ liệu thẻ vì select * trả mọi cột
+const cardExtOk = () => !S.cards.length || 'senses' in S.cards[0];
 const deckVaultOk = () => S.vaultOk && (!S.decks.length || 'vault_id' in S.decks[0]);
 const vaultDecks = id => S.decks.filter(d => alive(d) && d.vault_id === id);
 const deckCardIds = deckId => S.deckCards.filter(dc => alive(dc) && dc.deck_id === deckId).map(dc => dc.card_id);

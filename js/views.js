@@ -72,9 +72,9 @@ function viewToday() {
 ACT.startDue = el => startStudy({ mode: el.dataset.mode, due: true, limit: SC.limit, ask: SC.ask, typing: SC.typing, split: SC.split });
 
 // ═══ THẺ ═══════════════════════════════════════════════════════════════════
-function currentList() { return filterCards({ search: FILT.search, type: FILT.type, jlpt: FILT.jlpt, pos: FILT.pos, status: FILT.status, fav: FILT.fav, due: FILT.due, deck: FILT.deck, cat: FILT.cat }); }
+function currentList() { return filterCards({ search: FILT.search, type: FILT.type, jlpt: FILT.jlpt, pos: FILT.pos, nk: FILT.nk, status: FILT.status, fav: FILT.fav, due: FILT.due, deck: FILT.deck, cat: FILT.cat }); }
 function viewCards() {
-  const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
+  const active = [FILT.jlpt, FILT.pos, FILT.nk, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck), cat = FILT.cat && catName(FILT.cat);
   return `<div class="page">${pageTop(deck ? `${deck.icon || ''} ${deck.name}` : cat || 'Thư viện', false,
     `<button class="btn tool${FILT.select ? ' on' : ''}" data-act="toggleSelect" aria-pressed="${FILT.select}">${FILT.select ? '✕ Xong' : '☑ Chọn'}</button>
@@ -97,7 +97,7 @@ function cardsBody() {
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if (FILT.page > totalPages - 1) FILT.page = totalPages - 1;
   const shown = pages ? list.slice(FILT.page * PAGE_SIZE, (FILT.page + 1) * PAGE_SIZE) : list.slice(0, FILT.shown);
-  const active = [FILT.jlpt, FILT.pos, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
+  const active = [FILT.jlpt, FILT.pos, FILT.nk, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck);
   const pager = () => { const p = FILT.page, b = (n, label, dis, aria) => `<button class="btn tool" data-act="cardsPage" data-p="${n}" aria-label="${aria}" ${dis ? 'disabled' : ''}>${label}</button>`;
     return `<nav class="pager" aria-label="Phân trang">${b(0, '«', p === 0, 'Trang đầu')}${b(p - 1, '‹', p === 0, 'Trang trước')}<span class="pg" aria-live="polite">Trang ${p + 1} / ${totalPages}</span>${b(p + 1, '›', p >= totalPages - 1, 'Trang sau')}${b(totalPages - 1, '»', p >= totalPages - 1, 'Trang cuối')}</nav>`; };
@@ -133,6 +133,7 @@ ACT.openFilter = () => {
   const s = openSheet(`<h2>Bộ lọc</h2>
     <div class="field"><span>Cấp độ JLPT</span><div class="chips wrap" style="flex-wrap:wrap">${chip('jlpt', '', 'Tất cả')}${JLPT.map(j => chip('jlpt', j, j)).join('')}</div></div>
     <div class="field"><span>Từ loại</span><div id="posbox">${posChips(FILT.pos, 'fset', 'pos')}</div></div>
+    ${cardExtOk() ? `<div class="field"><span>Tên riêng</span><div class="chips" style="flex-wrap:wrap">${chip('nk', '', 'Tất cả')}${chip('nk', '*', 'Mọi tên riêng')}${NAME_KINDS.map(k => chip('nk', k[0], k[1])).join('')}</div></div>` : ''}
     <div class="field"><span>Trạng thái</span><div class="chips" style="flex-wrap:wrap">${chip('status', '', 'Tất cả')}${STATUSES.map(j => chip('status', j, STATUS_LABEL[j])).join('')}</div></div>
     <label class="field"><span>Bộ thẻ</span><select id="f-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${FILT.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>
     ${S.cats.length ? `<label class="field"><span>Danh mục</span><select id="f-cat"><option value="">Tất cả</option>${S.cats.map(c => `<option value="${c.id}" ${FILT.cat === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}<option value="_none" ${FILT.cat === '_none' ? 'selected' : ''}>Chưa phân loại</option></select></label>` : ''}
@@ -146,7 +147,7 @@ ACT.fset = el => {
   $$('[data-act=fset]', _fs.el).filter(b => b.dataset.k === el.dataset.k).forEach(b => b.classList.toggle('on', b === el));
 };
 ACT.ftoggle = el => { FILT[el.dataset.k] = !FILT[el.dataset.k]; el.classList.toggle('on', FILT[el.dataset.k]); };
-ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', cat: '', shown: PAGE_SIZE, page: 0 }); _fs.close(); render(); };
+ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', nk: '', status: '', fav: false, due: false, deck: '', cat: '', shown: PAGE_SIZE, page: 0 }); _fs.close(); render(); };
 ACT.fapply = () => { FILT.deck = $('#f-deck', _fs.el).value; FILT.cat = $('#f-cat', _fs.el)?.value || ''; resetPaging(); _fs.close(); NAV.tab = 'cards'; render(); };
 
 // ── Thao tác hàng loạt ──
@@ -161,7 +162,8 @@ ACT.bulkDeckSet = async el => { await guard(() => linkCardsToDeck([...FILT.sel],
 // ── Chi tiết thẻ ──
 function openCardDetail(id) {
   const c = S.byId.get(id); if (!c) return;
-  const kv = [['Từ loại', posPath(c.pos)], ['Âm Kun', c.reading_kun], ['Âm On', c.reading_on], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
+  const extra = sensesOf(c), nkL = nameKindLabel(c.name_kind);
+  const kv = [...(nkL ? [['Tên riêng', nkL]] : []), ['Từ loại', posPath(c.pos)], ['Âm Kun', c.reading_kun], ['Âm On', c.reading_on], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
     ['Nghĩa (EN)', c.meaning_en], ['Số nét', c.stroke_count], ['Ví dụ', c.example_jp], ['Dịch ví dụ', c.example_vi], ['Nguồn', c.source], ['Ghi chú', c.notes]].filter(x => x[1]);
   const decks = (S.deckOfCard.get(id) || []).map(i => S.decks.find(d => d.id === i)).filter(Boolean);
   const rads = (S.radOfCard.get(id) || []).map(i => S.radicals.find(d => d.id === i)).filter(Boolean);
@@ -170,9 +172,11 @@ function openCardDetail(id) {
     <div class="paper${cb.multi ? ' multi' : ''}" style="${cb.multi ? '' : 'max-width:200px'}"><span class="corner">${TYPE_LABEL[c.type]}</span><span class="corner2">${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}</span>${cb.html}</div>
     ${c.vault_id ? `<p class="small" style="text-align:center;margin:10px 0 0;color:var(--accent)">Đang cất trong kho "${esc(vaultOf(c.vault_id)?.name || '')}" — không nằm trong ôn tập</p>` : ''}
     <div style="text-align:center;margin:10px 0 14px"><div style="font-size:21px;font-weight:700">${esc(c.meaning_vi)}</div>
-      <div class="row" style="justify-content:center;margin-top:4px"><span class="st ${c.status}"></span><span class="mute small">${STATUS_LABEL[c.status]} · ${c.study_count || 0} lần học</span></div></div>
+      <div class="row" style="justify-content:center;margin-top:4px"><span class="st ${c.status}"></span><span class="mute small">${STATUS_LABEL[c.status]} · ${c.study_count || 0} lần học</span></div>
+      ${nkL ? `<div style="margin-top:8px"><span class="tag nkt" style="--nk:${nameKindColor(c.name_kind)}">${esc(nkL)}</span></div>` : ''}</div>
     <dl class="kv">${kv.map(([k, v]) => `<dt>${k}</dt><dd class="${/On|Kun|đọc|Ví dụ$/.test(k) ? 'jp' : ''}">${esc(v)}</dd>`).join('')}
       <dt>Lịch ôn</dt><dd>${dueInfo(c)}<br><span class="mute small">${easeLabel(c.srs_ease)} · giãn cách ${c.srs_interval} ngày</span></dd></dl>
+    ${extra.length ? `<h3 style="margin:14px 0 6px;font-size:14px">Nghĩa / từ loại khác (${extra.length})</h3><div class="list">${extra.map(x => `<div class="item" style="display:block"><div class="row wrap" style="gap:6px">${x.pos ? `<span class="tag">${esc(posPath(x.pos))}</span>` : ''}${x.reading ? `<span class="jp">${esc(x.reading)}</span>` : ''}</div>${x.meaning ? `<div style="font-weight:600;margin-top:2px">${esc(x.meaning)}</div>` : ''}</div>`).join('')}</div>` : ''}
     ${decks.length || rads.length ? `<div class="row wrap" style="margin-top:10px">${decks.map(d => `<span class="tag">${esc(d.icon || '')} ${esc(d.name)}</span>`).join('')}${rads.map(r => `<span class="tag jp">部 ${esc(r.character)}</span>`).join('')}</div>` : ''}
     ${cmpDetail(c)}
     <div class="sp"></div>
@@ -227,8 +231,12 @@ function openCardForm(id, preset = {}) {
     <label class="field" id="w-meaning_vi"><span>Nghĩa tiếng Việt *</span><input name="meaning_vi" value="${v('meaning_vi')}" maxlength="200"></label>
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>
     ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks"></div></div>` : ''}
-    <details class="adv" id="cf-adv" ${id || preset.example_jp || preset.source ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
+    <details class="adv" id="cf-adv" ${id || preset.example_jp || preset.source || preset.name_kind ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
     ${posField(c.pos)}
+    ${cardExtOk() ? `<div data-for="vocab"><label class="field"><span>Tên riêng</span><select name="name_kind"><option value="">— Không phải tên riêng —</option>${NAME_KINDS.map(k => `<option value="${k[0]}" ${c.name_kind === k[0] ? 'selected' : ''}>${k[1]}</option>`).join('')}</select></label>
+    <div class="field" id="cf-senses-box"><span>Nghĩa / từ loại khác của từ này</span><div id="cf-senses"></div>
+      <button type="button" class="btn ghost small" data-act="senseAdd">+ Thêm nghĩa / từ loại</button>
+      <span class="small mute">Dùng khi một từ có nhiều cách đọc hoặc từ loại, vd 学: động từ nhóm 1 まなぶ · học; danh từ がく · học vấn. Nghĩa ở trên là nghĩa chính.</span></div></div>` : ''}
     <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div>
     <div class="grid2 fit" data-for="kanji vocab"><label class="field"><span>Âm Hán Việt</span><input name="reading_hanviet" value="${v('reading_hanviet')}"></label>
       <label class="field" data-for="kanji"><span>Số nét</span><input name="stroke_count" type="number" inputmode="numeric" min="1" max="60" value="${v('stroke_count')}"></label></div>
@@ -243,6 +251,7 @@ function openCardForm(id, preset = {}) {
     <div class="row sheet-actions"><button type="button" class="btn grow" data-close>Hủy</button><button type="submit" class="btn primary grow">Lưu thẻ</button></div>
   </form>`, { sticky: true });
   const form = s.$('#cf'); form.dataset.type = c.type; form._deckSel = decks; form._isNew = !id; form._id = id; form._sheet = s;
+  form._senses = sensesOf(c).map(x => ({ ...x })); renderSenses(form);
   posWire(form); initMultiRead(form); syncFormType(form); updateAdvSummary(form); renderDeckField(form);
   form.addEventListener('change', () => updateAdvSummary(form));
   if (!id) wireAutofill(form);
@@ -257,9 +266,11 @@ function openCardForm(id, preset = {}) {
       reading_kana: t !== 'kanji' ? f.reading_kana : null, reading_hanviet: (t === 'kanji' || t === 'vocab') ? f.reading_hanviet : null,
       romaji: f.romaji, meaning_en: f.meaning_en, example_jp: f.example_jp, example_vi: f.example_vi, stroke_count: t === 'kanji' ? f.stroke_count : null,
       jlpt_level: f.jlpt_level, pos: f.pos, status: (id && base ? base.status : 'new'), is_favorite: !!f.is_favorite, source: f.source, notes: f.notes,
+      ...(cardExtOk() ? { name_kind: t === 'vocab' ? f.name_kind : (base?.name_kind || null), senses: t === 'vocab' ? readSenses(form) : (base?.senses || null) } : {}),
     });
     // Trường bạn không đụng tới giữ NGUYÊN giá trị gốc (không bị cắt độ dài / chuẩn hoá lại → không sinh xung đột giả, không mất chữ)
     if (id && base) for (const k of Object.keys(data)) if (typeof data[k] === 'string' && k in f && base[k] != null && String(f[k]).trim() === String(base[k]).trim()) data[k] = base[k];
+    if (id && base && 'senses' in data && JSON.stringify(parseSenses(base.senses)) === JSON.stringify(parseSenses(data.senses))) data.senses = base.senses ?? null;   // không đổi → giữ nguyên chuỗi gốc (desktop có thể xếp khoá khác thứ tự)
     const dups = findDuplicates(data.character, t, id);
     if (dups.length) {
       const kv = dups.find(x => x.vault_id), where = kv ? ` (đang ở kho "${vaultOf(kv.vault_id)?.name || ''}" — đưa ra khỏi kho để dùng lại thẻ đó)` : '';
@@ -282,6 +293,23 @@ function openCardForm(id, preset = {}) {
     if (ok) { toast(note); s.close(); render(); }
   });
 }
+// ── Nghĩa / từ loại khác trong form thẻ ──
+const POS_OPTIONS = POS.map(v => `<option value="${v}">${posPath(v)}</option>`).join('');
+function renderSenses(form) {
+  const box = form.querySelector('#cf-senses'); if (!box) return;
+  box.innerHTML = form._senses.map((x, i) => `<div class="sense" data-i="${i}">
+    <select class="s-pos" aria-label="Từ loại"><option value="">— từ loại —</option>${POS_OPTIONS.replace(`value="${x.pos}"`, `value="${x.pos}" selected`)}</select>
+    <button type="button" class="btn ghost small" data-act="senseDel" data-i="${i}" aria-label="Xóa nghĩa này">✕</button>
+    <input class="s-reading jp sfull" placeholder="Cách đọc (kana)" value="${esc(x.reading || '')}" maxlength="${LIMITS.reading}">
+    <input class="s-meaning sfull" placeholder="Nghĩa tiếng Việt" value="${esc(x.meaning || '')}" maxlength="${LIMITS.meaning}"></div>`).join('');
+  const add = form.querySelector('[data-act=senseAdd]'); if (add) add.hidden = form._senses.length >= MAX_SENSES;
+}
+function readSenses(form) {
+  const rows = [...form.querySelectorAll('#cf-senses .sense')];
+  return rows.map(r => ({ pos: r.querySelector('.s-pos').value, reading: r.querySelector('.s-reading').value, meaning: r.querySelector('.s-meaning').value }));
+}
+ACT.senseAdd = el => { const f = el.closest('form'); f._senses = readSenses(f); if (f._senses.length >= MAX_SENSES) return; f._senses.push({ pos: '', reading: '', meaning: '' }); renderSenses(f); f.querySelector('.sense:last-child .s-reading')?.focus(); };
+ACT.senseDel = el => { const f = el.closest('form'); f._senses = readSenses(f); f._senses.splice(+el.dataset.i, 1); renderSenses(f); };
 function syncFormType(form) {
   const t = form.dataset.type;
   $$('[data-for]', form).forEach(el => el.classList.toggle('hidden', !el.dataset.for.split(' ').includes(t)));
@@ -388,7 +416,7 @@ function decksBody() {
   const inCat = d => (d.category_id && catIds.has(d.category_id)) ? d.category_id : '_none';
   const toks = DFILT.search.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const stat = new Map(all.map(d => [d.id, deckStats(d)]));
-  const ord = { name: (a, b) => (a.name || '').localeCompare(b.name || '', 'vi'), due: (a, b) => stat.get(b.id).due - stat.get(a.id).due || (a.name || '').localeCompare(b.name || '', 'vi'),
+  const ord = { name: (a, b) => (a.name || '').localeCompare(b.name || '', 'vi', { numeric: true }), due: (a, b) => stat.get(b.id).due - stat.get(a.id).due || (a.name || '').localeCompare(b.name || '', 'vi'),
     size: (a, b) => stat.get(b.id).n - stat.get(a.id).n, new: (a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) }[DFILT.sort] || (() => 0);
   const match = d => (!DFILT.cat || inCat(d) === DFILT.cat) && (!toks.length || toks.every(t => ((d.name || '') + ' ' + (d.description || '')).toLowerCase().includes(t)));
   const shown = all.filter(match).sort(ord);

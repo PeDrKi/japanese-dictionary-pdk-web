@@ -28,6 +28,31 @@ const POS_ALIAS = { 'danh từ': 'noun', 'danh tu': 'noun', 'meishi': 'noun', n:
   'liên từ': 'conjunction', 'lien tu': 'conjunction', 'setsuzokushi': 'conjunction',
   'thán từ': 'interjection', 'than tu': 'interjection', 'kandoushi': 'interjection' };
 const safePos = v => { const s = String(v ?? '').trim().toLowerCase(); return POS.includes(s) ? s : (POS_ALIAS[s] || null); };
+
+// ── Thẻ tên riêng (cột name_kind) và nhiều nghĩa / từ loại (cột senses = chuỗi JSON các nghĩa PHỤ) ──
+const NAME_KINDS = [['surname', 'Họ', '#E5738B'], ['given', 'Tên', '#F0A04B'], ['place', 'Địa danh', '#4EA9A0'], ['org', 'Tổ chức / khác', '#8E7CC3']];
+const safeNameKind = v => NAME_KINDS.some(k => k[0] === v) ? v : null;
+const nameKindLabel = v => (NAME_KINDS.find(k => k[0] === v) || [])[1] || '';
+const nameKindColor = v => (NAME_KINDS.find(k => k[0] === v) || [])[2] || '';
+const MAX_SENSES = 8;
+// Chuẩn hoá danh sách nghĩa phụ: bỏ dòng trống, từ loại sai → null, cắt độ dài, tối đa MAX_SENSES
+function cleanSenses(list) {
+  const out = [];
+  for (const x of Array.isArray(list) ? list : []) {
+    if (!x || typeof x !== 'object') continue;
+    const reading = trunc(String(x.reading ?? '').trim(), LIMITS.reading), meaning = trunc(String(x.meaning ?? '').trim(), LIMITS.meaning);
+    if (!reading && !meaning) continue;
+    out.push({ pos: safePos(x.pos), reading, meaning });
+    if (out.length >= MAX_SENSES) break;
+  }
+  return out;
+}
+function parseSenses(text) { try { return cleanSenses(typeof text === 'string' && text ? JSON.parse(text) : []); } catch { return []; } }
+const dumpSenses = list => { const l = cleanSenses(list); return l.length ? JSON.stringify(l) : null; };   // gọn, không khoảng trắng — desktop lọc từ loại dựa vào dạng này
+const _sensesCache = new Map();
+const sensesOf = c => { const t = c && c.senses; if (!t) return []; let r = _sensesCache.get(t); if (!r) { r = parseSenses(t); if (_sensesCache.size > 2000) _sensesCache.clear(); _sensesCache.set(t, r); } return r; };
+// Thẻ khớp bộ lọc từ loại nếu nghĩa chính HOẶC bất kỳ nghĩa phụ nào khớp
+const posMatchCard = (flt, c) => !flt || posMatch(flt, c.pos) || sensesOf(c).some(x => posMatch(flt, x.pos));
 // Từ loại 2 cấp (chỉ để chọn / lọc; giá trị lưu trong thẻ vẫn là POS ở trên). Cha có con: Động từ → nhóm 1/2/3 (hoặc "chưa rõ nhóm" = verb), Tính từ → đuôi い / な.
 // Khi LỌC, chọn cả cha (chưa chọn con) dùng ký hiệu 'verb*' / 'adj*' = mọi con của nhóm đó.
 const POS_TREE = [
@@ -228,6 +253,9 @@ function buildCardData(f) {
     is_favorite: !!f.is_favorite,
     source: t((f.source || '').trim(), LIMITS.source) || null,
     notes: t((f.notes || '').trim(), LIMITS.notes) || null,
+    // Chỉ gửi khi người gọi cung cấp (schema cũ chưa có 2 cột này sẽ không bị gửi nhầm)
+    ...('name_kind' in f ? { name_kind: safeNameKind(f.name_kind) } : {}),
+    ...('senses' in f ? { senses: dumpSenses(typeof f.senses === 'string' ? parseSenses(f.senses) : f.senses) } : {}),
   };
 }
 // Chọn nguồn kana để tự sinh romaji (resolve_romaji_source)
@@ -276,7 +304,7 @@ function parseIds(s) {
 
 // ── CSV ─────────────────────────────────────────────────────────────────────
 const CSV_FIELDS = ['type', 'character', 'reading_on', 'reading_kun', 'reading_kana', 'reading_hanviet', 'romaji', 'meaning_vi',
-  'meaning_en', 'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos'];
+  'meaning_en', 'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos', 'name_kind', 'senses'];
 function parseCsv(text) {
   text = text.replace(/^﻿/, '');
   const rows = []; let row = [], f = '', q = false;
@@ -313,6 +341,7 @@ function csvRowsToCards(rows) {
       reading_hanviet: s('reading_hanviet'), romaji: s('romaji'), meaning_en: s('meaning_en'), example_jp: s('example_jp'),
       example_vi: s('example_vi'), stroke_count: s('stroke_count'), jlpt_level: s('jlpt_level').toUpperCase(),
       status: STATUSES.includes(stat) ? stat : 'new', is_favorite: s('is_favorite', '0') === '1', source: s('source'), notes: s('notes'), pos: s('pos'),
+      ...(s('name_kind') ? { name_kind: s('name_kind') } : {}), ...(s('senses') ? { senses: s('senses') } : {}),
     }));
   });
   return { valid, errors };

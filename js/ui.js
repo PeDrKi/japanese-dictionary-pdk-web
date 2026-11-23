@@ -3,7 +3,7 @@
 
 const ACT = {};      // data-act → handler(el, event)
 const NAV = { tab: 'today', sub: null, stack: [], depth: 0 };   // depth = số mục history do màn phụ đã đẩy vào
-const FILT = { search: '', type: '', jlpt: '', pos: '', status: '', fav: false, due: false, deck: '', cat: '', shown: 50, page: 0, select: false, sel: new Set() };
+const FILT = { search: '', type: '', jlpt: '', pos: '', nk: '', status: '', fav: false, due: false, deck: '', cat: '', shown: 50, page: 0, select: false, sel: new Set() };
 const PAGE_SIZE = 50;
 const pageMode = () => (LS.get('jp_pagemode', 'more') === 'pages' ? 'pages' : 'more');   // 'more' = nút Xem thêm · 'pages' = phân trang
 function resetPaging() { FILT.shown = PAGE_SIZE; FILT.page = 0; }
@@ -103,12 +103,13 @@ function cardMainText(c) {
 function cardRow(c, extra = '') {
   const long = [...c.character].length > 3 ? ' long' : '';
   const sel = FILT.select && FILT.sel.has(c.id) ? ' sel' : '';
-  return `<button class="item${sel}" data-act="openCard" data-id="${c.id}">
+  const nk = c.name_kind ? ` nk" style="--nk:${nameKindColor(c.name_kind)}` : '', nS = sensesOf(c).length;
+  return `<button class="item${sel}${nk}" data-act="openCard" data-id="${c.id}">
     <span class="big jp${long}">${esc(c.character)}</span>
     <span class="grow"><span class="t">${esc(c.meaning_vi)}</span><br><span class="s jp">${esc(cardMainText(c)) || '&nbsp;'}</span></span>
     <span style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">
       <span class="row" style="gap:6px">${c.is_favorite ? '<span style="color:var(--accent)">★</span>' : ''}<span class="st ${c.status}" title="${STATUS_LABEL[c.status]}"></span></span>
-      <span class="row" style="gap:4px">${POS_SHORT[c.pos] ? `<span class="tag">${POS_SHORT[c.pos]}</span>` : ''}${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}</span>${extra}
+      <span class="row" style="gap:4px">${c.name_kind ? `<span class="tag nkt" style="--nk:${nameKindColor(c.name_kind)}">${esc(nameKindLabel(c.name_kind))}</span>` : ''}${nS ? `<span class="tag" title="Từ này còn ${nS} nghĩa / từ loại khác">+${nS}</span>` : ''}${POS_SHORT[c.pos] ? `<span class="tag">${POS_SHORT[c.pos]}</span>` : ''}${safeJlpt(c.jlpt_level) ? `<span class="tag ${safeJlpt(c.jlpt_level).toLowerCase()}">${safeJlpt(c.jlpt_level)}</span>` : ''}</span>${extra}
     </span></button>`;
 }
 const emptyBox = (g, msg, sub = '') => `<div class="empty"><div class="g jp">${g}</div><p><b>${esc(msg)}</b></p>${sub ? `<p class="small">${sub}</p>` : ''}</div>`;
