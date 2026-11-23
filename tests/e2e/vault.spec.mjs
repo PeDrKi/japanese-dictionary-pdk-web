@@ -83,7 +83,7 @@ export default async ({ session }) => {
     await page.waitForSelector('#view'); await page.click('#tabs [data-tab=decks]'); await page.waitForSelector('[data-act=editDeck]');
     check('trước khi chuyển: tab Bộ thẻ có bộ N5', (await page.locator('#view').innerText()).includes('Từ vựng N5'));
     await page.click('[data-act=editDeck]'); await page.waitForSelector('[data-act=dfStash]'); await page.click('[data-act=dfStash]');
-    await page.waitForSelector('#vp-new'); await page.fill('#vp-new [name=name]', 'Cả bộ'); await page.click('#vp-new [type=submit]'); await page.waitForTimeout(700);
+    await page.waitForSelector('#vp-new'); await page.fill('#vp-new [name=name]', 'Cả bộ'); await page.click('#vp-new [type=submit]'); await page.waitForFunction(() => window.__DB?.decks?.some(x => x.vault_id) && window.__DB.cards.some(c => c.vault_id), null, { timeout: 20000 }).catch(() => {}); await page.waitForTimeout(300);
     let d = await db(); const v = d.vaults[0], dk = d.decks.find(x => x.vault_id);
     check('bộ thẻ chuyển vào kho: decks.vault_id + thẻ của bộ cùng vào kho, giữ liên kết bộ-thẻ', !!v && dk && dk.vault_id === v.id && d.deck_cards.length === 1 && d.cards.filter(c => c.vault_id === v.id).length === 1, JSON.stringify(d.decks.map(x => x.vault_id)));
     check('bộ thẻ biến khỏi tab Bộ thẻ', !(await page.locator('#view').innerText()).includes('Từ vựng N5'));

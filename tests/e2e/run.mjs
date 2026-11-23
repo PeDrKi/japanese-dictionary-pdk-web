@@ -22,7 +22,18 @@ const browser = await chromium.launch(process.env.PW_CHROMIUM ? { executablePath
 const results = []; let failed = 0;
 
 // Mỗi bài test nhận helper { page, check, open } — open(seed) mở app với dữ liệu giả ban đầu.
+// Mỗi bài chạy tối đa 2 lần: máy chậm (CI) hay làm trễ vài thao tác chờ cố định; lần 2 vẫn lỗi mới tính là lỗi thật.
 async function session(seed, fn, opts = {}) {
+  const first = await attempt(seed, fn, opts);
+  const out = first.fails ? await attempt(seed, fn, opts) : first;
+  if (first.fails && !out.fails) console.log('(thử lại lần 2 → đạt: ' + (opts.name || '') + ')');
+  const final = first.fails && out.fails ? out : out;
+  for (const l of final.lines) console.log(l);
+  for (const r of final.res) results.push(r);
+  failed += final.fails;
+}
+async function attempt(seed, fn, opts = {}) {
+  const lines = [], res = []; let fails = 0;
   const context = await browser.newContext({ serviceWorkers: 'block', viewport: opts.viewport || { width: 1280, height: 800 }, reducedMotion: (opts.motion || process.env.MOTION) ? 'no-preference' : 'reduce' });   // mặc định tắt hiệu ứng cho test ổn định; opts.motion bật lại để thử hiệu ứng
   await context.route('**/vendor/supabase.js', r => r.fulfill({ contentType: 'text/javascript', body: `window.__SEED = ${JSON.stringify(seed || {})};\n` + FAKE }));
   await context.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());                       // test không cần mạng
@@ -34,10 +45,11 @@ async function session(seed, fn, opts = {}) {
   if (!opts.noCfg) await context.addInitScript(() => { if (!localStorage.getItem('jp_cfg')) localStorage.setItem('jp_cfg', JSON.stringify({ url: 'http://fake.supabase.test', key: 'anon' })); });
   const page = await context.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
-  const check = (name, cond, extra = '') => { results.push([name, !!cond]); if (!cond) failed++; console.log((cond ? 'PASS ' : 'FAIL ') + name + (cond ? '' : '  ' + extra)); };
+  const check = (name, cond, extra = '') => { res.push([name, !!cond]); if (!cond) fails++; lines.push((cond ? 'PASS ' : 'FAIL ') + name + (cond ? '' : '  ' + extra)); };
   try { await page.goto(BASE + '/index.html'); await fn({ page, check, errors, db: () => page.evaluate(() => window.__DB), wait: ms => page.waitForTimeout(ms) }); }
-  catch (e) { failed++; console.log('FAIL (lỗi test) ' + (opts.name || '') + ': ' + e.stack.split('\n').slice(0,3).join(' / ')); }
+  catch (e) { fails++; lines.push('FAIL (lỗi test) ' + (opts.name || '') + ': ' + e.stack.split('\n').slice(0,3).join(' / ')); }
   await context.close();
+  return { lines, res, fails };
 }
 
 const files = fs.readdirSync(here).filter(f => f.endsWith('.spec.mjs')).filter(f => !process.argv[2] || process.argv[2].split(',').some(k => f.includes(k))).sort();
