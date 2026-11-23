@@ -258,6 +258,68 @@ function buildCardData(f) {
     ...('senses' in f ? { senses: dumpSenses(typeof f.senses === 'string' ? parseSenses(f.senses) : f.senses) } : {}),
   };
 }
+// ── Romaji → kana (gõ chữ Latin trên bàn phím điện thoại, tự đổi sang ひらがな / カタカナ) ──
+// Bảng romaji → hiragana (dạng lùi từ HIRA + các cách gõ phổ biến khác)
+const ROMA_KANA = (() => {
+  const m = {};
+  for (const [k, r] of Object.entries(HIRA)) if (!(r in m)) m[r] = k;
+  Object.assign(m, {
+    si: 'し', ti: 'ち', tu: 'つ', hu: 'ふ', zi: 'じ', di: 'ぢ', du: 'づ', wo: 'を',
+    sya: 'しゃ', syu: 'しゅ', syo: 'しょ', tya: 'ちゃ', tyu: 'ちゅ', tyo: 'ちょ', cya: 'ちゃ', cyu: 'ちゅ', cyo: 'ちょ',
+    jya: 'じゃ', jyu: 'じゅ', jyo: 'じょ', zya: 'じゃ', zyu: 'じゅ', zyo: 'じょ', dya: 'ぢゃ', dyu: 'ぢゅ', dyo: 'ぢょ',
+    fa: 'ふぁ', fi: 'ふぃ', fe: 'ふぇ', fo: 'ふぉ', ye: 'いぇ', wi: 'うぃ', we: 'うぇ', va: 'ゔぁ', vi: 'ゔぃ', vu: 'ゔ', ve: 'ゔぇ', vo: 'ゔぉ',
+    je: 'じぇ', che: 'ちぇ', she: 'しぇ', tsa: 'つぁ', tsi: 'つぃ', tse: 'つぇ', tso: 'つぉ', thi: 'てぃ', dhi: 'でぃ', twu: 'とぅ', dwu: 'どぅ',
+    xa: 'ぁ', xi: 'ぃ', xu: 'ぅ', xe: 'ぇ', xo: 'ぉ', la: 'ぁ', li: 'ぃ', lu: 'ぅ', le: 'ぇ', lo: 'ぉ',
+    xya: 'ゃ', xyu: 'ゅ', xyo: 'ょ', lya: 'ゃ', lyu: 'ゅ', lyo: 'ょ', xtu: 'っ', ltu: 'っ', xtsu: 'っ', ltsu: 'っ', xwa: 'ゎ', lwa: 'ゎ',
+  });
+  delete m.n;   // 'n' đơn xử lý riêng (ん) vì còn tuỳ chữ đứng sau
+  return m;
+})();
+const _VOWELS = 'aiueo';
+const _toKata = s => s.replace(/[ぁ-ゖ]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+/**
+ * Đổi romaji trong chuỗi sang kana, giữ nguyên ký tự khác (kanji, kana có sẵn, số, dấu).
+ * script: 'hira' (mặc định) | 'kata' | 'auto' (chữ thường → hiragana, CHỮ HOA → katakana)
+ * final=false (đang gõ): phần romaji dở dang ở cuối (k, sh, ky, n…) được giữ nguyên chờ gõ tiếp; final=true: chữ n lẻ → ん.
+ */
+function romajiToKana(text, script = 'hira', final = false) {
+  const src = String(text ?? ''); let out = '', i = 0;
+  const emit = (kana, upper) => { out += (script === 'kata' || (script === 'auto' && upper)) ? _toKata(kana) : kana; };
+  const isLetter = ch => /[A-Za-z]/.test(ch || '');
+  while (i < src.length) {
+    const ch = src[i];
+    if (!isLetter(ch)) {
+      // '-' ngay sau một chữ kana → kéo dài âm ー
+      if (ch === '-' && out && /[ぁ-ゖァ-ヺ]$/.test(out)) { out += 'ー'; i++; continue; }
+      out += ch; i++; continue;
+    }
+    const upper = ch !== ch.toLowerCase();
+    const low = src.slice(i, i + 4).toLowerCase();
+    // nhóm 1–4 chữ cái liền nhau, dài nhất trước
+    let hit = null;
+    for (let n = Math.min(4, low.length); n >= 1; n--) {
+      const key = low.slice(0, n);
+      if (/^[a-z]+$/.test(key) && ROMA_KANA[key]) { hit = [key, n]; break; }
+    }
+    if (hit) {
+      emit(ROMA_KANA[hit[0]], upper); i += hit[1]; continue;
+    }
+    const c = low[0], nx = low[1] || '';
+    // っ: phụ âm đôi (kk, tt, ss, pp…) hoặc "tch"
+    if (c !== 'n' && !_VOWELS.includes(c) && /[a-z]/.test(c) && (nx === c || (c === 't' && nx === 'c' && low[2] === 'h'))) { emit('っ', upper); i++; continue; }
+    // ん: n đứng trước phụ âm (trừ y) hoặc n' ; n cuối chuỗi chờ nếu chưa final
+    if (c === 'n') {
+      if (nx === "'") { emit('ん', upper); i += 2; continue; }
+      if (nx === 'n') { emit('ん', upper); i += (low[2] && (_VOWELS.includes(low[2]) || low[2] === 'y')) ? 1 : 2; continue; }   // "kanna" → かんな, "kann" → かん
+      if (nx && !_VOWELS.includes(nx) && nx !== 'y' && /[a-z]/.test(nx)) { emit('ん', upper); i++; continue; }
+      if (!nx && final) { emit('ん', upper); i++; continue; }
+    }
+    // phần còn lại: dở dang (hoặc không phải romaji hợp lệ) → giữ nguyên chữ Latin
+    out += ch; i++;
+  }
+  return out;
+}
+
 // Chọn nguồn kana để tự sinh romaji (resolve_romaji_source)
 function romajiSource(type, on, kun, kana, ch) {
   const k = type === 'kanji' ? ((kun || '').trim() || (on || '').trim()) : (kana || '').trim();

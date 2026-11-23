@@ -227,7 +227,7 @@ function openCardForm(id, preset = {}) {
     <div class="grid2 mrgrid" data-for="kanji">
       <div class="field" data-mr="reading_kun"><span>Âm Kun (KUN-yomi)</span><input type="hidden" name="reading_kun" value="${v('reading_kun')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_kun">+ Thêm âm Kun</button></div></div>
       <div class="field" data-mr="reading_on"><span>Âm On (ON-yomi)</span><input type="hidden" name="reading_on" value="${v('reading_on')}"><div class="mr-rows"></div><button type="button" class="btn ghost small" data-act="mrAdd" data-name="reading_on">+ Thêm âm On</button></div>
-    <label class="field" data-for="vocab hiragana katakana"><span>Cách đọc (kana)</span><input name="reading_kana" class="jp" value="${v('reading_kana')}"></label>
+    <label class="field" data-for="vocab hiragana katakana"><span>Cách đọc (kana)</span><input name="reading_kana" class="jp" data-kana="auto" autocapitalize="none" autocorrect="off" spellcheck="false" value="${v('reading_kana')}"></label>
     <label class="field" id="w-meaning_vi"><span>Nghĩa tiếng Việt *</span><input name="meaning_vi" value="${v('meaning_vi')}" maxlength="200"></label>
     <div id="cf-suggest" class="small" style="margin:-6px 0 10px"></div>
     ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks"></div></div>` : ''}
@@ -235,8 +235,7 @@ function openCardForm(id, preset = {}) {
     ${posField(c.pos)}
     ${cardExtOk() ? `<div data-for="vocab"><label class="field"><span>Tên riêng</span><select name="name_kind"><option value="">— Không phải tên riêng —</option>${NAME_KINDS.map(k => `<option value="${k[0]}" ${c.name_kind === k[0] ? 'selected' : ''}>${k[1]}</option>`).join('')}</select></label>
     <div class="field" id="cf-senses-box"><span>Nghĩa / từ loại khác của từ này</span><div id="cf-senses"></div>
-      <button type="button" class="btn ghost small" data-act="senseAdd">+ Thêm nghĩa / từ loại</button>
-      <span class="small mute">Dùng khi một từ có nhiều cách đọc hoặc từ loại, vd 学: động từ nhóm 1 まなぶ · học; danh từ がく · học vấn. Nghĩa ở trên là nghĩa chính.</span></div></div>` : ''}
+      <button type="button" class="btn ghost small" data-act="senseAdd">+ Thêm nghĩa / từ loại</button></div></div>` : ''}
     <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div>
     <div class="grid2 fit" data-for="kanji vocab"><label class="field"><span>Âm Hán Việt</span><input name="reading_hanviet" value="${v('reading_hanviet')}"></label>
       <label class="field" data-for="kanji"><span>Số nét</span><input name="stroke_count" type="number" inputmode="numeric" min="1" max="60" value="${v('stroke_count')}"></label></div>
@@ -360,7 +359,7 @@ function initMultiRead(form) {
     const name = box.dataset.mr, hid = box.querySelector('input[type=hidden]'), rows = box.querySelector('.mr-rows');
     const draw = (list, focusLast) => {
       if (!list.length) list = [''];
-      rows.innerHTML = list.map(x => `<div class="mr-row"><input class="jp" data-mrin="${name}" value="${esc(x)}" autocomplete="off"><button type="button" class="mr-x" tabindex="-1" aria-label="Xóa ô này" data-act="mrDel">×</button></div>`).join('');
+      rows.innerHTML = list.map(x => `<div class="mr-row"><input class="jp" data-mrin="${name}" ${name === 'reading_on' ? 'data-kana="kata"' : name === 'reading_kun' ? 'data-kana="hira"' : ''} value="${esc(x)}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"><button type="button" class="mr-x" tabindex="-1" aria-label="Xóa ô này" data-act="mrDel">×</button></div>`).join('');
       if (focusLast) rows.querySelector('.mr-row:last-child input').focus();
     };
     const collect = () => [...rows.querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean).join('、');

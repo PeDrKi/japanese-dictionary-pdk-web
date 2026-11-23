@@ -196,6 +196,9 @@ function runSession(cfg) {
       <div class="row" style="margin-top:10px"><button type="button" class="btn" id="kp" aria-label="Bàn phím kana">あ</button><button type="button" class="btn grow" id="skip">Bỏ qua</button><button class="btn primary grow" id="chk">Kiểm tra</button></div></form>
       <div class="feedback" id="fb"></div><div id="nx" style="margin-top:8px"></div></div>`);
     const ti = win.$('#ti'); setTimeout(() => ti.focus(), 60);
+    // Ô nhập kana: gõ romaji tự đổi sang kana (Âm On → katakana, Âm Kun → hiragana, Cách đọc → hiragana / CHỮ HOA = katakana)
+    const rt = m === 'kana' ? c._rt : m;
+    if (['kana', 'kun', 'on'].includes(m)) ti.dataset.kana = rt === 'on' ? 'kata' : rt === 'kun' ? 'hira' : (c.type === 'katakana' ? 'kata' : 'auto');
     win.$('#kp').onclick = () => openKanaPad(ti);
     win.$('#skip').onclick = () => {
       if (st.answered) return; st.answered = true; st.bad++; requeue();
@@ -204,7 +207,7 @@ function runSession(cfg) {
     };
     win.$('#typf').onsubmit = e => {
       e.preventDefault(); if (st.answered) { win.$('#go')?.click(); return; }
-      const v = ti.value.trim(); if (!v) return; st.answered = true;
+      kanaConvert(ti, true); const v = ti.value.trim(); if (!v) return; st.answered = true;
       const list = typingAnswers(c), ok = isCorrect(v, list); answer(ok);
       ti.classList.add(ok ? 'ok' : 'bad'); const fb = win.$('#fb'); fb.className = 'feedback ' + (ok ? 'ok' : 'bad');
       fb.textContent = ok ? '✓ Chính xác!' : `✗ Sai. Đáp án đúng: ${list.slice(0, 3).join(' / ')}`;

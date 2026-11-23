@@ -170,3 +170,17 @@ function charBox(str) {
   if (a.length < 2) return { multi: false, html: `<div class="ch">${esc(str)}</div>` };
   return { multi: true, html: `<div class="cells" style="--n:${a.length}">${a.map(x => `<span class="cell"><span class="ch">${esc(x)}</span></span>`).join('')}</div>` };
 }
+
+// ── Gõ romaji trên điện thoại → tự đổi sang kana ở các ô có data-kana ("hira" | "kata" | "auto": chữ thường → hiragana, CHỮ HOA → katakana) ──
+const kanaScript = el => el.dataset.kana === 'auto' && el.closest('form')?.dataset.type === 'katakana' ? 'kata' : el.dataset.kana;
+function kanaConvert(el, final) {
+  if (!el || !el.dataset || !el.dataset.kana) return false;
+  const v = el.value;
+  if (!final && el.selectionStart !== v.length) return false;   // sửa giữa chuỗi: không đổi để con trỏ khỏi nhảy
+  const nv = romajiToKana(v, kanaScript(el), final);
+  if (nv === v) return false;
+  el.value = nv; try { el.setSelectionRange(nv.length, nv.length); } catch { /* một số kiểu input không hỗ trợ */ }
+  return true;
+}
+document.addEventListener('input', e => { kanaConvert(e.target, false); }, true);   // capture: đổi xong rồi các xử lý khác mới đọc giá trị
+document.addEventListener('focusout', e => { if (kanaConvert(e.target, true)) e.target.dispatchEvent(new Event('input', { bubbles: true })); }, true);   // rời ô: chữ n còn lại → ん
