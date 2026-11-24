@@ -16,6 +16,7 @@ export default async ({ session }) => {
     await sel(page, '友達'); await page.waitForSelector('#selnote');
     check('thanh ghi nhanh có 3 nút', (await page.locator('#selnote button').count()) === 3);
     await page.click('[data-act=noteGloss]'); await page.waitForSelector('#glf');
+    await page.waitForFunction(() => document.activeElement && document.activeElement.name === 'meaning', null, { timeout: 5000 }).catch(() => {});
     check('form từ vựng điền sẵn từ đã bôi đen, con trỏ ở ô nghĩa', (await page.inputValue('#glf [name=term]')) === '友達' && await page.evaluate(() => document.activeElement.name === 'meaning'));
     await page.fill('#glf [name=meaning]', 'bạn bè'); await page.keyboard.press('Control+Enter'); await page.waitForSelector('#glf', { state: 'detached' }); await page.waitForTimeout(300);
     check('lưu vào cột glossary dạng "từ = nghĩa"', (await db()).translations[0].glossary === '友達 = bạn bè', JSON.stringify((await db()).translations[0].glossary));

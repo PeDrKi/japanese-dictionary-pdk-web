@@ -329,7 +329,9 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - v3.55: Ghép thẻ hiển thị bảng 2 cột × 5 hàng cố định.
 - v3.56: Luyện gõ nghĩa: nghĩa có nhiều vế ngăn bởi , ; / chỉ cần nhập 1 vế (vd. "Tháng / Mặt trăng"). Sửa trùng id form gõ với form bản dịch (gây lỗi JS khi bấm Enter).
 - v3.57: Giảm icon mặc định: bảng chọn icon gọn (4 nhóm ~30 icon); bộ thẻ/danh mục/kho mới không tự gán icon (danh sách bộ thẻ hiện chữ cái đầu); bỏ emoji trang trí trong nhãn nút/menu. Icon đã đặt trước đó giữ nguyên, không cần chạy lại schema.
-- v3.63: Làm bộ test giao diện bền hơn trên máy chậm (CI GitHub): mỗi bài chạy lại 1 lần nếu lỗi, thay thời gian chờ cố định bằng chờ điều kiện. Không đổi chức năng.
+- v3.65: Ôn tập Gõ: âm On và âm Kun đều nhận cả hiragana lẫn katakana (gõ romaji chữ thường → ひらがな, CHỮ HOA → カタカナ; ô cố định theo loại cũ đã bỏ).
+- v3.64: Ôn tập (Gõ): kanji có nhiều âm on/kun chỉ hỏi 1 lần, gõ bất kỳ âm nào cũng đúng (hiragana/katakana đều được), sau đó hiện các âm còn lại; bỏ kiểu (1/3), (2/3), (3/3) và ô "tách riêng từng âm".
+- v3.63: Làm bộ test giao diện bền hơn trên máy chậm (CI GitHub): mỗi bài chạy lại 1 lần nếu lỗi, thay thời gian chờ cố định bằng chờ điều kiện. Không đổi chức năng. Sửa thêm các bài kiểm tra con trỏ (focus) tự nhảy sau khi mở form.
 - v3.62: Gõ romaji trên điện thoại tự đổi sang kana ở Cách đọc (chữ thường = ひらがな, CHỮ HOA = カタカナ), Âm Kun (ひらがな), Âm On (カタカナ) và ô nhập của chế độ Gõ (Kana / Kun / On); bỏ dòng ví dụ ở mục Nghĩa / từ loại khác.
 - v3.61 (schema 15): thẻ tên riêng (Họ / Tên / Địa danh / Tổ chức-khác: nhãn màu, viền, bộ lọc ở Thư viện và Ôn tập) và một từ nhiều nghĩa / từ loại (cột senses). CẦN chạy lại schema.sql (v15); chưa chạy thì app vẫn dùng bình thường, chỉ ẩn hai tính năng mới.
 - v3.60: Sắp xếp tên bộ thẻ/kho theo số (Lession_2 trước Lession_10).

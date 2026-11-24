@@ -29,7 +29,6 @@ function viewStudyLauncher() {
   <div class="card sumcard"><span class="mute small">Lần này sẽ ôn</span><div><b>${MODE_LABEL[SC.mode]}</b> · ${SC.source === 'due' ? 'thẻ đến hạn' : 'tất cả thẻ'} · ${SC.mode === 'match' ? `${matchDef(SC.pair)[1]} · ${Math.min(SC.pairs, n)} cặp` : `${SC.limit || 'không giới hạn'} thẻ`}${nAdv ? ` · đã lọc (${nAdv})` : ''}</div></div>
   <details class="adv" id="sc-adv" ${SC.adv ? 'open' : ''}><summary>Tùy chỉnh bài ôn <span class="mute small" style="font-weight:400;margin-left:8px">câu hỏi, số thẻ, bộ lọc</span></summary>
   ${asks ? `<div class="field"><span>${SC.mode === 'quiz' ? 'Câu hỏi hỏi về' : 'Bạn sẽ nhập'}</span><div class="chips" style="flex-wrap:wrap">${asks.map(([k, l]) => chip(askKey, k, l)).join('')}</div></div>` : ''}
-  ${SC.mode === 'typing' && SC.typing === 'kana' ? `<label class="row" style="margin-bottom:12px"><input type="checkbox" data-act="scSplit" ${SC.split ? 'checked' : ''} style="width:20px;height:20px"><span>Tách từng âm đọc của Kanji thành câu hỏi riêng</span></label>` : ''}
   <div class="field"><span>Ôn những thẻ nào?</span><div class="chips">${chip('source', 'due', 'Đến hạn hôm nay')}${chip('source', 'all', 'Tất cả thẻ')}</div></div>
   ${SC.mode === 'match' ? '' : `<div class="field"><span>Số thẻ mỗi lượt</span><div class="chips">${[10, 20, 50, 0].map(v => `<button class="chip ${SC.limit === v ? 'on' : ''}" data-act="scLimit" data-v="${v}">${v || 'Tất cả'}</button>`).join('')}</div></div>`}
   <div class="mute small" style="margin:2px 0 8px"><b>Lọc thêm</b></div>
@@ -47,21 +46,20 @@ ACT.scSet = el => { SC[el.dataset.k] = el.dataset.v; render(); };
 ACT.scFav = () => { SC.fav = !SC.fav; render(); };
 ACT.scPairs = el => { SC.pairs = +el.dataset.v; render(); };
 ACT.scLimit = el => { SC.limit = +el.dataset.v; render(); };
-ACT.scSplit = el => { SC.split = el.checked; };
 document.addEventListener('toggle', e => { if (e.target.id === 'sc-adv') { SC.adv = e.target.open; saveSC(); } }, true);
 document.addEventListener('change', e => { if (e.target.id === 'sc-deck') { SC.deck = e.target.value; render(); } });
 ACT.scStart = () => startStudy({ ...SC, mode: SC.mode });
 
 // ── Chuẩn bị bộ câu hỏi ─────────────────────────────────────────────────────
 const fieldValue = (c, f) => (f === 'on' || f === 'kun') ? (c['reading_' + f] || null) : (c[f] || null);
-function expandKanaItems(cards, split) {
-  if (!split) return cards.map(c => ({ ...c }));
+// Kanji có nhiều âm đọc: chỉ hỏi MỘT lần; gõ bất kỳ âm nào trong danh sách đều đúng, rồi hiện các âm còn lại (_all = mọi âm hợp lệ)
+const splitReadings = v => (v || '').split(/[、,，/；;]+/).map(x => x.trim()).filter(Boolean);
+function expandKanaItems(cards) {
   const items = [];
   for (const c of cards) {
     if (c.type === 'kanji') {
-      const on = (c.reading_on || '').split('、').map(x => x.trim()).filter(Boolean), kun = (c.reading_kun || '').split('、').map(x => x.trim()).filter(Boolean);
-      const rs = [...on.map(v => ['on', v]), ...kun.map(v => ['kun', v])];
-      rs.forEach(([t, v], i) => items.push({ ...c, _rt: t, _rv: v, _pos: rs.length > 1 ? `${i + 1}/${rs.length}` : '' }));
+      const all = [...splitReadings(c.reading_on).map(v => ({ t: 'on', v })), ...splitReadings(c.reading_kun).map(v => ({ t: 'kun', v }))];
+      if (all.length) items.push({ ...c, _rt: 'kana', _all: all, _pos: '' });
     } else { const k = c.reading_kana || c.reading_kun || ''; if (k) items.push({ ...c, _rt: 'kana', _rv: k, _pos: '' }); }
   }
   return items;
@@ -70,8 +68,8 @@ function expandReadingItems(cards, kind) {
   const items = [];
   for (const c of cards) {
     if (c.type !== 'kanji') continue;
-    const vals = (c['reading_' + kind] || '').split('、').map(x => x.trim()).filter(Boolean);
-    vals.forEach((v, i) => items.push({ ...c, _rt: kind, _rv: v, _pos: vals.length > 1 ? `${i + 1}/${vals.length}` : '' }));
+    const all = splitReadings(c['reading_' + kind]).map(v => ({ t: kind, v }));
+    if (all.length) items.push({ ...c, _rt: kind, _all: all, _pos: '' });
   }
   return items;
 }
@@ -84,7 +82,7 @@ function startStudy(cfg) {
   else if (cfg.mode === 'quiz') { const f = cfg.ask || 'meaning_vi'; items = cards.filter(c => fieldValue(c, f)).map(c => ({ ...c })); }
   else {
     const m = cfg.typing || 'meaning';
-    if (m === 'kana') items = expandKanaItems(cards, cfg.split !== false);
+    if (m === 'kana') items = expandKanaItems(cards);
     else if (m === 'on' || m === 'kun') items = expandReadingItems(cards, m);
     else if (m === 'romaji') items = cards.filter(c => c.romaji || c.reading_kana).map(c => ({ ...c }));
     else if (m === 'hanviet') items = cards.filter(c => c.reading_hanviet).map(c => ({ ...c }));
@@ -169,21 +167,22 @@ function runSession(cfg) {
       a = c.romaji ? [c.romaji] : []; const kana = c.reading_kana || (c.reading_kun || '').split('、')[0];
       if (kana && !c.romaji) a.push(kanaToRomaji(kana));
     } else if (m === 'kana') {
-      if (c._rv) a = [c._rv]; else for (const k of [c.reading_kana, ...(c.reading_kun || '').split('、'), ...(c.reading_on || '').split('、')]) { const t = (k || '').trim(); if (t && !a.includes(t)) a.push(t); }
+      if (c._all) a = c._all.map(x => x.v); else if (c._rv) a = [c._rv]; else for (const k of [c.reading_kana, ...(c.reading_kun || '').split('、'), ...(c.reading_on || '').split('、')]) { const t = (k || '').trim(); if (t && !a.includes(t)) a.push(t); }
     } else if (m === 'hanviet') a = c.reading_hanviet ? [c.reading_hanviet] : [];
-    else a = c._rv ? [c._rv] : [];
+    else a = c._all ? c._all.map(x => x.v) : c._rv ? [c._rv] : [];
     return a;
   };
   const normR = s => s.replace(/oo/g, 'o').replace(/ou/g, 'o').replace(/uu/g, 'u').replace(/tt/g, 't').replace(/mb/g, 'nb').replace(/mp/g, 'np');
   const isCorrect = (ans, list) => {
-    const norm = s => (s || '').trim().toLowerCase(), a = norm(ans), ns = list.map(norm);
+    const kanaMode = ['kana', 'on', 'kun'].includes(cfg.typing || 'meaning');
+    const norm = s => (kanaMode ? kataToHira(s || '') : (s || '')).trim().toLowerCase(), a = norm(ans), ns = list.map(norm);   // ô kana: ニチ = にち
     if (ns.includes(a)) return true;
     if (['romaji', 'meaning'].includes(cfg.typing || 'meaning')) return ns.map(normR).includes(normR(a));
     return false;
   };
   const paintTyping = () => {
     const c = st.cur, m = cfg.typing || 'meaning'; let hint = '', prompt = '';
-    const lab = { on: 'âm ON-yomi', kun: 'âm KUN-yomi', kana: 'cách đọc' }[c._rt] || 'cách đọc'; const pos = c._pos ? `  (${c._pos})` : '';
+    const lab = { on: 'âm ON-yomi', kun: 'âm KUN-yomi', kana: 'cách đọc' }[c._rt] || 'cách đọc'; const pos = c._all && c._all.length > 1 ? ` — có ${c._all.length} âm, gõ một âm bất kỳ` : '';
     if (m === 'meaning') { hint = c.romaji || ''; prompt = 'Nhập nghĩa tiếng Việt:'; }
     else if (m === 'romaji') { const mv = c.meaning_vi || ''; hint = mv.length > 2 ? mv.slice(0, 2) + '...' : mv; prompt = 'Nhập romaji (phiên âm Latin):'; }
     else if (m === 'kana') { hint = c.romaji || ''; prompt = `Nhập ${lab}${pos}:`; }
@@ -198,11 +197,11 @@ function runSession(cfg) {
     const ti = win.$('#ti'); setTimeout(() => ti.focus(), 60);
     // Ô nhập kana: gõ romaji tự đổi sang kana (Âm On → katakana, Âm Kun → hiragana, Cách đọc → hiragana / CHỮ HOA = katakana)
     const rt = m === 'kana' ? c._rt : m;
-    if (['kana', 'kun', 'on'].includes(m)) ti.dataset.kana = rt === 'on' ? 'kata' : rt === 'kun' ? 'hira' : (c.type === 'katakana' ? 'kata' : 'auto');
+    ti.dataset.kana = c.type === 'katakana' ? 'kata' : 'auto';   // chữ thường → hiragana, CHỮ HOA → katakana (âm on/kun đều nhận cả hai)
     win.$('#kp').onclick = () => openKanaPad(ti);
     win.$('#skip').onclick = () => {
       if (st.answered) return; st.answered = true; st.bad++; requeue();
-      const fb = win.$('#fb'); fb.className = 'feedback'; fb.style.color = 'var(--accent)'; fb.textContent = `⏭ Đã bỏ qua. Đáp án: ${typingAnswers(c).slice(0, 3).join(' / ')}`;
+      const fb = win.$('#fb'); fb.className = 'feedback'; fb.style.color = 'var(--accent)'; fb.textContent = `⏭ Đã bỏ qua. Đáp án: ${typingAnswers(c).slice(0, c._all ? 12 : 3).join(' / ')}`;
       win.$('#nx').innerHTML = '<button class="btn primary block" id="go">Tiếp ›</button>'; win.$('#go').onclick = next;
     };
     win.$('#typf').onsubmit = e => {
@@ -210,9 +209,11 @@ function runSession(cfg) {
       kanaConvert(ti, true); const v = ti.value.trim(); if (!v) return; st.answered = true;
       const list = typingAnswers(c), ok = isCorrect(v, list); answer(ok);
       ti.classList.add(ok ? 'ok' : 'bad'); const fb = win.$('#fb'); fb.className = 'feedback ' + (ok ? 'ok' : 'bad');
-      fb.textContent = ok ? '✓ Chính xác!' : `✗ Sai. Đáp án đúng: ${list.slice(0, 3).join(' / ')}`;
+      // Nhiều âm đọc: đúng khi khớp một âm bất kỳ; sau đó hiện các âm còn lại để đối chiếu
+      const nrm = x => kataToHira(x || '').trim().toLowerCase(), rest = c._all ? list.filter(x => nrm(x) !== nrm(v)) : [];
+      fb.textContent = ok ? (rest.length ? `✓ Chính xác! Các âm còn lại: ${rest.join(' / ')}` : '✓ Chính xác!') : `✗ Sai. Đáp án đúng: ${list.slice(0, c._all ? 12 : 3).join(' / ')}`;
       win.$('#nx').innerHTML = '<button type="button" class="btn primary block" id="go">Tiếp ›</button>'; win.$('#go').onclick = next;
-      if (ok) st.timer = setTimeout(next, 900);
+      if (ok) st.timer = setTimeout(next, rest.length ? 3500 : 900);   // còn âm khác → để lâu hơn cho bạn đọc (hoặc bấm Tiếp / Enter)
     };
   };
 

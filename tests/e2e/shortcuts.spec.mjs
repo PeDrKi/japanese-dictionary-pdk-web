@@ -4,6 +4,7 @@ export default async ({ session }) => {
     await page.waitForSelector('#view'); const tab = () => page.evaluate(() => NAV.tab); const key = k => page.keyboard.press(k);
     for (const [k, t] of [['2', 'cards'], ['3', 'study'], ['4', 'decks'], ['5', 'more'], ['1', 'today']]) { await key(k); await page.waitForTimeout(120); check(`phím ${k} → tab ${t}`, (await tab()) === t); }
     await key('2'); await key('Slash'); await page.waitForTimeout(150);
+    await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'q', null, { timeout: 5000 }).catch(() => {});
     check('/ nhảy tới ô tìm kiếm', (await page.evaluate(() => document.activeElement.id)) === 'q');
     await page.keyboard.type('nuoc'); await page.waitForTimeout(300);
     check('đang gõ trong ô tìm: phím tắt không kích hoạt', (await tab()) === 'cards' && (await page.inputValue('#q')) === 'nuoc');

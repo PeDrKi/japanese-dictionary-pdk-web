@@ -21,6 +21,7 @@ export default async ({ session }) => {
     const v = n => page.inputValue(`#cf [name=${n}]`);
     check('form thẻ mở sẵn: chữ, câu ví dụ, bản dịch câu, nguồn', (await v('character')) === '友達' && (await v('example_jp')) === '今日は友達と映画を見に行きました。' && (await v('example_vi')) === 'Hôm nay tôi đi xem phim với bạn.' && (await v('source')) === '日記');
     await page.waitForTimeout(400);
+    await page.waitForFunction(() => document.activeElement && document.activeElement.name === 'meaning_vi', null, { timeout: 5000 }).catch(() => {});
     check('con trỏ nhảy tới ô nghĩa tiếng Việt', await page.evaluate(() => document.activeElement && document.activeElement.name === 'meaning_vi'));
     await page.fill('#cf [name=meaning_vi]', 'bạn bè'); await page.keyboard.press('Control+Enter'); await page.waitForSelector('#cf', { state: 'detached' });
     let d = await db(), c = d.cards.find(x => x.character === '友達');

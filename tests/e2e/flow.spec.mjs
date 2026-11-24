@@ -34,6 +34,7 @@ export default async ({ session }) => {
     await page.keyboard.press('Enter');
     await page.waitForSelector('[data-act=jishoPick]');
     await page.waitForTimeout(250);
+    await page.waitForFunction(() => document.activeElement && document.activeElement.dataset.act === 'jishoPick', null, { timeout: 5000 }).catch(() => {});
     check('mở danh sách Jisho, mục đầu có focus', await page.evaluate(() => document.activeElement && document.activeElement.dataset.act === 'jishoPick'));
     await page.keyboard.press('Enter');
     await page.waitForTimeout(400);
