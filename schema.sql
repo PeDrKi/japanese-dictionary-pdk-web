@@ -897,6 +897,8 @@ grant select, insert, update, delete on public.card_groups to authenticated;
 alter table public.cards drop constraint if exists cards_name_kind_check;
 alter table public.cards add constraint cards_name_kind_check check (name_kind is null or length(name_kind) <= 40);
 alter table public.cards add column if not exists extra text;
+-- Nhóm có sẵn đã xóa: hàng ghi đè hidden = true (tên đổi thành ~khoá để không chặn việc đặt trùng tên)
+alter table public.card_groups add column if not exists hidden boolean not null default false;
 
 create or replace function public.jp_sync_sig() returns text
 language sql stable set search_path = public as $$

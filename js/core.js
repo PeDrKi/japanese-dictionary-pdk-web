@@ -40,11 +40,11 @@ const parseGroupFields = v => {
   let a = v; if (typeof v === 'string') { try { a = JSON.parse(v); } catch { a = []; } }
   return Array.isArray(a) ? a.filter(x => x && x.k && String(x.label || '').trim()).slice(0, 6).map(x => ({ k: String(x.k).slice(0, 24), label: String(x.label).trim().slice(0, 30) })) : [];
 };
-const allNameGroups = () => {
+const allNameGroups = (withHidden = false) => {
   const gs = NAME_KINDS.map(([key, name, color]) => {
     const r = NAME_GROUPS.find(x => x.builtin === key);
-    return { key, id: r ? r.id : null, name: (r && r.name) || name, color: (r && safeColor(r.color)) || color, fields: parseGroupFields(r && r.fields), builtin: true };
-  });
+    return { key, id: r ? r.id : null, name: (r && r.name) || name, color: (r && safeColor(r.color)) || color, fields: parseGroupFields(r && r.fields), builtin: true, hidden: !!(r && r.hidden) };
+  }).filter(g => withHidden || !g.hidden);
   const custom = NAME_GROUPS.filter(x => !x.builtin).sort((a, b) => (a.sort_order - b.sort_order) || String(a.name).localeCompare(String(b.name), 'vi'));
   return [...gs, ...custom.map(r => ({ key: r.id, id: r.id, name: r.name, color: safeColor(r.color) || '#8E7CC3', fields: parseGroupFields(r.fields), builtin: false }))];
 };

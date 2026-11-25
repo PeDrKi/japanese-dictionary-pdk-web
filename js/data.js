@@ -555,17 +555,40 @@ async function saveNameGroup(key, { name, color, fields }) {
   const n = groupName(name), col = safeColor(color) || '#8E7CC3', fj = JSON.stringify(cleanGroupFields(fields));
   if (allNameGroups().some(g => g.key !== key && g.name.toLowerCase() === n.toLowerCase())) throw new Error(`Đã có nhóm tên "${n}"`);
   const cur = key ? nameGroup(key) : null; let r;
-  if (cur && cur.id) [r] = await mut(sb.from('card_groups').update({ name: n, color: col, fields: fj }).eq('id', cur.id).select());
+  if (cur && cur.id) [r] = await mut(sb.from('card_groups').update({ name: n, color: col, fields: fj, hidden: false }).eq('id', cur.id).select());
   else [r] = await mut(sb.from('card_groups').insert({ id: uuid7(), name: n, color: col, fields: fj, builtin: cur ? cur.key : null, sort_order: S.card_groups.length }).select());
   if (r) { const i = S.card_groups.findIndex(x => x.id === r.id); if (i >= 0) S.card_groups[i] = r; else S.card_groups.push(r); }
   setNameGroups(S.card_groups); return r;
 }
-// Xoá nhóm tự tạo (thẻ trong nhóm thành thẻ thường) hoặc đặt lại nhóm có sẵn về mặc định
-async function deleteNameGroup(key) {
-  const g = nameGroup(key); if (!g || !g.id) return;
-  if (!g.builtin) { const ids = S.cards.filter(c => alive(c) && c.name_kind === key).map(c => c.id); if (ids.length) await updateCards(ids, { name_kind: null, extra: null }); }
+// Nhóm có sẵn: về tên / màu / trường mặc định (xoá hàng ghi đè)
+async function resetNameGroup(key) {
+  const g = nameGroup(key); if (!g || !g.builtin || !g.id) return;
   await mut(sb.from('card_groups').delete().eq('id', g.id));
   S.card_groups = S.card_groups.filter(x => x.id !== g.id); setNameGroups(S.card_groups);
+}
+// Xoá nhóm (kể cả nhóm có sẵn): thẻ trong nhóm thành thẻ thường. Nhóm có sẵn chỉ bị ẩn (khôi phục được).
+async function deleteNameGroup(key) {
+  const g = nameGroup(key); if (!g) return;
+  const ids = S.cards.filter(c => alive(c) && c.name_kind === key).map(c => c.id);
+  if (ids.length) await updateCards(ids, { name_kind: null, extra: null });
+  if (!g.builtin) await mut(sb.from('card_groups').delete().eq('id', g.id));
+  else {
+    const patch = { name: '~' + key, fields: '[]', hidden: true }; let r;
+    if (g.id) [r] = await mut(sb.from('card_groups').update(patch).eq('id', g.id).select());
+    else [r] = await mut(sb.from('card_groups').insert({ id: uuid7(), color: g.color, builtin: key, sort_order: S.card_groups.length, ...patch }).select());
+    if (r) { const i = S.card_groups.findIndex(x => x.id === r.id); if (i >= 0) S.card_groups[i] = r; else S.card_groups.push(r); }
+    setNameGroups(S.card_groups); return;
+  }
+  S.card_groups = S.card_groups.filter(x => x.id !== g.id); setNameGroups(S.card_groups);
+}
+// Khôi phục nhóm có sẵn đã xoá (tên / màu mặc định, không có trường riêng)
+async function restoreNameGroup(key) {
+  const g = allNameGroups(true).find(x => x.key === key && x.builtin && x.hidden); if (!g) return;
+  const d = NAME_KINDS.find(k => k[0] === key);
+  if (allNameGroups().some(x => x.name.toLowerCase() === d[1].toLowerCase())) throw new Error(`Đã có nhóm tên "${d[1]}" — hãy đổi tên nhóm đó trước khi khôi phục`);
+  const [r] = await mut(sb.from('card_groups').update({ name: d[1], color: d[2], fields: '[]', hidden: false }).eq('id', g.id).select());
+  if (r) { const i = S.card_groups.findIndex(x => x.id === r.id); if (i >= 0) S.card_groups[i] = r; }
+  setNameGroups(S.card_groups);
 }
 const groupCards = key => S.cards.filter(c => alive(c) && !c.vault_id && c.name_kind === key);
 const deckVaultOk = () => S.vaultOk && (!S.decks.length || 'vault_id' in S.decks[0]);

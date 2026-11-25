@@ -33,6 +33,13 @@ export default async ({ session }) => {
     await page.evaluate(id => deleteNameGroup(id), g.id);
     const d = await db(); const c2 = d.cards.find(x => x.character === 'ラーメン');
     check('xóa nhóm: thẻ còn nguyên, thành thẻ thường', c2 && !c2.name_kind && !c2.extra && !d.card_groups.some(x => x.id === g.id), JSON.stringify(c2));
+    // xóa nhóm có sẵn rồi khôi phục
+    await page.evaluate(() => { const c = S.cards.find(x => !x.name_kind); return updateCards([c.id], { name_kind: 'place' }); });
+    await page.evaluate(() => deleteNameGroup('place'));
+    const d2 = await db(); const pl = d2.card_groups.find(x => x.builtin === 'place');
+    check('xóa nhóm có sẵn: ẩn khỏi danh sách, thẻ thành thẻ thường', pl && pl.hidden === true && !(await page.evaluate(() => allNameGroups().some(x => x.key === 'place'))) && !(await db()).cards.some(x => x.name_kind === 'place'), JSON.stringify(pl));
+    await page.evaluate(() => restoreNameGroup('place'));
+    check('khôi phục nhóm có sẵn về mặc định', await page.evaluate(() => { const g = nameGroup('place'); return g && g.name === 'Địa danh' && g.fields.length === 0; }));
     check('không lỗi JS', errors.length === 0, errors.join('|'));
   }, { name: 'nhóm từ riêng: tạo, màu, trường riêng' });
 };

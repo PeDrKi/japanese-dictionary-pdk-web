@@ -329,6 +329,8 @@ Mã ở `js/fx.js`. Mọi hiệu ứng ngắn (≤ 0.5 giây), chỉ dùng trans
 - v3.55: Ghép thẻ hiển thị bảng 2 cột × 5 hàng cố định.
 - v3.56: Luyện gõ nghĩa: nghĩa có nhiều vế ngăn bởi , ; / chỉ cần nhập 1 vế (vd. "Tháng / Mặt trăng"). Sửa trùng id form gõ với form bản dịch (gây lỗi JS khi bấm Enter).
 - v3.57: Giảm icon mặc định: bảng chọn icon gọn (4 nhóm ~30 icon); bộ thẻ/danh mục/kho mới không tự gán icon (danh sách bộ thẻ hiện chữ cái đầu); bỏ emoji trang trí trong nhãn nút/menu. Icon đã đặt trước đó giữ nguyên, không cần chạy lại schema.
+- v3.71: Nhóm từ riêng — nhóm có sẵn (Họ, Tên, Địa danh, Tổ chức) cũng xóa được (thẻ thành thẻ thường); nhóm đã xóa hiện ở cuối danh sách để khôi phục. Schema 16 có thêm cột card_groups.hidden — chạy lại schema.sql.
+- v3.70: Sửa test e2e "ime" hay lỗi ngẫu nhiên trên CI (đợi form xong autofocus rồi mới gõ). Không đổi chức năng.
 - v3.69: Bộ lọc theo Nguồn — Thư viện → Bộ lọc → Nguồn (chọn từ danh sách nguồn đang có, kèm số thẻ, có mục "Chưa có nguồn") và trong Tùy chỉnh bài ôn ở tab Ôn tập.
 - v3.68: Kiểu chữ gõ thống nhất toàn web: mặc định Abc (không đổi); Ctrl+~ (phím dưới Esc) hoặc nút nhỏ cạnh ô đang gõ đổi Abc → あ → ア ở MỌI ô nhập. Các ô kana (Cách đọc / Âm On / Âm Kun / ô gõ ở Ôn tập) theo kiểu chữ chung này thay vì tự đổi riêng; màn Ôn Gõ có 3 nút Hiragana / Katakana / Abc đồng bộ với phím tắt.
 - v3.67: Ôn Gõ (cách đọc / âm On / âm Kun): thêm nút chọn kiểu chữ gõ vào — あ Hiragana (mặc định) / ア Katakana / Abc không đổi (dùng bàn phím tiếng Nhật riêng); nhớ lựa chọn.

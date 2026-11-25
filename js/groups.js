@@ -12,11 +12,13 @@ function openGroups() {
 }
 function paintGroups(s = window._gs) {
   const box = s && s.$('#grp-list'); if (!box) return;
+  const gone = allNameGroups(true).filter(g => g.hidden);
   box.innerHTML = allNameGroups().map(g => `<div class="item grp" style="--nk:${g.color}">
     <span class="grow"><span class="t">${groupBar(g)} ${esc(g.name)}</span><span class="small mute">${groupCards(g.key).length} thẻ${g.fields.length ? ' · ' + g.fields.map(f => esc(f.label)).join(', ') : ''}</span></span>
-    <span class="row" style="gap:6px"><button class="btn small" data-act="groupView" data-key="${esc(g.key)}">Xem</button><button class="btn small" data-act="groupAddCard" data-key="${esc(g.key)}">＋ Thẻ</button><button class="btn small ghost" data-act="groupEdit" data-key="${esc(g.key)}">Sửa</button></span></div>`).join('');
+    <span class="row" style="gap:6px"><button class="btn small" data-act="groupView" data-key="${esc(g.key)}">Xem</button><button class="btn small" data-act="groupAddCard" data-key="${esc(g.key)}">＋ Thẻ</button><button class="btn small ghost" data-act="groupEdit" data-key="${esc(g.key)}">Sửa</button></span></div>`).join('') + (gone.length ? `<div class="small mute" style="margin-top:10px">Nhóm có sẵn đã xóa:</div><div class="row wrap" style="gap:6px">${gone.map(g => `<button class="chip" data-act="groupRestore" data-key="${g.key}">↺ ${esc(NAME_KINDS.find(k => k[0] === g.key)[1])}</button>`).join('')}</div>` : '');
 }
 ACT.groups = () => openGroups();
+ACT.groupRestore = async el => { const ok = await guard(() => restoreNameGroup(el.dataset.key), 'Đã khôi phục nhóm'); if (ok !== undefined) { paintGroups(); render(); } };
 ACT.groupNew = () => groupForm(null);
 ACT.groupEdit = el => groupForm(el.dataset.key);
 ACT.groupView = el => { FILT.nk = el.dataset.key; FILT.type = ''; window._gs?.close?.(); ACT.tab({ dataset: { tab: 'cards' } }); };
@@ -32,7 +34,7 @@ function groupForm(key) {
       <label class="field"><span>Màu</span><div class="row"><input type="color" name="color" value="${g.color}" style="width:56px;height:40px;padding:2px"><span class="small mute">Màu viền / nhãn của thẻ thuộc nhóm</span></div></label>
       <div class="field"><span>Trường riêng (tối đa 6)</span><div id="gf-fields">${g.fields.map(fieldRow).join('')}</div>
         <button type="button" class="btn ghost small" data-act="gfAdd">＋ Thêm trường</button></div>
-      <div class="row sheet-actions"><button type="button" class="btn grow" data-close>Hủy</button>${key && !g.builtin ? '<button type="button" class="btn grow danger" data-act="gfRemove">Xóa nhóm</button>' : key && g.id ? '<button type="button" class="btn grow" data-act="gfRemove">Về mặc định</button>' : ''}<button type="submit" class="btn primary grow">Lưu</button></div>
+      <div class="row sheet-actions"><button type="button" class="btn grow" data-close>Hủy</button>${key && g.builtin && g.id ? '<button type="button" class="btn grow" data-act="gfReset">Về mặc định</button>' : ''}${key ? '<button type="button" class="btn grow danger" data-act="gfRemove">Xóa nhóm</button>' : ''}<button type="submit" class="btn primary grow">Lưu</button></div>
     </form>`);
   const f = s.$('#gf'); f._key = key; f._sheet = s; f._row = fieldRow; window._gf = f;
   f.addEventListener('submit', async e => {
@@ -45,11 +47,17 @@ function groupForm(key) {
 }
 ACT.gfAdd = () => { const f = window._gf; if (!f) return; const box = f.querySelector('#gf-fields'); if (box.children.length >= 6) return toast('Tối đa 6 trường', true); box.insertAdjacentHTML('beforeend', f._row({})); box.lastElementChild.querySelector('input').focus(); };
 ACT.gfDel = el => el.closest('.gf-row')?.remove();
+ACT.gfReset = async () => {
+  const f = window._gf; if (!f) return; const g = nameGroup(f._key); if (!g) return;
+  if (!confirm(`Đặt nhóm "${g.name}" về tên, màu mặc định và bỏ các trường riêng?`)) return;
+  const ok = await guard(() => resetNameGroup(g.key), 'Đã đặt lại nhóm');
+  if (ok === undefined) return; f._sheet.close(); render(); if (window._gs && window._gs.el.isConnected) paintGroups();
+};
 ACT.gfRemove = async () => {
   const f = window._gf; if (!f) return; const g = nameGroup(f._key); if (!g) return;
   const n = groupCards(g.key).length;
-  if (!confirm(g.builtin ? `Đặt nhóm "${g.name}" về tên, màu mặc định và bỏ các trường riêng?` : `Xóa nhóm "${g.name}"? ${n} thẻ trong nhóm sẽ thành thẻ thường (không mất thẻ).`)) return;
-  const ok = await guard(() => deleteNameGroup(g.key), g.builtin ? 'Đã đặt lại nhóm' : 'Đã xóa nhóm');
+  if (!confirm(`Xóa nhóm "${g.name}"? ${n} thẻ trong nhóm sẽ thành thẻ thường (không mất thẻ).${g.builtin ? ' Có thể khôi phục lại nhóm có sẵn sau.' : ''}`)) return;
+  const ok = await guard(() => deleteNameGroup(g.key), 'Đã xóa nhóm');
   if (ok === undefined) return; f._sheet.close(); render(); if (window._gs && window._gs.el.isConnected) paintGroups();
 };
 

@@ -21,7 +21,8 @@ export default async ({ session }) => {
   // Gõ tiếng Nhật: Ctrl+` đổi vòng Tắt → あ → ア
   await session(SEED, async ({ page, check }) => {
     await page.waitForSelector('#view'); await page.click('#tabs [data-tab=cards]'); await page.click('.fab'); await page.waitForSelector('#cf');
-    const type = async (sel, s) => { await page.fill(sel, ''); await page.click(sel); await page.keyboard.type(s, { delay: 8 }); return page.inputValue(sel); };
+    await page.waitForFunction(() => document.activeElement?.name === 'character'); await page.waitForTimeout(250);   // form tự focus ô Chữ sau ~60ms — đợi xong rồi mới sang ô khác
+    const type = async (sel, s) => { await page.fill(sel, ''); await page.focus(sel); await page.waitForFunction(n => document.activeElement?.name === n, sel.match(/name=(\w+)/)[1]); await page.keyboard.type(s, { delay: 8 }); return page.inputValue(sel); };
     check('mặc định tắt: gõ romaji giữ nguyên', (await type('#cf [name=meaning_vi]', 'taberu')) === 'taberu');
     await page.keyboard.press('Control+Backquote'); check('Ctrl+` bật hiragana', (await page.evaluate(() => IME.mode)) === 1);
     const CASES = { taberu: 'たべる', nihongo: 'にほんご', konnichiha: 'こんにちは', onna: 'おんな', gakkou: 'がっこう', chotto: 'ちょっと', "kon'ya": 'こんや', 'kohi-': 'こひー', shinnbunn: 'しんぶん', shinbun: 'しんぶn', sannninn: 'さんにん' };
