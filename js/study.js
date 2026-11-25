@@ -35,7 +35,7 @@ function viewStudyLauncher() {
   <div class="field"><span>Loại thẻ</span><div class="chips"><button class="chip ${SC.type ? '' : 'on'}" data-act="scSet" data-k="type" data-v="">Tất cả</button>${TYPES.map(t => chip('type', t, TYPE_LABEL[t])).join('')}</div></div>
   <div class="field"><span>JLPT</span><div class="chips"><button class="chip ${SC.jlpt ? '' : 'on'}" data-act="scSet" data-k="jlpt" data-v="">Tất cả</button>${JLPT.map(t => chip('jlpt', t, t)).join('')}</div></div>
   <div class="field"><span>Từ loại</span>${posChips(SC.pos, 'scSet', 'pos')}</div>
-  ${cardExtOk() ? `<div class="field"><span>Tên riêng</span><div class="chips" style="flex-wrap:wrap">${chip('nk', '', 'Tất cả')}${chip('nk', '*', 'Mọi tên riêng')}${NAME_KINDS.map(k => chip('nk', k[0], k[1])).join('')}</div></div>` : ''}
+  ${cardExtOk() ? `<div class="field"><span>Tên riêng</span><div class="chips" style="flex-wrap:wrap">${chip('nk', '', 'Tất cả')}${chip('nk', '*', 'Mọi tên riêng')}${allNameGroups().map(g => chip('nk', g.key, esc(g.name))).join('')}</div></div>` : ''}
   <div class="field"><span>Trạng thái</span><div class="chips"><button class="chip ${SC.status ? '' : 'on'}" data-act="scSet" data-k="status" data-v="">Tất cả</button>${STATUSES.map(t => chip('status', t, STATUS_LABEL[t])).join('')}</div></div>
   ${liveDecks().length ? `<label class="field"><span>Bộ thẻ</span><select id="sc-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${SC.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>` : ''}
   <div class="row wrap" style="margin-bottom:6px"><button class="chip ${SC.fav ? 'on' : ''}" data-act="scFav">★ Chỉ yêu thích</button></div></details>
@@ -191,13 +191,20 @@ function runSession(cfg) {
     win.set(`<div class="page">${bar()}<div class="sp"></div><div style="max-width:240px;margin:0 auto">${paper(c)}</div>
       <div class="mute small" style="text-align:center;margin-top:8px;min-height:20px">${hint ? 'Gợi ý: ' + esc(hint) : ''}</div>
       <p style="text-align:center;margin:6px 0 8px;font-weight:600">${esc(prompt)}</p>
+      ${['kana', 'on', 'kun'].includes(m) ? `<div class="chips" id="sc" role="group" aria-label="Kiểu chữ gõ (Ctrl+~ để đổi ở mọi ô nhập)" title="Ctrl+~ (phím dưới Esc) để đổi ở mọi ô nhập" style="justify-content:center;margin-bottom:8px"><button type="button" class="chip" data-s="1">あ Hiragana</button><button type="button" class="chip" data-s="2">ア Katakana</button><button type="button" class="chip" data-s="0">Abc Không đổi</button></div>` : ''}
       <form id="typf"><input id="ti" class="input typein jp" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done">
       <div class="row" style="margin-top:10px"><button type="button" class="btn" id="kp" aria-label="Bàn phím kana">あ</button><button type="button" class="btn grow" id="skip">Bỏ qua</button><button class="btn primary grow" id="chk">Kiểm tra</button></div></form>
       <div class="feedback" id="fb"></div><div id="nx" style="margin-top:8px"></div></div>`);
     const ti = win.$('#ti'); setTimeout(() => ti.focus(), 60);
     // Ô nhập kana: gõ romaji tự đổi sang kana (Âm On → katakana, Âm Kun → hiragana, Cách đọc → hiragana / CHỮ HOA = katakana)
     const rt = m === 'kana' ? c._rt : m;
-    ti.dataset.kana = c.type === 'katakana' ? 'kata' : 'auto';   // chữ thường → hiragana, CHỮ HOA → katakana (âm on/kun đều nhận cả hai)
+    // Kiểu chữ gõ vào dùng bộ gõ chung (ime.js): mặc định Abc (không đổi); Ctrl+` hoặc 3 nút này để đổi あ / ア / Abc ở MỌI ô nhập. Đáp án hira/kata đều được nhận.
+    if (['kana', 'on', 'kun'].includes(m)) ti.dataset.kana = 'auto'; else delete ti.dataset.kana;   // có dấu → n cuối thành ん khi kiểm tra
+    const syncScript = () => win.$('#sc')?.querySelectorAll('[data-s]').forEach(b => b.classList.toggle('on', +b.dataset.s === IME.mode));
+    syncScript();
+    if (window._imeStudy) document.removeEventListener('imemode', window._imeStudy);
+    window._imeStudy = syncScript; document.addEventListener('imemode', syncScript);
+    win.$('#sc')?.addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; IME.cycle(+b.dataset.s); ti.focus(); });
     win.$('#kp').onclick = () => openKanaPad(ti);
     win.$('#skip').onclick = () => {
       if (st.answered) return; st.answered = true; st.bad++; requeue();

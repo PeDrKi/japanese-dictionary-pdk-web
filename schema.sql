@@ -865,5 +865,63 @@ create index if not exists cards_name_kind on public.cards (user_id, name_kind) 
 create or replace function public.jp_schema_version() returns integer
 language sql stable as $$ select 15 $$;
 
+-- ============================================================================
+-- PHIÊN BẢN 16 — Nhóm "từ riêng" tự tạo (tên + màu + các trường riêng)
+--   card_groups : mỗi hàng là 1 nhóm. builtin = 'surname'|'given'|'place'|'org' → hàng ghi đè tên/màu/trường của nhóm có sẵn;
+--                 builtin NULL → nhóm tự tạo (cards.name_kind = id của nhóm, dạng chuỗi).
+--   fields      : chuỗi JSON [{"k":"f1a2b3","label":"Hán tự"}, …] (tối đa 6) — các trường riêng khi tạo thẻ của nhóm.
+--   cards.extra : chuỗi JSON {"f1a2b3":"giá trị"} lưu giá trị các trường riêng.
+-- ============================================================================
+create table if not exists public.card_groups (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name        text not null check (length(btrim(name)) between 1 and 40),
+  color       text not null default '#8E7CC3' check (color ~ '^#[0-9a-fA-F]{6}$'),
+  builtin     text check (builtin is null or builtin in ('surname', 'given', 'place', 'org')),
+  fields      text not null default '[]',
+  sort_order  integer not null default 0,
+  version     bigint not null default 1,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create unique index if not exists card_groups_user_name on public.card_groups (user_id, lower(btrim(name)));
+create unique index if not exists card_groups_user_builtin on public.card_groups (user_id, builtin) where builtin is not null;
+drop trigger if exists trg_touch on public.card_groups;
+create trigger trg_touch before insert or update on public.card_groups for each row execute function public.touch_versioned();
+alter table public.card_groups enable row level security;
+drop policy if exists "own rows" on public.card_groups;
+create policy "own rows" on public.card_groups for all to authenticated
+  using (user_id = auth.uid() and public.jp_is_active()) with check (user_id = auth.uid() and public.jp_is_active());
+grant select, insert, update, delete on public.card_groups to authenticated;
+
+alter table public.cards drop constraint if exists cards_name_kind_check;
+alter table public.cards add constraint cards_name_kind_check check (name_kind is null or length(name_kind) <= 40);
+alter table public.cards add column if not exists extra text;
+
+create or replace function public.jp_sync_sig() returns text
+language sql stable set search_path = public as $$
+  select md5(concat_ws('|',
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from decks),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radicals),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from deck_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from radical_cards),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from user_decompositions),
+    (select count(*)::text || coalesce(max(studied_at)::text, '') from study_sessions),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from grammar_points),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_forms),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_verbs),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from conj_cells),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from translations),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from vaults),
+    (select count(*)::text || coalesce(max(updated_at)::text, '') from card_groups),
+    (select coalesce(md5(string_agg(id::text || name || coalesce(icon, '') || sort_order::text, ',' order by id)), '') from deck_categories)
+  )) $$;
+revoke execute on function public.jp_sync_sig() from public, anon;
+grant execute on function public.jp_sync_sig() to authenticated;
+
+create or replace function public.jp_schema_version() returns integer
+language sql stable as $$ select 16 $$;
+
 -- Báo cho API nạp lại cấu trúc mới ngay (cột version, hàm log_study)
 notify pgrst, 'reload schema';

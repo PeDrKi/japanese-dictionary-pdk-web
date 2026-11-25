@@ -133,7 +133,7 @@ ACT.openFilter = () => {
   const s = openSheet(`<h2>Bộ lọc</h2>
     <div class="field"><span>Cấp độ JLPT</span><div class="chips wrap" style="flex-wrap:wrap">${chip('jlpt', '', 'Tất cả')}${JLPT.map(j => chip('jlpt', j, j)).join('')}</div></div>
     <div class="field"><span>Từ loại</span><div id="posbox">${posChips(FILT.pos, 'fset', 'pos')}</div></div>
-    ${cardExtOk() ? `<div class="field"><span>Tên riêng</span><div class="chips" style="flex-wrap:wrap">${chip('nk', '', 'Tất cả')}${chip('nk', '*', 'Mọi tên riêng')}${NAME_KINDS.map(k => chip('nk', k[0], k[1])).join('')}</div></div>` : ''}
+    ${cardExtOk() ? `<div class="field"><span>Tên riêng</span><div class="chips" style="flex-wrap:wrap">${chip('nk', '', 'Tất cả')}${chip('nk', '*', 'Mọi tên riêng')}${allNameGroups().map(g => chip('nk', g.key, esc(g.name))).join('')}</div></div>` : ''}
     <div class="field"><span>Trạng thái</span><div class="chips" style="flex-wrap:wrap">${chip('status', '', 'Tất cả')}${STATUSES.map(j => chip('status', j, STATUS_LABEL[j])).join('')}</div></div>
     <label class="field"><span>Bộ thẻ</span><select id="f-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${FILT.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>
     ${S.cats.length ? `<label class="field"><span>Danh mục</span><select id="f-cat"><option value="">Tất cả</option>${S.cats.map(c => `<option value="${c.id}" ${FILT.cat === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}<option value="_none" ${FILT.cat === '_none' ? 'selected' : ''}>Chưa phân loại</option></select></label>` : ''}
@@ -163,7 +163,8 @@ ACT.bulkDeckSet = async el => { await guard(() => linkCardsToDeck([...FILT.sel],
 function openCardDetail(id) {
   const c = S.byId.get(id); if (!c) return;
   const extra = sensesOf(c), nkL = nameKindLabel(c.name_kind);
-  const kv = [...(nkL ? [['Tên riêng', nkL]] : []), ['Từ loại', posPath(c.pos)], ['Âm Kun', c.reading_kun], ['Âm On', c.reading_on], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
+  const ng = nameGroup(c.name_kind), ex = parseExtra(c.extra);
+  const kv = [...(nkL ? [['Tên riêng', nkL]] : []), ...((ng ? ng.fields : []).map(f => [f.label, ex[f.k]])), ['Từ loại', posPath(c.pos)], ['Âm Kun', c.reading_kun], ['Âm On', c.reading_on], ['Cách đọc', c.reading_kana], ['Hán Việt', c.reading_hanviet], ['Romaji', c.romaji],
     ['Nghĩa (EN)', c.meaning_en], ['Số nét', c.stroke_count], ['Ví dụ', c.example_jp], ['Dịch ví dụ', c.example_vi], ['Nguồn', c.source], ['Ghi chú', c.notes]].filter(x => x[1]);
   const decks = (S.deckOfCard.get(id) || []).map(i => S.decks.find(d => d.id === i)).filter(Boolean);
   const rads = (S.radOfCard.get(id) || []).map(i => S.radicals.find(d => d.id === i)).filter(Boolean);
@@ -233,7 +234,8 @@ function openCardForm(id, preset = {}) {
     ${liveDecks().length ? `<div class="field"><span>Bộ thẻ</span><div class="row wrap" id="cf-decks"></div></div>` : ''}
     <details class="adv" id="cf-adv" ${id || preset.example_jp || preset.source || preset.name_kind ? 'open' : ''}><summary id="cf-advs">Tùy chọn thêm</summary>
     ${posField(c.pos)}
-    ${cardExtOk() ? `<div data-for="vocab"><label class="field"><span>Tên riêng</span><select name="name_kind"><option value="">— Không phải tên riêng —</option>${NAME_KINDS.map(k => `<option value="${k[0]}" ${c.name_kind === k[0] ? 'selected' : ''}>${k[1]}</option>`).join('')}</select></label>
+    ${cardExtOk() ? `<div data-for="vocab"><label class="field"><span>Tên riêng</span><select name="name_kind"><option value="">— Không phải tên riêng —</option>${allNameGroups().map(g => `<option value="${esc(g.key)}" ${c.name_kind === g.key ? 'selected' : ''}>${esc(g.name)}</option>`).join('')}</select></label>
+    <div id="cf-extra"></div>
     <div class="field" id="cf-senses-box"><span>Nghĩa / từ loại khác của từ này</span><div id="cf-senses"></div>
       <button type="button" class="btn ghost small" data-act="senseAdd">+ Thêm nghĩa / từ loại</button></div></div>` : ''}
     <div class="grid2"><label class="field"><span>JLPT</span><select name="jlpt_level"><option value="">—</option>${JLPT.map(j => `<option ${c.jlpt_level === j ? 'selected' : ''}>${j}</option>`).join('')}</select></label></div>
@@ -251,6 +253,8 @@ function openCardForm(id, preset = {}) {
   </form>`, { sticky: true });
   const form = s.$('#cf'); form.dataset.type = c.type; form._deckSel = decks; form._isNew = !id; form._id = id; form._sheet = s;
   form._senses = sensesOf(c).map(x => ({ ...x })); renderSenses(form);
+  form._extra = parseExtra(c.extra); renderExtraFields(form);
+  form.elements.name_kind?.addEventListener('change', () => renderExtraFields(form));
   posWire(form); initMultiRead(form); syncFormType(form); updateAdvSummary(form); renderDeckField(form);
   form.addEventListener('change', () => updateAdvSummary(form));
   if (!id) wireAutofill(form);
@@ -265,10 +269,11 @@ function openCardForm(id, preset = {}) {
       reading_kana: t !== 'kanji' ? f.reading_kana : null, reading_hanviet: (t === 'kanji' || t === 'vocab') ? f.reading_hanviet : null,
       romaji: f.romaji, meaning_en: f.meaning_en, example_jp: f.example_jp, example_vi: f.example_vi, stroke_count: t === 'kanji' ? f.stroke_count : null,
       jlpt_level: f.jlpt_level, pos: f.pos, status: (id && base ? base.status : 'new'), is_favorite: !!f.is_favorite, source: f.source, notes: f.notes,
-      ...(cardExtOk() ? { name_kind: t === 'vocab' ? f.name_kind : (base?.name_kind || null), senses: t === 'vocab' ? readSenses(form) : (base?.senses || null) } : {}),
+      ...(cardExtOk() ? { name_kind: t === 'vocab' ? f.name_kind : (base?.name_kind || null), ...(groupExtOk() ? { extra: t === 'vocab' && f.name_kind ? readExtra(form) : (t === 'vocab' ? null : (base?.extra || null)) } : {}), senses: t === 'vocab' ? readSenses(form) : (base?.senses || null) } : {}),
     });
     // Trường bạn không đụng tới giữ NGUYÊN giá trị gốc (không bị cắt độ dài / chuẩn hoá lại → không sinh xung đột giả, không mất chữ)
     if (id && base) for (const k of Object.keys(data)) if (typeof data[k] === 'string' && k in f && base[k] != null && String(f[k]).trim() === String(base[k]).trim()) data[k] = base[k];
+    if (id && base && 'extra' in data && JSON.stringify(parseExtra(base.extra)) === JSON.stringify(parseExtra(data.extra))) data.extra = base.extra ?? null;
     if (id && base && 'senses' in data && JSON.stringify(parseSenses(base.senses)) === JSON.stringify(parseSenses(data.senses))) data.senses = base.senses ?? null;   // không đổi → giữ nguyên chuỗi gốc (desktop có thể xếp khoá khác thứ tự)
     const dups = findDuplicates(data.character, t, id);
     if (dups.length) {
@@ -542,7 +547,8 @@ function viewMore() {
     + link('訳', 'Bản dịch', `${S.translations.length} bài`, 'trans')
     + link('蔵', 'Kho thẻ', S.vaultOk ? `${S.vaults.length} kho · ${S.cards.filter(c => alive(c) && c.vault_id).length} thẻ đang cất` : 'Cần nâng cấp schema', 'vault')
     + link('部', 'Bộ thủ', 'Nhóm thẻ theo bộ', 'radicals')
-    + act('合', 'Ghép kanji', 'Ghép kanji đã có thành từ mới', 'compound'))}
+    + act('合', 'Ghép kanji', 'Ghép kanji đã có thành từ mới', 'compound')
+    + act('名', 'Nhóm từ riêng', S.groupOk ? `${allNameGroups().filter(g => groupCards(g.key).length).length} nhóm đang dùng · chọn màu, thêm trường` : 'Cần nâng cấp schema', 'groups'))}
   ${sec('Thêm thẻ',
     act('速', 'Nhập nhanh', 'Dán nhiều dòng "chữ - nghĩa"', 'quickAdd')
     + link('組', 'Bộ thẻ mẫu', 'Từ vựng, kanji có sẵn', 'starters')

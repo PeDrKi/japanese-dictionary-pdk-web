@@ -31,9 +31,29 @@ const safePos = v => { const s = String(v ?? '').trim().toLowerCase(); return PO
 
 // ── Thẻ tên riêng (cột name_kind) và nhiều nghĩa / từ loại (cột senses = chuỗi JSON các nghĩa PHỤ) ──
 const NAME_KINDS = [['surname', 'Họ', '#E5738B'], ['given', 'Tên', '#F0A04B'], ['place', 'Địa danh', '#4EA9A0'], ['org', 'Tổ chức / khác', '#8E7CC3']];
-const safeNameKind = v => NAME_KINDS.some(k => k[0] === v) ? v : null;
-const nameKindLabel = v => (NAME_KINDS.find(k => k[0] === v) || [])[1] || '';
-const nameKindColor = v => (NAME_KINDS.find(k => k[0] === v) || [])[2] || '';
+// Nhóm từ riêng (schema v16, bảng card_groups): 4 nhóm có sẵn (đổi được tên / màu) + nhóm tự tạo. cards.name_kind = khoá nhóm
+// (surname|given|place|org hoặc id nhóm tự tạo); cards.extra = chuỗi JSON {mã trường: giá trị} cho các trường riêng của nhóm.
+let NAME_GROUPS = [];
+const setNameGroups = rows => { NAME_GROUPS = Array.isArray(rows) ? rows : []; };
+const safeColor = v => /^#[0-9a-fA-F]{6}$/.test(v || '') ? v : '';
+const parseGroupFields = v => {
+  let a = v; if (typeof v === 'string') { try { a = JSON.parse(v); } catch { a = []; } }
+  return Array.isArray(a) ? a.filter(x => x && x.k && String(x.label || '').trim()).slice(0, 6).map(x => ({ k: String(x.k).slice(0, 24), label: String(x.label).trim().slice(0, 30) })) : [];
+};
+const allNameGroups = () => {
+  const gs = NAME_KINDS.map(([key, name, color]) => {
+    const r = NAME_GROUPS.find(x => x.builtin === key);
+    return { key, id: r ? r.id : null, name: (r && r.name) || name, color: (r && safeColor(r.color)) || color, fields: parseGroupFields(r && r.fields), builtin: true };
+  });
+  const custom = NAME_GROUPS.filter(x => !x.builtin).sort((a, b) => (a.sort_order - b.sort_order) || String(a.name).localeCompare(String(b.name), 'vi'));
+  return [...gs, ...custom.map(r => ({ key: r.id, id: r.id, name: r.name, color: safeColor(r.color) || '#8E7CC3', fields: parseGroupFields(r.fields), builtin: false }))];
+};
+const nameGroup = key => key ? allNameGroups().find(g => g.key === key) || null : null;
+const safeNameKind = v => nameGroup(v) ? v : null;
+const nameKindLabel = v => (nameGroup(v) || {}).name || '';
+const nameKindColor = v => (nameGroup(v) || {}).color || '';
+const parseExtra = v => { let o = v; if (typeof v === 'string') { try { o = JSON.parse(v); } catch { o = null; } } return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; };
+const dumpExtra = o => { const e = Object.entries(o || {}).filter(([k, v]) => k && String(v || '').trim()).map(([k, v]) => [k, String(v).trim().slice(0, 200)]); return e.length ? JSON.stringify(Object.fromEntries(e)) : null; };
 const MAX_SENSES = 8;
 // Chuẩn hoá danh sách nghĩa phụ: bỏ dòng trống, từ loại sai → null, cắt độ dài, tối đa MAX_SENSES
 function cleanSenses(list) {
@@ -255,6 +275,7 @@ function buildCardData(f) {
     notes: t((f.notes || '').trim(), LIMITS.notes) || null,
     // Chỉ gửi khi người gọi cung cấp (schema cũ chưa có 2 cột này sẽ không bị gửi nhầm)
     ...('name_kind' in f ? { name_kind: safeNameKind(f.name_kind) } : {}),
+    ...('extra' in f ? { extra: dumpExtra(typeof f.extra === 'string' ? parseExtra(f.extra) : f.extra) } : {}),
     ...('senses' in f ? { senses: dumpSenses(typeof f.senses === 'string' ? parseSenses(f.senses) : f.senses) } : {}),
   };
 }

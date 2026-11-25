@@ -487,3 +487,6 @@ mark.gl { background: none; color: inherit; text-decoration: underline; text-dec
 .mt-item.gone { opacity: 0; pointer-events: none; transform: scale(.9); }
 @keyframes mtshake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 @media (prefers-reduced-motion: reduce) { .mt-item.bad { animation: none; } }
+/* Nhóm từ riêng */
+.gdot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.item.grp { border-left: 4px solid var(--nk); align-items: center; gap: 8px; flex-wrap: wrap; }

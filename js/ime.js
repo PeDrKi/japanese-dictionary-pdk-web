@@ -92,7 +92,7 @@ const IME = (() => {
   }
   function cycle(to) {
     mode = to === undefined ? (mode + 1) % 3 : to;
-    place();
+    place(); document.dispatchEvent(new CustomEvent('imemode'));
     if (typeof toast === 'function') toast(mode === 0 ? 'Đã tắt gõ tiếng Nhật' : mode === 1 ? 'Gõ tiếng Nhật: hiragana (あ) — gõ romaji, vd taberu → たべる' : 'Gõ tiếng Nhật: katakana (ア) — vd kohi- → コヒー');
     const s = document.getElementById('imestate'); if (s) s.textContent = describe();
     syncSide();

@@ -2,12 +2,12 @@
    Mô phỏng đủ phần của supabase-js mà app dùng: auth, from().select/insert/update/upsert/delete + eq/in/gte/order/range, rpc().
    Dữ liệu nằm trong window.__DB (test đọc/ghi trực tiếp để kiểm tra). Dữ liệu ban đầu: window.__SEED. */
 (() => {
-  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells', 'translations', 'vaults'];
+  const TABLES = ['cards', 'decks', 'deck_categories', 'deck_cards', 'radicals', 'radical_cards', 'user_decompositions', 'study_sessions', 'starter_decks', 'starter_cards', 'grammar_points', 'conj_forms', 'conj_verbs', 'conj_cells', 'translations', 'vaults', 'card_groups'];
   const seed = window.__SEED || {};
   const DB = window.__DB = { n: 0, calls: [], me: seed.me || { role: 'user', status: 'active' }, fail: null };
   for (const t of TABLES) DB[t] = JSON.parse(JSON.stringify(seed[t] || []));
   if (!seed.oldSchema && DB.decks) DB.decks.forEach(d => { if (!('vault_id' in d)) d.vault_id = null; });   // cột decks.vault_id (schema 14)
-  if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; delete DB.translations; delete DB.vaults; }   // mô phỏng máy chủ chưa chạy schema v7
+  if (seed.oldSchema) { delete DB.grammar_points; delete DB.conj_forms; delete DB.conj_verbs; delete DB.conj_cells; delete DB.translations; delete DB.vaults; delete DB.card_groups; }   // mô phỏng máy chủ chưa chạy schema v7
   const USER = { id: '11111111-1111-4111-8111-111111111111', email: seed.email || 'test@example.com' };
   const nowIso = () => new Date().toISOString();
   const bump = () => { DB.n++; };

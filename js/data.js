@@ -93,6 +93,9 @@ async function loadAll(opts = {}) {
   reindexConj();
   // Kho thẻ (schema v13): chưa chạy schema mới thì bỏ qua êm (không ai bị ẩn thẻ)
   try { S.vaults = await fetchAll('vaults', q => q.order('sort_order').order('created_at')); S.vaultOk = true; } catch { S.vaults = []; S.vaultOk = false; }
+  // Nhóm từ riêng (schema v16): chưa chạy schema mới thì chỉ dùng 4 nhóm có sẵn
+  try { S.card_groups = await fetchAll('card_groups', q => q.order('sort_order').order('created_at')); S.groupOk = true; } catch { S.card_groups = []; S.groupOk = false; }
+  setNameGroups(S.card_groups);
   // Bản dịch (schema v11)
   try { S.translations = await fetchAll('translations', q => q.order('created_at', { ascending: false })); S.transOk = true; } catch { S.translations = []; S.transOk = false; }
   S.cards = cards; S.decks = decks; S.cats = cats.sort((a, b) => a.sort_order - b.sort_order); S.deckCards = dcs; S.radicals = rads; S.radCards = rcs;
@@ -190,7 +193,7 @@ function logStudy(cardId, result) {
 // Nếu ai đó đã sửa trước: trường khác nhau → tự gộp; cùng 1 trường khác giá trị → hỏi bạn.
 const EDIT_FIELDS = {
   cards: ['type', 'character', 'reading_on', 'reading_kun', 'reading_kana', 'reading_hanviet', 'romaji', 'meaning_vi', 'meaning_en',
-    'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos', 'name_kind', 'senses'],
+    'example_jp', 'example_vi', 'stroke_count', 'jlpt_level', 'status', 'is_favorite', 'source', 'notes', 'pos', 'name_kind', 'senses', 'extra'],
   decks: ['name', 'description', 'color', 'icon', 'category_id'],
   radicals: ['character', 'name', 'color'],
   grammar_points: ['title', 'meaning_vi', 'structure', 'explanation', 'examples', 'jlpt_level'],
@@ -529,6 +532,35 @@ const vaultCount = id => vaultCards(id).length;
 const VAULT_NEED = 'Cần chạy lại schema.sql (bản 14) trên Supabase để dùng Kho thẻ.';
 // Schema v15 (cột name_kind / senses) đã chạy chưa — xem theo dữ liệu thẻ vì select * trả mọi cột
 const cardExtOk = () => !S.cards.length || 'senses' in S.cards[0];
+// Schema v16: bảng card_groups + cột cards.extra
+const groupExtOk = () => S.groupOk && (!S.cards.length || 'extra' in S.cards[0]);
+const GROUP_NEED = 'Cần chạy lại schema.sql (bản 16) trên Supabase để tạo nhóm từ riêng.';
+function groupName(raw) { const n = String(raw || '').trim().replace(/\s+/g, ' '); if (!n) throw new Error('Cần nhập tên nhóm'); if (n.length > 40) throw new Error('Tên nhóm tối đa 40 ký tự'); return n; }
+// fields: [{k?, label}] — mã trường k tự sinh nếu chưa có, giữ nguyên khi sửa để dữ liệu đã nhập không mất
+function cleanGroupFields(fields) {
+  const out = [], used = new Set();
+  for (const f of fields || []) { const label = String(f.label || '').trim().slice(0, 30); if (!label) continue; let k = f.k && !used.has(f.k) ? String(f.k) : 'f' + Math.random().toString(36).slice(2, 8); used.add(k); out.push({ k, label }); }
+  return out.slice(0, 6);
+}
+// key: khoá nhóm có sẵn (surname…) hoặc id nhóm tự tạo; null = tạo mới. Nhóm có sẵn chưa có hàng thì tạo hàng ghi đè.
+async function saveNameGroup(key, { name, color, fields }) {
+  if (!S.groupOk) throw new Error(GROUP_NEED);
+  const n = groupName(name), col = safeColor(color) || '#8E7CC3', fj = JSON.stringify(cleanGroupFields(fields));
+  if (allNameGroups().some(g => g.key !== key && g.name.toLowerCase() === n.toLowerCase())) throw new Error(`Đã có nhóm tên "${n}"`);
+  const cur = key ? nameGroup(key) : null; let r;
+  if (cur && cur.id) [r] = await mut(sb.from('card_groups').update({ name: n, color: col, fields: fj }).eq('id', cur.id).select());
+  else [r] = await mut(sb.from('card_groups').insert({ id: uuid7(), name: n, color: col, fields: fj, builtin: cur ? cur.key : null, sort_order: S.card_groups.length }).select());
+  if (r) { const i = S.card_groups.findIndex(x => x.id === r.id); if (i >= 0) S.card_groups[i] = r; else S.card_groups.push(r); }
+  setNameGroups(S.card_groups); return r;
+}
+// Xoá nhóm tự tạo (thẻ trong nhóm thành thẻ thường) hoặc đặt lại nhóm có sẵn về mặc định
+async function deleteNameGroup(key) {
+  const g = nameGroup(key); if (!g || !g.id) return;
+  if (!g.builtin) { const ids = S.cards.filter(c => alive(c) && c.name_kind === key).map(c => c.id); if (ids.length) await updateCards(ids, { name_kind: null, extra: null }); }
+  await mut(sb.from('card_groups').delete().eq('id', g.id));
+  S.card_groups = S.card_groups.filter(x => x.id !== g.id); setNameGroups(S.card_groups);
+}
+const groupCards = key => S.cards.filter(c => alive(c) && !c.vault_id && c.name_kind === key);
 const deckVaultOk = () => S.vaultOk && (!S.decks.length || 'vault_id' in S.decks[0]);
 const vaultDecks = id => S.decks.filter(d => alive(d) && d.vault_id === id);
 const deckCardIds = deckId => S.deckCards.filter(dc => alive(dc) && dc.deck_id === deckId).map(dc => dc.card_id);

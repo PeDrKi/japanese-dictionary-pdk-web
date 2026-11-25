@@ -172,12 +172,13 @@ function charBox(str) {
 }
 
 // ── Gõ romaji trên điện thoại → tự đổi sang kana ở các ô có data-kana ("hira" | "kata" | "auto": chữ thường → hiragana, CHỮ HOA → katakana) ──
-const kanaScript = el => el.dataset.kana === 'auto' && el.closest('form')?.dataset.type === 'katakana' ? 'kata' : el.dataset.kana;
+// Kiểu chữ theo bộ gõ chung (ime.js, Ctrl+`): Abc (tắt) → không đổi · あ → hiragana · ア → katakana
+const kanaScript = () => IME.mode === 2 ? 'kata' : 'hira';
 function kanaConvert(el, final) {
-  if (!el || !el.dataset || !el.dataset.kana) return false;
+  if (!el || !el.dataset || !el.dataset.kana || !IME.mode) return false;
   const v = el.value;
   if (!final && el.selectionStart !== v.length) return false;   // sửa giữa chuỗi: không đổi để con trỏ khỏi nhảy
-  const nv = romajiToKana(v, kanaScript(el), final);
+  const nv = romajiToKana(v, kanaScript(), final);
   if (nv === v) return false;
   el.value = nv; try { el.setSelectionRange(nv.length, nv.length); } catch { /* một số kiểu input không hỗ trợ */ }
   return true;
