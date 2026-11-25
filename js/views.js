@@ -72,9 +72,9 @@ function viewToday() {
 ACT.startDue = el => startStudy({ mode: el.dataset.mode, due: true, limit: SC.limit, ask: SC.ask, typing: SC.typing, split: SC.split });
 
 // ═══ THẺ ═══════════════════════════════════════════════════════════════════
-function currentList() { return filterCards({ search: FILT.search, type: FILT.type, jlpt: FILT.jlpt, pos: FILT.pos, nk: FILT.nk, status: FILT.status, fav: FILT.fav, due: FILT.due, deck: FILT.deck, cat: FILT.cat }); }
+function currentList() { return filterCards({ search: FILT.search, type: FILT.type, jlpt: FILT.jlpt, pos: FILT.pos, nk: FILT.nk, src: FILT.src, status: FILT.status, fav: FILT.fav, due: FILT.due, deck: FILT.deck, cat: FILT.cat }); }
 function viewCards() {
-  const active = [FILT.jlpt, FILT.pos, FILT.nk, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
+  const active = [FILT.jlpt, FILT.pos, FILT.nk, FILT.src, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck), cat = FILT.cat && catName(FILT.cat);
   return `<div class="page">${pageTop(deck ? `${deck.icon || ''} ${deck.name}` : cat || 'Thư viện', false,
     `<button class="btn tool${FILT.select ? ' on' : ''}" data-act="toggleSelect" aria-pressed="${FILT.select}">${FILT.select ? '✕ Xong' : '☑ Chọn'}</button>
@@ -97,7 +97,7 @@ function cardsBody() {
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   if (FILT.page > totalPages - 1) FILT.page = totalPages - 1;
   const shown = pages ? list.slice(FILT.page * PAGE_SIZE, (FILT.page + 1) * PAGE_SIZE) : list.slice(0, FILT.shown);
-  const active = [FILT.jlpt, FILT.pos, FILT.nk, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
+  const active = [FILT.jlpt, FILT.pos, FILT.nk, FILT.src, FILT.status, FILT.fav, FILT.due, FILT.deck, FILT.cat].filter(Boolean).length;
   const deck = FILT.deck && S.decks.find(d => d.id === FILT.deck);
   const pager = () => { const p = FILT.page, b = (n, label, dis, aria) => `<button class="btn tool" data-act="cardsPage" data-p="${n}" aria-label="${aria}" ${dis ? 'disabled' : ''}>${label}</button>`;
     return `<nav class="pager" aria-label="Phân trang">${b(0, '«', p === 0, 'Trang đầu')}${b(p - 1, '‹', p === 0, 'Trang trước')}<span class="pg" aria-live="polite">Trang ${p + 1} / ${totalPages}</span>${b(p + 1, '›', p >= totalPages - 1, 'Trang sau')}${b(totalPages - 1, '»', p >= totalPages - 1, 'Trang cuối')}</nav>`; };
@@ -128,6 +128,10 @@ ACT.openCard = el => {
   if (FILT.select) { FILT.sel.has(id) ? FILT.sel.delete(id) : FILT.sel.add(id); const y = $('#view').scrollTop; render(); $('#view').scrollTop = y; return; }
   openCardDetail(id);
 };
+function sourceSelect(id, cur) {
+  const { list, none } = sourceList(); if (!list.length) return '';
+  return `<label class="field"><span>Nguồn</span><select id="${id}"><option value="">Tất cả</option>${list.map(([k, n]) => `<option value="${esc(k)}" ${cur === k ? 'selected' : ''}>${esc(k)} (${n})</option>`).join('')}${none ? `<option value="_none" ${cur === '_none' ? 'selected' : ''}>Chưa có nguồn (${none})</option>` : ''}</select></label>`;
+}
 ACT.openFilter = () => {
   const chip = (k, v, l) => `<button class="chip ${FILT[k] === v ? 'on' : ''}" data-act="fset" data-k="${k}" data-v="${v}">${l}</button>`;
   const s = openSheet(`<h2>Bộ lọc</h2>
@@ -135,6 +139,7 @@ ACT.openFilter = () => {
     <div class="field"><span>Từ loại</span><div id="posbox">${posChips(FILT.pos, 'fset', 'pos')}</div></div>
     ${cardExtOk() ? `<div class="field"><span>Tên riêng</span><div class="chips" style="flex-wrap:wrap">${chip('nk', '', 'Tất cả')}${chip('nk', '*', 'Mọi tên riêng')}${allNameGroups().map(g => chip('nk', g.key, esc(g.name))).join('')}</div></div>` : ''}
     <div class="field"><span>Trạng thái</span><div class="chips" style="flex-wrap:wrap">${chip('status', '', 'Tất cả')}${STATUSES.map(j => chip('status', j, STATUS_LABEL[j])).join('')}</div></div>
+    ${sourceSelect('f-src', FILT.src)}
     <label class="field"><span>Bộ thẻ</span><select id="f-deck"><option value="">Tất cả</option>${liveDecks().map(d => `<option value="${d.id}" ${FILT.deck === d.id ? 'selected' : ''}>${esc(d.icon || '')} ${esc(d.name)}</option>`).join('')}</select></label>
     ${S.cats.length ? `<label class="field"><span>Danh mục</span><select id="f-cat"><option value="">Tất cả</option>${S.cats.map(c => `<option value="${c.id}" ${FILT.cat === c.id ? 'selected' : ''}>${esc(c.icon || '')} ${esc(c.name)}</option>`).join('')}<option value="_none" ${FILT.cat === '_none' ? 'selected' : ''}>Chưa phân loại</option></select></label>` : ''}
     <div class="row wrap" style="margin-bottom:14px"><button class="chip ${FILT.fav ? 'on' : ''}" data-act="ftoggle" data-k="fav">★ Yêu thích</button><button class="chip ${FILT.due ? 'on' : ''}" data-act="ftoggle" data-k="due">Đến hạn ôn</button></div>
@@ -147,8 +152,8 @@ ACT.fset = el => {
   $$('[data-act=fset]', _fs.el).filter(b => b.dataset.k === el.dataset.k).forEach(b => b.classList.toggle('on', b === el));
 };
 ACT.ftoggle = el => { FILT[el.dataset.k] = !FILT[el.dataset.k]; el.classList.toggle('on', FILT[el.dataset.k]); };
-ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', nk: '', status: '', fav: false, due: false, deck: '', cat: '', shown: PAGE_SIZE, page: 0 }); _fs.close(); render(); };
-ACT.fapply = () => { FILT.deck = $('#f-deck', _fs.el).value; FILT.cat = $('#f-cat', _fs.el)?.value || ''; resetPaging(); _fs.close(); NAV.tab = 'cards'; render(); };
+ACT.fclear = () => { Object.assign(FILT, { jlpt: '', pos: '', nk: '', src: '', status: '', fav: false, due: false, deck: '', cat: '', shown: PAGE_SIZE, page: 0 }); _fs.close(); render(); };
+ACT.fapply = () => { FILT.src = $('#f-src', _fs.el)?.value || ''; FILT.deck = $('#f-deck', _fs.el).value; FILT.cat = $('#f-cat', _fs.el)?.value || ''; resetPaging(); _fs.close(); NAV.tab = 'cards'; render(); };
 
 // ── Thao tác hàng loạt ──
 ACT.bulkFav = async () => { await guard(() => toggleFavorite([...FILT.sel]), 'Đã đổi yêu thích'); FILT.sel.clear(); render(); };

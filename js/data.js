@@ -389,6 +389,7 @@ function filterCards(f = {}) {
   if (f.status) list = list.filter(c => c.status === f.status);
   if (f.pos) list = list.filter(c => posMatchCard(f.pos, c));
   if (f.nk) list = list.filter(c => f.nk === '*' ? !!c.name_kind : c.name_kind === f.nk);
+  if (f.src) list = list.filter(c => f.src === '_none' ? !(c.source || '').trim() : (c.source || '').trim() === f.src);   // lọc theo Nguồn ('_none' = chưa có nguồn)
   if (f.fav) list = list.filter(c => c.is_favorite);
   if (f.due) { const t = localDate(); list = list.filter(c => isDue(c, t)); }
   if (f.deck) { const s = new Set(S.cardsOfDeck.get(f.deck) || []); list = list.filter(c => s.has(c.id)); }
@@ -533,6 +534,12 @@ const VAULT_NEED = 'Cần chạy lại schema.sql (bản 14) trên Supabase đ�
 // Schema v15 (cột name_kind / senses) đã chạy chưa — xem theo dữ liệu thẻ vì select * trả mọi cột
 const cardExtOk = () => !S.cards.length || 'senses' in S.cards[0];
 // Schema v16: bảng card_groups + cột cards.extra
+// Các nguồn đang có (kèm số thẻ), xếp theo tên tự nhiên — dùng cho bộ lọc Nguồn
+function sourceList() {
+  const m = new Map(); let none = 0;
+  for (const c of liveCards()) { const k = (c.source || '').trim(); if (k) m.set(k, (m.get(k) || 0) + 1); else none++; }
+  return { list: [...m].sort((a, b) => a[0].localeCompare(b[0], 'vi', { numeric: true })), none };
+}
 const groupExtOk = () => S.groupOk && (!S.cards.length || 'extra' in S.cards[0]);
 const GROUP_NEED = 'Cần chạy lại schema.sql (bản 16) trên Supabase để tạo nhóm từ riêng.';
 function groupName(raw) { const n = String(raw || '').trim().replace(/\s+/g, ' '); if (!n) throw new Error('Cần nhập tên nhóm'); if (n.length > 40) throw new Error('Tên nhóm tối đa 40 ký tự'); return n; }
